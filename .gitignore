@@ -1,0 +1,48 @@
+# Claude Code (local only, not for public repos)
+CLAUDE.md
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Inspect AI logs
+logs/
+.env
+.venv/
+logs/
+__pycache__/
+*.pyc
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+# Claude Code internals
+.claude/
+
+# External reference clones (read locally, do not ship)
+github_Repos/
+
+# Local paper library (read locally, do not ship)
+Papers/
