@@ -1,5 +1,6 @@
-# Claude Code (local only, not for public repos)
+# Local only docs (not for public repo)
 CLAUDE.md
+CONTEXT.md
 
 # Secrets
 .env
