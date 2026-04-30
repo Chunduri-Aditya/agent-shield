@@ -2,11 +2,16 @@
 
 Single source of truth for any cold reader (agent, collaborator, future self).
 Read this first; every other doc is a deeper cut on a section here. Last
-regenerated: April 29, 2026 (Day 13 of the 40 day sprint).
+regenerated: April 30, 2026 (Day 14 of the 40 day sprint).
 
 Repo visibility: **private** as of Day 13 (move from public to private for
 sprint duration; flip back public on Day 40 ship). No external contributors
-during sprint.
+during sprint. No AI agents credited as contributors at any layer
+(Section 0 sole contributor rule).
+
+Day 14 cleanup: removed `PROJECT_INDEX.md` (outdated, superseded by this file),
+`STARTER_GUIDE.md` (redundant with this file + README), and root
+`reading_notes.md` (canonical version lives in `docs/reading_notes.md`).
 
 ---
 
@@ -60,6 +65,21 @@ If a chat with Claude (any agent) modifies project state, Claude is required
 to either (a) update CONTEXT.md in the same response or (b) refuse to
 finalize the work until the file is updated. Treat this as a non negotiable
 rule equivalent to the mapping discipline in Section 9.
+
+### Sole contributor rule
+
+Aditya is the sole contributor to this repository. No AI agent (Claude,
+GPT, Copilot, Cursor, Aider, Devin, or any other) is credited as author or
+co-author in any commit, PR, comment, or doc. Tools don't sign their work.
+
+This rule lives in full in `CLAUDE.md` Rule A. Verify before push:
+
+```bash
+git log -1 --pretty=full | grep -iE "co-authored-by|claude|gpt|copilot|generated with|written by"
+```
+
+Empty output = clean. A commit-msg hook at `.git/hooks/commit-msg` enforces
+this locally; reinstall instructions are in `CLAUDE.md`.
 
 ---
 
@@ -202,8 +222,6 @@ agent-shield/
 ├── files/                Placeholder for env payloads (currently empty)
 ├── AGENT_SHIELD_TODO.md  Master atomic checklist (20 sections)
 ├── TIMELINES.md          Sprint milestones, application deadlines, content calendar
-├── STARTER_GUIDE.md      Repo walkthrough for cold readers
-├── PROJECT_INDEX.md      Auto retrieval map of every file
 ├── THREAT_MODEL.md       STRIDE + Greshake + outcome cube + metrics
 ├── MAPPINGS.md           Attack registry cross linked to OWASP + ATLAS
 ├── ETHICS.md             Responsible disclosure, 90 day window, dual use policy
@@ -211,7 +229,6 @@ agent-shield/
 ├── RESULTS.md            Schema + per module result tables (most empty pending runs)
 ├── WEEKLY.md             Sunday retrospective template
 ├── CONTEXT.md            This file
-├── reading_notes.md      Root copy of OWASP notes
 ├── pyproject.toml        uv config, deps, ruff, mypy, pytest settings
 ├── Makefile              eval, eval-inputs, eval-tools, test, lint, fmt, view, clean
 ├── main.py               Stub entry point
@@ -303,8 +320,6 @@ shipped. Zero day streaks not allowed.
 |---|---|---|
 | `AGENT_SHIELD_TODO.md` | Master atomic checklist, 20 sections | Every session |
 | `TIMELINES.md` | Milestone map, app deadlines, content calendar | Weekly review |
-| `STARTER_GUIDE.md` | Cold reader walkthrough | Onboarding |
-| `PROJECT_INDEX.md` | Auto retrieval file map | Looking up where things live |
 | `BACKLOG.md` | Off sprint ideas | When new scope appears |
 | `WEEKLY.md` | Sunday retrospective template | Sunday review |
 
@@ -319,7 +334,6 @@ shipped. Zero day streaks not allowed.
 | `ETHICS.md` | 90 day disclosure window, dual use, severity matrix, transparency justification |
 | `RESULTS.md` | Metric schema + per module result tables |
 | `docs/reading_notes.md` | Primary reading notes (Greshake, AgentDojo, OWASP, ATLAS) |
-| `reading_notes.md` | Root copy of OWASP notes |
 
 ### Code
 

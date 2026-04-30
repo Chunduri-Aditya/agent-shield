@@ -81,7 +81,7 @@ agent-shield/
 ├── THREAT_MODEL.md        Threat model and metric definitions
 ├── MAPPINGS.md            OWASP + MITRE ATLAS attack registry
 ├── RESULTS.md             Logged runs, seeds, dates, and model IDs
-└── STARTER_GUIDE.md       Longer repo walkthrough
+└── CONTEXT.md             Single source of truth (read first)
 ```
 
 ## Stack
@@ -142,7 +142,7 @@ Agent Shield keeps the reproducibility trail in repo:
 
 - [RESULTS.md](RESULTS.md) for run summaries and model IDs
 - [logs/](logs/) for raw Inspect `.eval` artifacts
-- [PROJECT_INDEX.md](PROJECT_INDEX.md) for dated project milestones
+- [TIMELINES.md](TIMELINES.md) for sprint milestones and dated checkpoints
 - [MAPPINGS.md](MAPPINGS.md) for attack-to-framework mapping discipline
 
 The existing AgentDojo smoke artifact is
@@ -150,9 +150,9 @@ The existing AgentDojo smoke artifact is
 
 ## References
 
+- [CONTEXT.md](CONTEXT.md) — full project state, single source of truth
 - [THREAT_MODEL.md](THREAT_MODEL.md)
 - [MAPPINGS.md](MAPPINGS.md)
-- [STARTER_GUIDE.md](STARTER_GUIDE.md)
 - [docs/reading_notes.md](docs/reading_notes.md)
 
 ## Citation
