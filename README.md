@@ -80,8 +80,7 @@ agent-shield/
 ├── AGENT_SHIELD_TODO.md   Master sprint checklist
 ├── THREAT_MODEL.md        Threat model and metric definitions
 ├── MAPPINGS.md            OWASP + MITRE ATLAS attack registry
-├── RESULTS.md             Logged runs, seeds, dates, and model IDs
-└── CONTEXT.md             Single source of truth (read first)
+└── RESULTS.md             Logged runs, seeds, dates, and model IDs
 ```
 
 ## Stack
@@ -152,6 +151,7 @@ The existing AgentDojo smoke artifact is
 
 - [THREAT_MODEL.md](THREAT_MODEL.md)
 - [MAPPINGS.md](MAPPINGS.md)
+- [TIMELINES.md](TIMELINES.md)
 - [docs/reading_notes.md](docs/reading_notes.md)
 
 ## Citation
