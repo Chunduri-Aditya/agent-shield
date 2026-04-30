@@ -150,7 +150,6 @@ The existing AgentDojo smoke artifact is
 
 ## References
 
-- [CONTEXT.md](CONTEXT.md) — full project state, single source of truth
 - [THREAT_MODEL.md](THREAT_MODEL.md)
 - [MAPPINGS.md](MAPPINGS.md)
 - [docs/reading_notes.md](docs/reading_notes.md)
