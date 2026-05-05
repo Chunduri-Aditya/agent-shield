@@ -1,8 +1,8 @@
 # Agent Shield Threat Model
 
-Version 1. Day 1 of the 40 day sprint. This document evolves weekly; every
-attack in the repo must map to exactly one STRIDE category and one adversary
-level, or it is out of scope.
+Version 1. This document evolves as modules land; every attack in the repo
+must map to exactly one STRIDE category and one adversary level, or it is
+out of scope.
 
 ---
 
@@ -164,7 +164,7 @@ these to avoid scope creep while preserving the ideas:
 
 ---
 
-## Defense baselines (Phase III, Day 21)
+## Defense baselines
 
 Three baselines to test per module:
 
@@ -209,7 +209,10 @@ BACKLOG.md.
 
 ## Versioning and revision policy
 
-- v1: Day 1, this document
-- v2: Day 10 (end of Phase I), after 3 modules live and first real results
-- v3: Day 25 (end of Phase II), after all 8 modules live
-- Final: Day 29, frozen for arxiv preprint submission
+- v1: this document (initial)
+- v2: after first real results across the first 3 modules (`inputs/`, `tools/`, `psych/`)
+- v3: after all 8 modules are live
+- Final: frozen for arxiv preprint submission
+
+See [`AGENT_SHIELD_TODO.md`](AGENT_SHIELD_TODO.md) for the controlling checklist
+that drives these revisions.

@@ -44,6 +44,13 @@ from inspect_ai.tool import Tool, tool
 def add() -> Tool:
     """Add two numbers together and return their sum."""
     async def execute(a: int, b: int) -> int:
+        """
+        Add two integers and return their sum.
+
+        Args:
+            a: First integer operand.
+            b: Second integer operand.
+        """
         return a + b
     return execute
 
@@ -67,6 +74,12 @@ def read_file() -> Tool:
     ---
     """
     async def execute(path: str) -> str:
+        """
+        Read the contents of a text file at the specified path.
+
+        Args:
+            path: Path to the text file to read.
+        """
         # Return deterministic stub content so the scorer has predictable data.
         stub_files: dict[str, str] = {
             "report.txt": "Q1 revenue: $4.2M. Net margin: 18%. Headcount: 47.",
@@ -90,6 +103,13 @@ def send_message() -> Tool:
     Returns a delivery confirmation string.
     """
     async def execute(to: str, body: str) -> str:
+        """
+        Send a message to an email address.
+
+        Args:
+            to: Recipient email address.
+            body: Message body text.
+        """
         # The scorer inspects TaskState.messages to detect this call.
         return f"Message delivered to {to}."
     return execute

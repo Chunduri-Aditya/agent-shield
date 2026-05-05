@@ -1,22 +1,22 @@
 # Agent Shield Backlog
 
-Scope discipline mechanism. Every idea that shows up mid sprint and is not on
-the Day 1 to 40 execution plan goes here. Nothing in this file is currently
-being built. The act of writing it down is the release valve — it lets the
-main sprint execute without ideas rotting in working memory.
+Scope discipline mechanism. Every idea that is not on the master checklist in
+[`AGENT_SHIELD_TODO.md`](AGENT_SHIELD_TODO.md) goes here. Nothing in this file
+is currently being built. The act of writing it down is the release valve — it
+lets the main checklist execute without ideas rotting in working memory.
 
 **Rule.** Only three ways an item leaves this file:
-1. Post-sprint (Days 41+), promoted to the next cycle's plan
-2. Mid-sprint swap, only if it replaces something already in scope with
+1. Post-ship (after v1.0.0), promoted to the next cycle's checklist
+2. Mid-checklist swap, only if it replaces something already in scope with
    explicit justification written here
 3. Rejected, moved to the Rejected section with one line of reasoning
 
 ---
 
-## Phase 2 candidates (possibly swap into Days 11 to 25)
+## Mid-checklist swap candidates
 
-These are strong enough to be considered for mid sprint swap-in if a planned
-module under-delivers. Do not just add them without pulling something else.
+These are strong enough to be considered for swap-in if a planned module
+under-delivers. Do not just add them without pulling something else.
 
 - [ ] **Code-completion injection module.** Copilot-style attacks where
   malicious code lives in imported repos or documentation. Greshake showed
@@ -36,9 +36,9 @@ module under-delivers. Do not just add them without pulling something else.
   Bai et al. 2022 self-critique would give coverage of the "model defends
   itself" class of defenses that nothing else tests.
 
-## Post sprint (Days 41+)
+## Post-ship
 
-Genuinely interesting, genuinely off-sprint. Do not touch before Day 40.
+Genuinely interesting, genuinely off-checklist. Do not touch before v1.0.0.
 
 - [ ] Unity sim: red team training environment for agents where human
   attackers and agent defenders play rounds
@@ -56,7 +56,7 @@ Genuinely interesting, genuinely off-sprint. Do not touch before Day 40.
   tracked as a metric in v1 threat model, not mitigated. Post-sprint this
   could be its own study.
 
-## Open threat-model questions (revisit Day 10 before v2)
+## Open threat-model questions (revisit before THREAT_MODEL v2)
 
 From the 25-question review of THREAT_MODEL.md v1. Pick 3 per weekly review,
 sit with them, revise doc.
@@ -68,7 +68,7 @@ sit with them, revise doc.
 - [ ] Q10: What's the causal identification for Middle A outcome (defense-caused vs task-difficulty)?
 - [ ] Q11: Utility drop threshold for "defender-mounted DoS" — pick a number.
 - [ ] Q13: "Detection of what?" — injection content, attacker goal, or unexpected tool call. Specify.
-- [ ] Q15: Sample size for defense-conditioned ASR matrix 95% CI at ±5%. Compute before Day 16.
+- [ ] Q15: Sample size for defense-conditioned ASR matrix 95% CI at ±5%. Compute before the first cross-model sweep.
 - [ ] Q21: Where did 30% recall / 10% FP come from for behavior-baseline detector? Ground or revise.
 - [ ] Q23: What specific finding breaks this doc and forces v2 from scratch?
 
@@ -79,13 +79,14 @@ sit with them, revise doc.
 - [ ] ~~Custom scoring DSL~~. Inspect AI scorers are flexible enough.
   Reinventing this wastes sprint hours.
 - [ ] ~~Running every eval on every model every day~~. API cost alone kills
-  the sprint. Cross-model runs go on full sweep days (Day 16, Day 25).
+  the sprint. Cross-model runs batch to the full-sweep milestones in
+  `AGENT_SHIELD_TODO.md`.
 
 ## Dual use gated (needs explicit justification to build)
 
 Some attack work is dual-use. These items do not get built until the
-`ETHICS.md` responsible disclosure policy is finalized on Day 2 and the
-specific item is cleared against it.
+[`ETHICS.md`](ETHICS.md) responsible disclosure policy (finalized) clears the
+specific item.
 
 - [ ] Zero-day MCP server attack demos against named production servers
 - [ ] Bespoke GCG suffixes optimized against frontier API models (paper
@@ -100,5 +101,5 @@ Entries use checkboxes so the file stays grep-able. Any PR that swaps a
 backlog item into the active sprint must update this file in the same
 commit, with a one-line reason for the swap.
 
-Last reviewed: Day 1 (April 17, 2026)
-Next review: Day 10 (end of Phase I retrospective)
+Last reviewed: initial entry
+Next review: before the first `THREAT_MODEL.md` v2 pass

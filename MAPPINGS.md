@@ -155,9 +155,9 @@ The current ATLAS taxonomy does not yet expose first class techniques for
 multi agent coordination attacks (orchestrator bypass, majority vote poisoning,
 adversarial peer). These map only loosely to T0053 (tool invocation when the
 "tool" is another agent) or T0048 (downstream harm). This is a gap to flag in
-the paper Limitations section. Pending: confirm during Day 19 multi agent
-module build whether to propose new ATLAS techniques as part of responsible
-disclosure or just document the gap.
+the paper Limitations section. Pending: confirm when the `multiagent/` module
+lands whether to propose new ATLAS techniques as part of responsible disclosure
+or just document the gap.
 
 ### Reverse index implication for paper methodology
 
@@ -169,13 +169,13 @@ section as evidence the module decomposition is taxonomy aligned, not arbitrary.
 
 ## Verification debt
 
-Resolve during today's reading blocks. Every line here is a required task before
-Phase I close.
+Resolve during reading blocks. Every line here is a required task before the
+mapping is locked for the paper methodology section.
 
 * [x] OWASP Agentic Top 10 exact item names and IDs (Apr 20, source: OWASP GenAI Security Project, Astrix writeup cross check)
 * [x] OWASP Agentic to Agent Shield module mapping full table (Apr 20, see Scope and Limitations for partial coverage notes)
 * [x] MITRE ATLAS technique IDs verified against current taxonomy (Apr 20, three changes integrated: T0053 renamed, T0051 sub techniques exposed, T0048 sub techniques exposed)
-* [x] Multi agent ATLAS coverage (Apr 20, no first class agent techniques in current taxonomy, gap flagged for paper Limitations and possible disclosure proposal during Day 19)
+* [x] Multi agent ATLAS coverage (Apr 20, no first class agent techniques in current taxonomy, gap flagged for paper Limitations and possible disclosure proposal when `multiagent/` module lands)
 * [ ] Delimiter confusion anchor source
 * [ ] MCP rug pull original source
 * [ ] MCP line jumping original source

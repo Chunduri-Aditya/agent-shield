@@ -22,22 +22,24 @@ Rate** and uses it consistently across attack modules.
 
 ## Current Status
 
-Implemented today:
+See [AGENT_SHIELD_TODO.md](AGENT_SHIELD_TODO.md) for the live checklist.
+Snapshot:
 
-- `evals/smoke.py`: trivial Inspect AI harness smoke test
-- `evals/inputs.py`: prompt-injection ASR and transparency evals
-- `evals/tools.py`: MCP tool-poisoning ASR and transparency evals
+- `evals/smoke.py`: Inspect AI harness smoke test
+- `evals/inputs.py`: prompt-injection ASR and transparency evals (IN-01..IN-05)
+- `evals/tools.py`: MCP tool-poisoning ASR and transparency evals (TL-01)
+- `evals/psych.py`: Cialdini-grounded ASR and transparency evals (PS-01..PS-06)
+- `tools/server.py`: FastMCP adversarial server scaffold
 - Logged AgentDojo smoke artifact: 5 banking tasks on
   `anthropic/claude-sonnet-4-5`
 
-Planned modules:
+Planned modules (not yet implemented):
 
 - `memory/`: RAG poisoning
-- `env/`: PDF/image/calendar/email payloads
+- `env/`: PDF / image / calendar / email payloads
 - `exfil/`: covert exfiltration channels
-- `multiagent/`: adversarial peer/orchestrator attacks
+- `multiagent/`: adversarial peer and orchestrator attacks
 - `drift/`: multi-turn manipulation and behavioral drift
-- `psych/`: psychology-grounded manipulation prompts
 
 ## Threat Model
 
@@ -73,11 +75,13 @@ agent-shield/
 ├── evals/                 Inspect AI task definitions
 ├── inputs/                Prompt-injection attack registry
 ├── tools/                 MCP attack registry and demo server
+├── psych/                 Psychology-grounded attack registry (Cialdini)
 ├── docs/                  Reading notes and paper support docs
 ├── logs/                  Inspect AI run artifacts
 ├── Papers/                Local paper library
 ├── github_Repos/          Cloned reference implementations
-├── AGENT_SHIELD_TODO.md   Master sprint checklist
+├── AGENT_SHIELD_TODO.md   Master execution checklist (single source of truth)
+├── SESSION_STATE.md       Parallel-session coordination
 ├── THREAT_MODEL.md        Threat model and metric definitions
 ├── MAPPINGS.md            OWASP + MITRE ATLAS attack registry
 └── RESULTS.md             Logged runs, seeds, dates, and model IDs
@@ -116,6 +120,8 @@ Run the implemented attack modules:
 ```bash
 make eval-inputs
 make eval-tools
+make eval-psych
+make eval-all
 ```
 
 Run local checks:
@@ -141,7 +147,7 @@ Agent Shield keeps the reproducibility trail in repo:
 
 - [RESULTS.md](RESULTS.md) for run summaries and model IDs
 - [logs/](logs/) for raw Inspect `.eval` artifacts
-- [TIMELINES.md](TIMELINES.md) for sprint milestones and dated checkpoints
+- [AGENT_SHIELD_TODO.md](AGENT_SHIELD_TODO.md) for the execution checklist ([TIMELINES.md](TIMELINES.md) is a pointer only, not a calendar)
 - [MAPPINGS.md](MAPPINGS.md) for attack-to-framework mapping discipline
 
 The existing AgentDojo smoke artifact is
@@ -151,7 +157,8 @@ The existing AgentDojo smoke artifact is
 
 - [THREAT_MODEL.md](THREAT_MODEL.md)
 - [MAPPINGS.md](MAPPINGS.md)
-- [TIMELINES.md](TIMELINES.md)
+- [AGENT_SHIELD_TODO.md](AGENT_SHIELD_TODO.md)
+- [SESSION_STATE.md](SESSION_STATE.md) (parallel session handoff; pair with local `CONTEXT.md`)
 - [docs/reading_notes.md](docs/reading_notes.md)
 
 ## Citation
