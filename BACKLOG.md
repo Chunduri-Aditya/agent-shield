@@ -31,8 +31,8 @@ under-delivers. Do not just add them without pulling something else.
   level needed (L0.5: influences user behavior upstream of agent).
 - [ ] **Cross-lingual injection.** Chinese, Hindi, Russian payloads. Tests
   whether English-trained safety filters generalize. One suite per module.
-- [ ] **Constitutional AI as fifth defense baseline.** Current 4 defenses are
-  Spotlighting, LLM judge, tool arg constraints, behavior baseline. Adding
+- [ ] **Constitutional AI as fifth defense baseline.** Current 3 defenses are
+  spotlighting, LLM judge, tool arg constraints. Adding
   Bai et al. 2022 self-critique would give coverage of the "model defends
   itself" class of defenses that nothing else tests.
 
