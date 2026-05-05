@@ -167,9 +167,9 @@ Citation metadata will be added once the workshop draft is frozen.
 
 ## Security
 
-Report vulnerabilities in **this repository’s code or tooling** privately:
-see [.github/SECURITY.md](.github/SECURITY.md). Full ethics and disclosure
-policy: [ETHICS.md](ETHICS.md).
+**Contact:** Aditya Chunduri — report issues in **this repository’s code or
+tooling** privately per [.github/SECURITY.md](.github/SECURITY.md) (email in
+that file). Ethics and disclosure: [ETHICS.md](ETHICS.md).
 
 ## License
 
