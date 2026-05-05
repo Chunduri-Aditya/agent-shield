@@ -72,3 +72,8 @@ WEEKLY.md
 
 # Reference material from external sources (not original work)
 files/
+
+# Internal working docs inside docs/
+docs/12-current-status.md
+docs/free_agent_resources.md
+docs/kaggle_free_models.md
