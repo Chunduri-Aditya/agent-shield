@@ -1,0 +1,24 @@
+---
+description: Agent Shield — mandatory pre-read and session discipline for all Cursor agents
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Agent Shield: mandatory agent onboarding
+
+Before writing a single line of code or editing any file, read these files in order:
+
+1. `CONTEXT.md` — full local project state (gitignored; read only when it exists in the working directory)
+2. `SESSION_STATE.md` — parallel-session coordination (combine with `CONTEXT.md`; workstreams, files in flight)
+3. `AGENT_SHIELD_TODO.md` — atomic execution checklist (single source of truth)
+4. `CLAUDE.md` — project rules, conventions, response behavior
+
+Skip none. All four together take under a few minutes and prevent rework from stale context.
+
+## Before stopping any session
+
+Update `AGENT_SHIELD_TODO.md` (check off items that landed), `CONTEXT.md` if private state shifted, and `SESSION_STATE.md` if parallel work would be confused without an update. There is no dated milestone calendar in `TIMELINES.md` — only the checklist matters.
+
+## Contributor rule
+
+Aditya is the sole contributor. No AI agent credited as author, co-author, or contributor anywhere — commit messages, PR descriptions, comments, or doc footers. See `CLAUDE.md` Rule A.

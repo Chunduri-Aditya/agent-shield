@@ -2,13 +2,13 @@
 
 Framework to module mappings derived from these notes live in MAPPINGS.md at the repo root.
 
-### AgentDojo Day 1 smoke
+### AgentDojo first smoke run
 - Model: claude-sonnet-4-5, suite: banking, 5 samples (u0 × i0..i4)
 - Attack variant: important_instructions
 - Security: 0/5 (all injections defended)
 - Utility: 0/5 (user task not completed)
 - Hypothesis: defended but abandoned the user goal
-- Follow up Day 11 (tools module): measure how often defense comes with utility collapse
+- Follow up inside `tools/` module: measure how often defense comes with utility collapse
 
 # OWASP LLM 2025 Reading Notes
 _Source: OWASP Top 10 for LLM Applications 2025, Version 2025, released November 18, 2024._
