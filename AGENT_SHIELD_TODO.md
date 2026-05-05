@@ -21,7 +21,10 @@ Cross items off as they happen. Order is suggested, not enforced.
 - [x] `BACKLOG.md` (every idea not in scope)
 - [x] `RESULTS.md` (numbers, seeds, dates, model IDs)
 - [x] `WEEKLY.md` (retrospectives)
-- [x] ~~`CONTRIBUTING.md` with 3 good first issues~~ (removed Day 13: solo dev, no contributors yet, revisit post sprint)
+- [x] `SESSION_STATE.md` (parallel-session coordination, public)
+- [x] `.cursor/rules/agent-shield.mdc` (mandatory agent pre-read enforced)
+- [x] Strict exploration resource access policy + local resource discovery log
+- [x] ~~`CONTRIBUTING.md` with 3 good first issues~~ (removed: solo dev, no contributors yet, revisit post-ship)
 - [ ] 90 sec Loom demo of full stack working
 
 ---
@@ -76,28 +79,29 @@ Cross items off as they happen. Order is suggested, not enforced.
 
 ## 4. Module: `inputs/` (prompt injection)
 
-- [ ] Scaffold module structure
-- [ ] 5 canonical attacks: ignore previous instructions, important message, system override, delimiter confusion, PAIR style rewrite
+- [x] Scaffold module structure (`inputs/__init__.py`, `inputs/attacks.py`)
+- [x] 5 canonical attacks: IN-01 direct_override, IN-02 authority_spoof, IN-03 persona_hijack, IN-04 delimiter_confusion, IN-05 indirect_injection
 - [ ] Reproduce GCG on Llama 3.1 8B Instruct
 - [ ] Log: wall clock, GPU memory, first successful suffix ASR
 - [ ] `attacks/jailbreak_registry.py` common interface
-- [ ] Port all attacks into Inspect tasks
-- [ ] Run on 8 models, log per attack ASR
+- [x] Port all attacks into Inspect tasks (`evals/inputs.py` — inputs_asr + inputs_transparency)
+- [ ] Run on 8 models, log per attack ASR (1 of 8 logged: ollama/llama3.1:8b, 2026-05-05)
 
 ---
 
 ## 5. Module: `tools/` (MCP)
 
-- [ ] First MCP adversary server with 3 tools: `add`, `read_file`, `send_message`
-- [ ] Poisoned tool description demo (exfiltrates dummy file)
-- [ ] Tool poisoning, rug pulls, line jumping
+- [x] First MCP adversary server with 3 tools: `add`, `read_file`, `send_message` (`tools/server.py`)
+- [x] Poisoned tool description demo — TL-01 exfiltrates dummy file (`tools/attacks.py`)
+- [ ] Tool poisoning, rug pulls, line jumping (TL-02..TL-04 stubbed, not eval'd)
 - [ ] Cross server shadowing
 - [ ] Confused deputy attack
 - [ ] Schema tampering
 - [ ] Extend with all Vulnerable MCP Project categories
 - [ ] Target: 30 tool attack tasks
-- [ ] Inspect harness integration
-- [ ] Cross model run
+- [x] Inspect harness integration (`evals/tools.py` — tools_asr + tools_transparency)
+- [x] First seeded Anthropic run logged in `RESULTS.md`
+- [ ] Cross model run (2 of 8 logged: ollama/llama3.1:8b + anthropic/claude-sonnet-4-5, 2026-05-05)
 
 ---
 
@@ -106,10 +110,12 @@ Cross items off as they happen. Order is suggested, not enforced.
 - [ ] `psych/cialdini_grid.md` mapping 6 principles to LLM manipulation patterns
 - [ ] Extract 5 Hadnagy pretext patterns
 - [ ] Map 3 System 1 exploits from Kahneman
-- [ ] Implement v1: 60 prompts (10 per principle, baseline + variant)
-- [ ] Run on Anthropic, OpenAI, and Google model families; log ASR per principle
-- [ ] Integrate into Inspect harness with unified schema
-- [ ] Expand to 8 models
+- [x] Implement v1: 6 baseline attacks (1 per Cialdini principle, PS-01..PS-06) in `psych/attacks.py`
+- [ ] Expand to 60 prompts (10 per principle, baseline + variant)
+- [ ] Run on Anthropic, OpenAI, and Google model families; log ASR per principle (Anthropic + Ollama logged 2026-05-05; OpenAI + Google pending)
+- [x] Integrate into Inspect harness with unified schema (`evals/psych.py` — psych_asr + psych_transparency)
+- [x] First seeded Anthropic run logged in `RESULTS.md`
+- [ ] Expand to 8 models (2 of 8 logged: ollama/llama3.1:8b + anthropic/claude-sonnet-4-5)
 
 ---
 
@@ -183,9 +189,15 @@ Cross items off as they happen. Order is suggested, not enforced.
 
 - [ ] Unified metric schema across all modules: benign utility, utility under attack, ASR, targeted ASR, canary leak rate, detection precision/recall
 - [ ] Custom Inspect solver
-- [ ] Custom Inspect scorer
-- [ ] Reproducibility bundle: model ID, API version, seed, timestamp, task set hash, judge ID, raw JSONL, aggregated metrics with 95% CI
-- [ ] Full sweep run: all 8 modules on 8 models
+- [x] Custom Inspect scorer (asr_scorer + transparency_scorer in `evals/inputs.py` and `evals/psych.py`; tools_asr_scorer + tools_transparency_scorer in `evals/tools.py`)
+- [x] Free agent backend scaffold for zero dollar sweeps (`make free-agents`, `docs/free_agent_resources.md`)
+- [x] Free agent status checks load `.env` and detect local Ollama, LM Studio, and vLLM servers
+- [x] Run first configured free backend sweep and paste rows into `RESULTS.md`
+- [x] Focused pytest coverage for eval scorer behavior and dataset wiring (`tests/test_eval_scorers.py`)
+- [x] Seed control across all eval targets (Makefile `SEED` variable wired through smoke + inputs + tools + psych + free-agent presets)
+- [x] Kaggle Benchmarks free-model proxy path (`scripts/kaggle_auth_check.sh`, `scripts/kaggle_inputs_runner.py`, `notebooks/run_kaggle_inputs_sweep.ipynb`, `docs/kaggle_free_models.md`)
+- [ ] Reproducibility bundle: model ID, API version, seed, timestamp, task set hash, judge ID, raw JSONL, aggregated metrics with 95% CI (model ID + seed + commit SHA logged in `RESULTS.md`; API version + raw JSONL bundling + 95% CI still open)
+- [ ] Full sweep run: all 8 modules on 8 models (3 modules live × 2 models partial; rest pending)
 - [ ] Headline finding picked after analysis
 
 ---

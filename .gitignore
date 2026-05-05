@@ -1,11 +1,17 @@
 # Local only docs (not for public repo)
+AGENTS.md
 CLAUDE.md
 CONTEXT.md
+RESOURCE_DISCOVERY_LOG.md
+docs/agent_resource_log.md
+docs/session_handoff.md
 
 # Secrets
 .env
 .env.local
 .env.*.local
+kaggle.json
+.kaggle/
 
 # Python
 __pycache__/
