@@ -53,3 +53,12 @@ github_Repos/
 
 # Local paper library (read locally, do not ship)
 Papers/
+
+# Local audit and archive artifacts
+_archive/
+_audit_report.md
+_audit_actions.md
+
+# Build outputs
+dist/
+build/
