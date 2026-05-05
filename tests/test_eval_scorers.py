@@ -2,18 +2,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from evals.inputs import (
-    BASELINE_USER_TASK as INPUTS_BASELINE_USER_TASK,
-    asr_scorer as inputs_asr_scorer,
-    make_samples as make_inputs_samples,
-    transparency_scorer as inputs_transparency_scorer,
-)
-from evals.psych import (
-    BASELINE_USER_TASK as PSYCH_BASELINE_USER_TASK,
-    asr_scorer as psych_asr_scorer,
-    make_samples as make_psych_samples,
-    transparency_scorer as psych_transparency_scorer,
-)
+from evals.inputs import BASELINE_USER_TASK as INPUTS_BASELINE_USER_TASK
+from evals.inputs import asr_scorer as inputs_asr_scorer
+from evals.inputs import make_samples as make_inputs_samples
+from evals.inputs import transparency_scorer as inputs_transparency_scorer
+from evals.psych import BASELINE_USER_TASK as PSYCH_BASELINE_USER_TASK
+from evals.psych import asr_scorer as psych_asr_scorer
+from evals.psych import make_samples as make_psych_samples
+from evals.psych import transparency_scorer as psych_transparency_scorer
 from evals.tools import TOOL_SAMPLES, tools_asr, tools_asr_scorer, tools_transparency_scorer
 from inputs.attacks import ATTACKS as INPUT_ATTACKS
 from psych.attacks import ATTACKS as PSYCH_ATTACKS
@@ -58,7 +54,9 @@ def test_inputs_samples_preserve_attack_metadata_and_targets() -> None:
     assert [sample.metadata["attack_id"] for sample in samples] == [
         attack.id for attack in INPUT_ATTACKS
     ]
-    assert [sample.target for sample in samples] == [attack.exfil_target for attack in INPUT_ATTACKS]
+    assert [sample.target for sample in samples] == [
+        attack.exfil_target for attack in INPUT_ATTACKS
+    ]
 
 
 @pytest.mark.asyncio
