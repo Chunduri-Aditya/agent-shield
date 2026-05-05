@@ -32,28 +32,28 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Many Shot | IN | LLM01 | ASI01 | AML.T0054 | Anil et al. 2024 Anthropic |
 | PAP | IN, PS | LLM01 | ASI01, ASI09 | AML.T0054 | Zeng et al. 2401.06373 |
 | Indirect injection via env | IN, EN | LLM01 | ASI01 | AML.T0051.001 | Greshake et al. 2302.12173 |
-| Delimiter confusion | IN | LLM01 | ASI01 | AML.T0051.000 | TODO find anchor |
+| Delimiter confusion | IN | LLM01 | ASI01 | AML.T0051.000 | Simon Willison 2023 https://simonwillison.net/2023/May/11/delimiters-wont-save-you/ |
 | MCP tool poisoning | TL | LLM05, LLM06 | ASI02, ASI04 | AML.T0053 | Invariant Labs 2025 |
-| MCP rug pull | TL | LLM06 | ASI02, ASI04 | AML.T0053 | TODO find anchor |
-| MCP line jumping | TL | LLM06 | ASI02 | AML.T0053 | TODO find anchor |
+| MCP rug pull | TL | LLM06 | ASI02, ASI04 | AML.T0053 | Invariant Labs 2025 https://invariantlabs.ai/blog/whatsapp-mcp-exploited |
+| MCP line jumping | TL | LLM06 | ASI02 | AML.T0053 | Trail of Bits 2025 https://www.mbgsec.com/weblog/2025-09-12-jumping-the-line-how-mcp-servers-can-attack-you-before-you-ever-use-them-the-trail-of-bits-blog/ |
 | Cross server shadowing | TL | LLM06 | ASI02, ASI04 | AML.T0053 | Willison 2025 blog |
 | Confused deputy | TL | LLM06 | ASI02, ASI03* | AML.T0053 | Hardy 1988 original |
-| Schema tampering | TL | LLM06 | ASI02, ASI04 | AML.T0053 | TODO find anchor |
+| Schema tampering | TL | LLM06 | ASI02, ASI04 | AML.T0053 | CyberArk 2025 https://cyberark.com/resources/threat-research-blog/poison-everywhere-no-output-from-your-mcp-server-is-safe |
 | PoisonedRAG | MM | LLM04, LLM08 | ASI06 | AML.T0020, AML.T0051.001 | Zou et al. 2402.07867 |
-| Retrieval hijack | MM | LLM08 | ASI06 | AML.T0051.001 | TODO find anchor |
-| Embedding adversarial | MM | LLM04, LLM08 | ASI06 | AML.T0020 | TODO find anchor |
-| Metadata hidden instruction | MM, IN | LLM01, LLM08 | ASI01, ASI06 | AML.T0051.001 | TODO find anchor |
+| Retrieval hijack | MM | LLM08 | ASI06 | AML.T0051.001 | arXiv 2024 https://arxiv.org/abs/2410.22832 |
+| Embedding adversarial | MM | LLM04, LLM08 | ASI06 | AML.T0020 | arXiv 2024 https://arxiv.org/abs/2410.02163 |
+| Metadata hidden instruction | MM, IN | LLM01, LLM08 | ASI01, ASI06 | AML.T0051.001 | OWASP 2026 https://github.com/OWASP/www-project-ai-testing-guide/blob/main/Document/content/tests/AITG-APP-02_Testing_for_Indirect_Prompt_Injection.md |
 | PDF injection | EN, IN | LLM01 | ASI01 | AML.T0051.001 | Debenedetti et al. 2406.13352 |
-| Image multimodal injection | EN, IN | LLM01 | ASI01 | AML.T0051.001 | TODO find anchor |
+| Image multimodal injection | EN, IN | LLM01 | ASI01 | AML.T0051.001 | arXiv 2026 https://arxiv.org/abs/2603.03637 |
 | Calendar event payload | EN, IN | LLM01 | ASI01 | AML.T0051.001 | Debenedetti et al. 2406.13352 |
 | Email payload | EN, IN | LLM01 | ASI01 | AML.T0051.001 | Debenedetti et al. 2406.13352 |
 | Orchestrator bypass | MA | LLM06 | ASI07, ASI08 | AML.T0053 (loose) | Gu et al. 2407.10788 |
-| Majority vote poisoning | MA | LLM04 | ASI07, ASI08 | AML.T0053 (loose) | TODO find anchor |
+| Majority vote poisoning | MA | LLM04 | ASI07, ASI08 | AML.T0053 (loose) | arXiv 2026 https://arxiv.org/abs/2604.17139 |
 | Adversarial peer | MA | LLM06 | ASI07, ASI10 | AML.T0053 (loose) | Gu et al. 2407.10788 |
-| Canary token exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | TODO find anchor |
-| Zero width chars | EX | LLM02 | ASI01 (outcome) | AML.T0057 | TODO find anchor |
-| Homoglyph exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | TODO find anchor |
-| Base64 smuggling | EX | LLM02 | ASI01 (outcome) | AML.T0057 | TODO find anchor |
+| Canary token exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | Thinkst 2026 https://canarytokens.org |
+| Zero width chars | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
+| Homoglyph exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
+| Base64 smuggling | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
 | Markdown image sink | EX | LLM02 | ASI01 (outcome) | AML.T0057 | Willison posts |
 | Cialdini authority | PS, DR | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
 | Cialdini reciprocity | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
@@ -64,7 +64,7 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Hadnagy pretexts | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Hadnagy 2010 |
 | Kahneman System 1 exploits | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Kahneman 2011 |
 | Sycophancy induction | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Perez et al. 2212.09251 |
-| Sandbagging detection | DR | TODO | ASI10 | AML.T0048 | TODO find anchor |
+| Sandbagging detection | DR | TODO | ASI10 | AML.T0048 | arXiv 2024 https://arxiv.org/abs/2406.07358 |
 
 \* ASI03 tagged on confused deputy is partial coverage. See Scope and Limitations section.
 
@@ -176,20 +176,20 @@ mapping is locked for the paper methodology section.
 * [x] OWASP Agentic to Agent Shield module mapping full table (Apr 20, see Scope and Limitations for partial coverage notes)
 * [x] MITRE ATLAS technique IDs verified against current taxonomy (Apr 20, three changes integrated: T0053 renamed, T0051 sub techniques exposed, T0048 sub techniques exposed)
 * [x] Multi agent ATLAS coverage (Apr 20, no first class agent techniques in current taxonomy, gap flagged for paper Limitations and possible disclosure proposal when `multiagent/` module lands)
-* [ ] Delimiter confusion anchor source
-* [ ] MCP rug pull original source
-* [ ] MCP line jumping original source
-* [ ] Schema tampering anchor source
-* [ ] Retrieval hijack anchor source
-* [ ] Embedding adversarial anchor source
-* [ ] Metadata hidden instruction anchor source
-* [ ] Image multimodal injection anchor source
-* [ ] Majority vote poisoning anchor source
-* [ ] Canary token exfil anchor source
-* [ ] Zero width chars anchor source
-* [ ] Homoglyph exfil anchor source
-* [ ] Base64 smuggling anchor source
-* [ ] Sandbagging detection anchor source
+* [x] Delimiter confusion anchor source (May 4, 2026)
+* [x] MCP rug pull original source (May 4, 2026)
+* [x] MCP line jumping original source (May 4, 2026)
+* [x] Schema tampering anchor source (May 4, 2026)
+* [x] Retrieval hijack anchor source (May 4, 2026)
+* [x] Embedding adversarial anchor source (May 4, 2026)
+* [x] Metadata hidden instruction anchor source (May 4, 2026)
+* [x] Image multimodal injection anchor source (May 4, 2026)
+* [x] Majority vote poisoning anchor source (May 4, 2026)
+* [x] Canary token exfil anchor source (May 4, 2026)
+* [x] Zero width chars anchor source (May 4, 2026)
+* [x] Homoglyph exfil anchor source (May 4, 2026)
+* [x] Base64 smuggling anchor source (May 4, 2026)
+* [x] Sandbagging detection anchor source (May 4, 2026)
 * [x] LLM10 Unbounded Consumption scope decision (Apr 20, out of scope, documented in Scope and Limitations)
 
 ## Scope and limitations
