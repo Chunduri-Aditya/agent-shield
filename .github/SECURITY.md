@@ -1,5 +1,15 @@
 # Security
 
+## Security contact (sole maintainer)
+
+**Aditya Chunduri** — private reports for vulnerabilities in *this* repository:
+
+- **Email:** [aditya2210.a1@gmail.com](mailto:aditya2210.a1@gmail.com)
+- **GitHub:** [@Chunduri-Aditya](https://github.com/Chunduri-Aditya)
+
+If your GitHub account has access, you can also use **Repository → Security →
+Report a vulnerability** when [private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability) is enabled for this repo (optional setting in **Settings → General → Security**).
+
 ## Supported versions
 
 Security fixes land on the default branch (`main`) at the latest commit. Tagged
@@ -12,7 +22,7 @@ best effort.
 this repository (harness, scripts, packaging, or CI). That can put other
 users at risk before a fix exists.
 
-**Contact:** [aditya2210.a1@gmail.com](mailto:aditya2210.a1@gmail.com)
+**Contact:** Aditya Chunduri — [aditya2210.a1@gmail.com](mailto:aditya2210.a1@gmail.com)
 
 Include, when you can:
 
