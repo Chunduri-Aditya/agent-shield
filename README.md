@@ -165,6 +165,12 @@ The existing AgentDojo smoke artifact is
 
 Citation metadata will be added once the workshop draft is frozen.
 
+## Security
+
+Report vulnerabilities in **this repository’s code or tooling** privately:
+see [.github/SECURITY.md](.github/SECURITY.md). Full ethics and disclosure
+policy: [ETHICS.md](ETHICS.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
