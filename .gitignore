@@ -62,3 +62,13 @@ _audit_actions.md
 # Build outputs
 dist/
 build/
+
+# Internal working docs (local only, not for public repo)
+AGENT_SHIELD_TODO.md
+SESSION_STATE.md
+TIMELINES.md
+WEEKLY.md
+.cursor/
+
+# Reference material from external sources (not original work)
+files/
