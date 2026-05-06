@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-tools eval-psych eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs test lint fmt clean
+.PHONY: eval eval-inputs eval-tools eval-psych eval-memory eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs test lint fmt clean
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -48,8 +48,18 @@ eval-psych-asr:
 eval-psych-transparency:
 	uv run inspect eval evals/psych.py@psych_transparency --model $(MODEL) --seed $(SEED)
 
+# Module: memory/ — RAG poisoning ASR + transparency
+eval-memory:
+	uv run inspect eval evals/memory.py --model $(MODEL) --seed $(SEED)
+
+eval-memory-asr:
+	uv run inspect eval evals/memory.py@memory_asr --model $(MODEL) --seed $(SEED)
+
+eval-memory-transparency:
+	uv run inspect eval evals/memory.py@memory_transparency --model $(MODEL) --seed $(SEED)
+
 # Run all implemented evals
-eval-all: eval eval-inputs eval-tools eval-psych
+eval-all: eval eval-inputs eval-tools eval-psych eval-memory
 
 # Free model presets. Override FREE_MODULE to reuse for later modules.
 free-agents:
