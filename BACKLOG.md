@@ -38,20 +38,11 @@ under-delivers. Do not just add them without pulling something else.
 
 ## Post-ship
 
-Genuinely interesting, genuinely off-checklist. Do not touch before v1.0.0.
+Project relevant ideas that do not belong on the v1.0.0 checklist. Do not
+touch before v1.0.0.
 
 - [ ] Unity sim: red team training environment for agents where human
   attackers and agent defenders play rounds
-- [ ] DJ energy curve as eval fatigue metric (half joke, half real — engagement
-  curves on eval campaigns are a legit research question)
-- [ ] Multi-agent RAG for music production knowledge (from old brainstorm)
-- [ ] Vocal performance analyzer (from old brainstorm)
-- [ ] Calisthenics form analyzer (from old brainstorm)
-- [ ] Cognitive load estimator from typing dynamics (from old brainstorm)
-- [ ] Attention drift detector (from old brainstorm)
-- [ ] Crate digger assistant (from old brainstorm)
-- [ ] DJ set energy planner (from old brainstorm)
-- [ ] B-roll matching engine (from old brainstorm)
 - [ ] `dos/` module — adversarial DoS attacks against agents. Currently
   tracked as a metric in v1 threat model, not mitigated. Post-sprint this
   could be its own study.
