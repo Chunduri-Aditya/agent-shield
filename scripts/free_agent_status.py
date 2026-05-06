@@ -47,15 +47,15 @@ FREE_AGENTS: tuple[FreeAgent, ...] = (
     ),
     FreeAgent(
         name="Groq free tier",
-        command="make eval-free-groq FREE_MODULE=inputs",
+        command="make eval-inputs-groq",
         required_env=("GROQ_API_KEY",),
-        note="Fast hosted open models with free rate limits.",
+        note="Fast hosted Llama 3.3 70B path with free rate limits.",
     ),
     FreeAgent(
         name="Google AI Studio free tier",
-        command="make eval-free-gemini FREE_MODULE=inputs",
+        command="make eval-inputs-gemini",
         required_env=("GOOGLE_API_KEY",),
-        note="Gemini API free tier for testing.",
+        note="Gemini API free tier path for testing.",
     ),
     FreeAgent(
         name="OpenRouter free router",
@@ -100,6 +100,8 @@ DEFAULT_MODELS: dict[str, str] = {
     "OLLAMA_MODEL": "llama3.1:8b",
     "LMSTUDIO_MODEL": "local-model",
     "VLLM_MODEL": "meta-llama/Llama-3.1-8B-Instruct",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
+    "GEMINI_MODEL": "gemini-1.5-flash",
 }
 
 
