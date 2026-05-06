@@ -39,6 +39,7 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Cross server shadowing | TL | LLM06 | ASI02, ASI04 | AML.T0053 | Willison 2025 blog |
 | Confused deputy | TL | LLM06 | ASI02, ASI03* | AML.T0053 | Hardy 1988 original |
 | Schema tampering | TL | LLM06 | ASI02, ASI04 | AML.T0053 | CyberArk 2025 https://cyberark.com/resources/threat-research-blog/poison-everywhere-no-output-from-your-mcp-server-is-safe |
+| MM-01 poisoned_rag_basic | MM | LLM03, LLM06 | ASI04 | AML.T0020, AML.T0051 | Zou et al. 2402.07867 |
 | PoisonedRAG | MM | LLM04, LLM08 | ASI06 | AML.T0020, AML.T0051.001 | Zou et al. 2402.07867 |
 | Retrieval hijack | MM | LLM08 | ASI06 | AML.T0051.001 | arXiv 2024 https://arxiv.org/abs/2410.22832 |
 | Embedding adversarial | MM | LLM04, LLM08 | ASI06 | AML.T0020 | arXiv 2024 https://arxiv.org/abs/2410.02163 |
@@ -118,6 +119,15 @@ Note. Exfiltration (`exfil/` module) does not map to a dedicated ASI class.
 OWASP treats data exfiltration as a downstream outcome of ASI01 (goal hijack),
 ASI02 (tool misuse), or ASI06 (memory poisoning) rather than as a standalone class.
 Exfil rows in the attack registry are tagged `ASI01 (outcome)` to reflect this.
+
+Note. Transparency Rate (TR) is a cross-cutting metric across all eight
+modules, not an attack class and not a `psych/` or `drift/` exclusive. It
+operationalizes the cognitive bandwidth dimension of ASI09 — whether the
+agent makes its defense behavior legible to the bounded human operator —
+and is the metric that confirms ASI09 mitigations like adaptive trust
+calibration and low-certainty cues actually fired. Full argument and
+citation chain in [`docs/reading_notes.md`](docs/reading_notes.md) under
+"Neuroinclusive Architecture and Transparency Rate".
 
 Reference incidents named by OWASP:
 * ASI01 exemplar: EchoLeak (zero click prompt injection against Microsoft Copilot)
