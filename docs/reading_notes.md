@@ -844,3 +844,49 @@ That means your default controls should be:
 - message integrity
 - observability
 - rollback and kill-switch capability  
+
+# Neuroinclusive Architecture and Transparency Rate
+
+_Source: "Architectural Assessment and Vulnerability Analysis of Modern Productivity Systems: A Neuroinclusive Framework" (May 5, 2026 synthesis). Anchors: WCAG / W3C COGA pattern set, Sweller's Cognitive Load Theory, the CyberArk "friction creates circumvention" line, OWASP 2025 architectural flaws, OWASP Agentic 2026 ASI09._
+
+## The thesis Agent Shield inherits
+
+Cognitive accessibility failure and security failure are two outputs of the same architectural neglect — designs that assume infinite human cognitive bandwidth. Friction-heavy security (long passwords, aggressive MFA, opaque CAPTCHAs) forces insecure workarounds: credential reuse, plaintext storage, MFA disabled. Non-deterministic systems (CRDT bloat, RAG poisoning, runaway multi-agent loops) destroy the predictability bounded working memory depends on, which itself becomes the next attack surface. Same architectural moves fix both.
+
+For Agent Shield the load-bearing claim is narrower: **opaque defense in agentic systems is the agentic-era equivalent of password complexity rules.** A defense that drops ASR but does not surface what it blocked is the same anti-pattern. The user cannot calibrate trust. They eventually disable the tool, ignore its warnings, or assume safety where there is none.
+
+## Where this lands in the existing OWASP Agentic frame
+
+ASI09 (Human–Agent Trust Exploitation) is the slot. OWASP already lists "adaptive trust calibration based on contextual risk", "show low-certainty or unverified-source cues", and "let users report suspicious manipulation easily" as required mitigations. Transparency Rate is the metric that operationalizes the first two. It does not replace ASI09 mitigations; it measures whether they fired.
+
+This means TR is not just a metric attached to `psych/` and `drift/` (where ASI09 maps in `MAPPINGS.md`). It is a **cross-cutting metric across all eight modules** because the cognitive bandwidth ceiling applies wherever an agent's defense behavior diverges from what the operator can reconstruct.
+
+## Lineage with the existing reading list
+
+Three papers already on the Agent Shield reading list anchor the spine of this argument and need no new fieldwork:
+
+- **Greshake et al. 2023, "Not what you've signed up for"** — names the user-facing surface explicitly: the user is the last reasoner, but the user cannot see the indirect injection. TR is the metric for whether the agent closes that gap on the user's behalf.
+- **Hines et al., spotlighting defense** — works precisely because it makes untrusted regions visible to both the model and the operator. The defense and the legibility primitive are the same move.
+- **Debenedetti et al., AgentDojo** — TR extends AgentDojo's 2x2 outcome matrix on exactly the axis AgentDojo's paper acknowledges as future work: operator visibility into what the agent caught.
+
+Two more papers in `Papers/` give the human-trust dimension supporting evidence:
+
+- **Zeng et al., PAP (arxiv 2401.06373)** — psychology grounded persuasion attacks succeed because the agent fails to surface the manipulation back to the user. Same TR gap, attack side.
+- **Perez et al., Model-Written Evaluations (arxiv 2212.09251)** — sycophancy and behavioral drift compound when the agent does not signal divergence. ASI09 + ASI10 territory.
+
+## Implications for the v1 paper
+
+One paragraph for the Methodology / Metrics section: TR has dual rationale.
+
+1. **Audit signal.** Operators cannot distinguish "no attack" from "silent compromise" without it.
+2. **Cognitive load.** The user is bounded; opaque defense erodes trust calibration over time and triggers the same workaround cycle Security UX literature documents for password and MFA fatigue.
+
+The first rationale is sufficient for the paper's contribution. The second strengthens the framing and gives the related work section a second leg to stand on (cognitive accessibility literature, not just security literature).
+
+## Implications for `RESULTS.md` reporting
+
+Defenses reporting (high benign utility, low ASR, low TR) are opaque by construction and should be flagged as such in `RESULTS.md`, not just in `THREAT_MODEL.md`. Opacity is a defense failure mode. The existing Defense Baselines section in `THREAT_MODEL.md` already gestures at this; the reading note above is the citation chain for why.
+
+## Key pointer to look out for
+
+If a defense achieves low ASR with low TR, the user has been protected from one attack and exposed to a slower one — losing the ability to know when the agent is working. Every defense table in `RESULTS.md` reports the (ASR, UUA, TR) triple for this reason.
