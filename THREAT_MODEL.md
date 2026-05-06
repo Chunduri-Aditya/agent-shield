@@ -107,6 +107,21 @@ a false sense of security — they see no hijacks in logs but also no warnings,
 and cannot distinguish "no attacks happened" from "attacks happened and were
 silently handled."
 
+The Best vs Good distinction also runs along a cognitive accessibility axis,
+not just an audit one. Bounded working memory — typical of ADHD and adjacent
+neurotypes, rate-limiting for every operator under load — cannot reconstruct
+trust calibration from invisible defense behavior. An agent that silently
+blocks a hundred attacks and an agent that silently blocks none look
+identical to the user. Either the operator disables the tool or assumes
+safety where there is none, the same workaround cycle Security UX literature
+documents for password and MFA fatigue. TR measures whether the defense is
+legible to the system the human actually runs on. OWASP Agentic ASI09
+already lists "adaptive trust calibration based on contextual risk" and
+"show low-certainty or unverified-source cues" as required mitigations; TR
+is the metric that confirms they fired. Full citation chain in
+[`docs/reading_notes.md`](docs/reading_notes.md) under "Neuroinclusive
+Architecture and Transparency Rate".
+
 The Middle outcomes remain the research problem. Defenses that push ASR to 0
 by making the agent refuse everything are not defenses, they are denial of
 service mounted by the defender. Every defense reported in Agent Shield must
