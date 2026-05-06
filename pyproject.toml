@@ -56,5 +56,5 @@ norecursedirs = [
 strict = true
 python_version = "3.11"
 explicit_package_bases = true
-files = ["evals", "inputs", "tools", "main.py", "tests"]
+files = ["evals", "inputs", "tools", "memory", "main.py", "tests"]
 exclude = "(^\\.claude/|^\\.venv/|^Papers/|^github_Repos/|^logs/)"
