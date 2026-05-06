@@ -36,6 +36,19 @@ under-delivers. Do not just add them without pulling something else.
   Bai et al. 2022 self-critique would give coverage of the "model defends
   itself" class of defenses that nothing else tests.
 
+## v1.1 deferred (was on the v1.0.0 checklist)
+
+1. `env/` module — Deferred because six modules are enough for v1.0.0 and environment payloads would add PDF, image, calendar, and email plumbing. Source: `AGENT_SHIELD_TODO.md` section 8.
+2. `multiagent/` module — Deferred because peer orchestration adds a second agent loop design after the single agent surfaces already support the paper claim. Source: `AGENT_SHIELD_TODO.md` section 10.
+3. LLM judge filter defense — Deferred because v1.0.0 already has scorer calibration work and a judge would need its own validation set. Source: `AGENT_SHIELD_TODO.md` section 12.
+4. Tool argument constraints defense — Deferred because v1.0.0 only needs one defense, and spotlighting applies to both `inputs/` and `psych` without tool schema changes. Source: `AGENT_SHIELD_TODO.md` section 12.
+5. 95% CI on every module — Deferred because `inputs/` at `n=20` is the anchor check and the other modules can ship point estimates in v1.0.0. Source: `AGENT_SHIELD_TODO.md` section 13.
+6. Full eight model coverage — Deferred because four models cover Anthropic, local Ollama, Groq, and Gemini for v1.0.0 without turning the sprint into provider operations. Source: `AGENT_SHIELD_TODO.md` section 13.
+7. `env/` and `multiagent/` result rows — Deferred because those modules do not ship at v1.0.0, so their result rows cannot be required for release. Source: `AGENT_SHIELD_TODO.md` sections 8 and 10.
+8. Job application batch — Deferred because v1.0.0 needs the research artifact first; applications resume after the four model evidence line is stable. Source: `AGENT_SHIELD_TODO.md` section 16.
+9. Fellowships — Deferred because fellowship materials depend on the shipped artifact and paper story. Source: `AGENT_SHIELD_TODO.md` section 18.
+10. Workshop submission after arxiv — Deferred because v1.0.0 ships the workshop length draft and release bundle, while submission packaging can follow in v1.1. Source: `AGENT_SHIELD_TODO.md` section 14.
+
 ## Post-ship
 
 Project relevant ideas that do not belong on the v1.0.0 checklist. Do not
