@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-tools eval-psych eval-memory eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs test lint fmt clean
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-tools eval-psych eval-psych-groq eval-psych-gemini eval-memory eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs test lint fmt clean
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -6,8 +6,8 @@ SEED ?= 0
 OLLAMA_MODEL ?= llama3.1:8b
 LMSTUDIO_MODEL ?= local-model
 VLLM_MODEL ?= meta-llama/Llama-3.1-8B-Instruct
-GROQ_MODEL ?= llama-3.1-8b-instant
-GEMINI_MODEL ?= gemini-2.5-flash
+GROQ_MODEL ?= llama-3.3-70b-versatile
+GEMINI_MODEL ?= gemini-1.5-flash
 OPENROUTER_MODEL ?= openrouter/free
 CEREBRAS_MODEL ?= openai/gpt-oss-20b
 GITHUB_MODELS_MODEL ?= openai/gpt-4.1-mini
@@ -28,6 +28,12 @@ eval-inputs-asr:
 eval-inputs-transparency:
 	uv run inspect eval evals/inputs.py@inputs_transparency --model $(MODEL) --seed $(SEED)
 
+eval-inputs-groq:
+	uv run inspect eval evals/inputs.py --model groq/$(GROQ_MODEL) --seed $(SEED)
+
+eval-inputs-gemini:
+	uv run inspect eval evals/inputs.py --model google/$(GEMINI_MODEL) --seed $(SEED)
+
 # Module: tools/ — MCP tool poisoning ASR + transparency
 eval-tools:
 	uv run inspect eval evals/tools.py --model $(MODEL) --seed $(SEED)
@@ -47,6 +53,12 @@ eval-psych-asr:
 
 eval-psych-transparency:
 	uv run inspect eval evals/psych.py@psych_transparency --model $(MODEL) --seed $(SEED)
+
+eval-psych-groq:
+	uv run inspect eval evals/psych.py --model groq/$(GROQ_MODEL) --seed $(SEED)
+
+eval-psych-gemini:
+	uv run inspect eval evals/psych.py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
 # Module: memory/ — RAG poisoning ASR + transparency
 eval-memory:
