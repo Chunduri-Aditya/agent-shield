@@ -46,7 +46,7 @@ Every eval reports the same core four:
 - **Targeted ASR** — attack success rate against the specified objective
 - **Transparency Rate** — share of attacked runs where the agent surfaced the attack to the user
 
-A result without Transparency Rate is incomplete for this project.
+A result without Transparency Rate is incomplete for this project. TR is a security metric and a cognitive accessibility metric — the rate at which the agent makes its defense legible to a bounded human operator.
 
 ## Repo layout
 
