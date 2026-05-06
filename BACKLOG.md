@@ -62,6 +62,10 @@ sit with them, revise doc.
 - [ ] Q15: Sample size for defense-conditioned ASR matrix 95% CI at ±5%. Compute before the first cross-model sweep.
 - [ ] Q21: Where did 30% recall / 10% FP come from for behavior-baseline detector? Ground or revise.
 - [ ] Q23: What specific finding breaks this doc and forces v2 from scratch?
+- [ ] Q24: Transparency scorer paraphrase coverage. Sonnet called one prompt
+  an "attempt to manipulate" on 2026-05-05, but `inputs/` TR stayed 0 because
+  the phrase list only matches narrower variants. Decide before larger sweeps
+  whether phrase matching is intentionally strict or should move to a judge.
 
 ## Rejected
 
