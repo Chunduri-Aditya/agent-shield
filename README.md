@@ -52,7 +52,7 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-Four modules live with seeded results: `inputs/`, `tools/`, `psych/`, `memory/`. Two of the four ship line models logged across all four: `anthropic/claude-sonnet-4-5` and `ollama/llama3.1:8b`. The remaining two (`groq/llama-3.3-70b-versatile`, `google/gemini-1.5-flash`) are scaffolded and waiting on the next sweep. Numbers, seeds, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+Four modules live with seeded results: `inputs/`, `tools/`, `psych/`, `memory/`. Two of the four ship line models logged across all four: `anthropic/claude-sonnet-4-5` and `ollama/llama3.1:8b`. The remaining two (`groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`) are scaffolded and waiting on the next sweep. Numbers, seeds, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
 
 ## Repo layout
 
@@ -88,8 +88,12 @@ agent-shield/
 
 ```bash
 uv sync
-cp .env.example .env
 
+# .env is gitignored — add your keys directly:
+#   ANTHROPIC_API_KEY, GROQ_API_KEY, GOOGLE_API_KEY
+# Ollama needs no key: ollama serve && ollama pull llama3.1:8b
+
+make status         # check which models are available
 make eval           # Inspect harness smoke test
 make eval-inputs    # IN-01..IN-05
 make eval-tools     # TL-01
@@ -109,7 +113,7 @@ Provider keys used by the repo:
 - `GOOGLE_API_KEY`
 - `GROQ_API_KEY`
 
-Template at [.env.example](.env.example). Free backend reference in [docs/free_agents.md](docs/free_agents.md).
+Keys live in `.env` (gitignored) — the full structure with placeholders is there. Free backend reference in [docs/free_agents.md](docs/free_agents.md).
 
 ## Reproducibility
 

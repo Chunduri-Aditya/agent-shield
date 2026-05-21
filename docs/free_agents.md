@@ -13,7 +13,7 @@ harness from a fresh clone.
 | Ollama (local) | none | `ollama/llama3.1:8b` | `make eval-inputs` (with `MODEL=ollama/llama3.1:8b`) |
 | Anthropic | `ANTHROPIC_API_KEY` | `anthropic/claude-sonnet-4-5` | `make eval-inputs` (default `MODEL`) |
 | Groq | `GROQ_API_KEY` | `groq/llama-3.3-70b-versatile` | `make eval-inputs-groq`, `make eval-psych-groq` |
-| Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-1.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini` |
+| Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-3.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini` |
 
 Defaults live in the [`Makefile`](../Makefile). Override per call:
 
@@ -27,7 +27,7 @@ make eval-psych-gemini SEED=0 GEMINI_MODEL=gemini-2.5-flash
 1. Copy the env template:
 
    ```bash
-   cp .env.example .env
+   # add keys directly to .env (gitignored — full structure is there)
    ```
 
 2. Add the keys you intend to use. Local Ollama needs no key.

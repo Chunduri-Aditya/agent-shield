@@ -51,11 +51,11 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Orchestrator bypass | MA | LLM06 | ASI07, ASI08 | AML.T0053 (loose) | Gu et al. 2407.10788 |
 | Majority vote poisoning | MA | LLM04 | ASI07, ASI08 | AML.T0053 (loose) | arXiv 2026 https://arxiv.org/abs/2604.17139 |
 | Adversarial peer | MA | LLM06 | ASI07, ASI10 | AML.T0053 (loose) | Gu et al. 2407.10788 |
-| Canary token exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | Thinkst 2026 https://canarytokens.org |
-| Zero width chars | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
-| Homoglyph exfil | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
-| Base64 smuggling | EX | LLM02 | ASI01 (outcome) | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
-| Markdown image sink | EX | LLM02 | ASI01 (outcome) | AML.T0057 | Willison posts |
+| EX-01 canary_token | EX | LLM02 | ASI02 | AML.T0057 | Thinkst 2026 https://canarytokens.org |
+| EX-02 zero_width_stego | EX | LLM02 | ASI02 | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
+| EX-03 homoglyph_sub | EX | LLM02 | ASI02 | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
+| EX-04 base64_encoding | EX | LLM02 | ASI02 | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
+| EX-05 markdown_image_sink | EX | LLM02 | ASI02 | AML.T0057 | Greshake et al. 2302.12173; Willison 2022 https://simonwillison.net/2022/Sep/12/prompt-injection/ |
 | Cialdini authority | PS, DR | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
 | Cialdini reciprocity | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
 | Cialdini scarcity | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
@@ -64,8 +64,12 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Cialdini social proof | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Cialdini 1984 |
 | Hadnagy pretexts | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Hadnagy 2010 |
 | Kahneman System 1 exploits | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Kahneman 2011 |
-| Sycophancy induction | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Perez et al. 2212.09251 |
-| Sandbagging detection | DR | TODO | ASI10 | AML.T0048 | arXiv 2024 https://arxiv.org/abs/2406.07358 |
+| DR-01 authority_over_turns | DR | LLM01 | ASI09 | AML.T0054 | Cialdini 1984; Russinovich et al. 2404.01833 |
+| DR-02 social_proof_over_turns | DR | LLM01 | ASI09 | AML.T0054 | Cialdini 1984 |
+| DR-03 user_displeasure_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2308.03188 |
+| DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2308.03188 |
+| DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
+| DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
 
 \* ASI03 tagged on confused deputy is partial coverage. See Scope and Limitations section.
 

@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-tools eval-psych eval-psych-groq eval-psych-gemini eval-memory eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs test lint fmt clean
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-defended eval-tools eval-psych eval-psych-groq eval-psych-gemini eval-psych-defended eval-memory eval-exfil eval-exfil-groq eval-exfil-gemini eval-drift eval-drift-groq eval-drift-gemini eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -7,7 +7,7 @@ OLLAMA_MODEL ?= llama3.1:8b
 LMSTUDIO_MODEL ?= local-model
 VLLM_MODEL ?= meta-llama/Llama-3.1-8B-Instruct
 GROQ_MODEL ?= llama-3.3-70b-versatile
-GEMINI_MODEL ?= gemini-1.5-flash
+GEMINI_MODEL ?= gemini-3.5-flash
 OPENROUTER_MODEL ?= openrouter/free
 CEREBRAS_MODEL ?= openai/gpt-oss-20b
 GITHUB_MODELS_MODEL ?= openai/gpt-4.1-mini
@@ -33,6 +33,9 @@ eval-inputs-groq:
 
 eval-inputs-gemini:
 	uv run inspect eval evals/inputs.py --model google/$(GEMINI_MODEL) --seed $(SEED)
+
+eval-inputs-defended:
+	uv run inspect eval evals/inputs.py@inputs_asr_defended evals/inputs.py@inputs_transparency_defended --model $(MODEL) --seed $(SEED)
 
 # Module: tools/ — MCP tool poisoning ASR + transparency
 eval-tools:
@@ -60,6 +63,48 @@ eval-psych-groq:
 eval-psych-gemini:
 	uv run inspect eval evals/psych.py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
+eval-psych-defended:
+	uv run inspect eval evals/psych.py@psych_asr_defended evals/psych.py@psych_transparency_defended --model $(MODEL) --seed $(SEED)
+
+# Both defended modules in one pass
+eval-defense:
+	uv run inspect eval evals/inputs.py@inputs_asr_defended evals/inputs.py@inputs_transparency_defended evals/psych.py@psych_asr_defended evals/psych.py@psych_transparency_defended --model $(MODEL) --seed $(SEED)
+
+# Module: exfil/ — covert-channel data exfiltration ASR + canary leak + transparency
+eval-exfil:
+	uv run inspect eval evals/exfil.py --model $(MODEL) --seed $(SEED)
+
+eval-exfil-asr:
+	uv run inspect eval evals/exfil.py@exfil_asr --model $(MODEL) --seed $(SEED)
+
+eval-exfil-canary:
+	uv run inspect eval evals/exfil.py@exfil_canary --model $(MODEL) --seed $(SEED)
+
+eval-exfil-transparency:
+	uv run inspect eval evals/exfil.py@exfil_transparency --model $(MODEL) --seed $(SEED)
+
+eval-exfil-groq:
+	uv run inspect eval evals/exfil.py --model groq/$(GROQ_MODEL) --seed $(SEED)
+
+eval-exfil-gemini:
+	uv run inspect eval evals/exfil.py --model google/$(GEMINI_MODEL) --seed $(SEED)
+
+# Module: drift/ — behavioral drift ASR + transparency
+eval-drift:
+	uv run inspect eval evals/drift.py --model $(MODEL) --seed $(SEED)
+
+eval-drift-asr:
+	uv run inspect eval evals/drift.py@drift_asr --model $(MODEL) --seed $(SEED)
+
+eval-drift-transparency:
+	uv run inspect eval evals/drift.py@drift_transparency --model $(MODEL) --seed $(SEED)
+
+eval-drift-groq:
+	uv run inspect eval evals/drift.py --model groq/$(GROQ_MODEL) --seed $(SEED)
+
+eval-drift-gemini:
+	uv run inspect eval evals/drift.py --model google/$(GEMINI_MODEL) --seed $(SEED)
+
 # Module: memory/ — RAG poisoning ASR + transparency
 eval-memory:
 	uv run inspect eval evals/memory.py --model $(MODEL) --seed $(SEED)
@@ -71,7 +116,7 @@ eval-memory-transparency:
 	uv run inspect eval evals/memory.py@memory_transparency --model $(MODEL) --seed $(SEED)
 
 # Run all implemented evals
-eval-all: eval eval-inputs eval-tools eval-psych eval-memory
+eval-all: eval eval-inputs eval-tools eval-psych eval-memory eval-exfil eval-drift
 
 # Free model presets. Override FREE_MODULE to reuse for later modules.
 free-agents:
@@ -123,6 +168,28 @@ eval-llama-groq:
 eval-gemini:
 	uv run inspect eval evals/$(FREE_MODULE).py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
+# ---------------------------------------------------------------------------
+# Dynamic sweep — detects available models, runs evals, writes placeholders
+# for models without keys. Add a key to .env and re-run to fill the gap.
+# ---------------------------------------------------------------------------
+
+# Run all 6 modules against all available models; placeholder rows for the rest.
+sweep:
+	uv run python scripts/sweep.py
+
+# Print plan without executing any evals.
+sweep-dry:
+	uv run python scripts/sweep.py --dry-run
+
+# Run one module only: make sweep-module MODULE=inputs
+sweep-module:
+	uv run python scripts/sweep.py --module $(MODULE)
+
+# Print model + module availability table.
+status:
+	uv run python scripts/sweep.py --status
+
+# ---------------------------------------------------------------------------
 # Kaggle free-model path. `kaggle-auth-check` never prints token contents.
 kaggle-auth-check:
 	scripts/kaggle_auth_check.sh
