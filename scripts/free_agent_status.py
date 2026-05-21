@@ -101,7 +101,7 @@ DEFAULT_MODELS: dict[str, str] = {
     "LMSTUDIO_MODEL": "local-model",
     "VLLM_MODEL": "meta-llama/Llama-3.1-8B-Instruct",
     "GROQ_MODEL": "llama-3.3-70b-versatile",
-    "GEMINI_MODEL": "gemini-1.5-flash",
+    "GEMINI_MODEL": "gemini-3.5-flash",
 }
 
 

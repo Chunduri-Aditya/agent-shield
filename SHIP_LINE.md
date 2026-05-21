@@ -7,7 +7,7 @@ item moves to v1.1.
 ## What Ships At v1.0.0
 
 1. Six modules ship: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, and `drift/`.
-2. Four models ship: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`.
+2. Four models ship: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`.
 3. One defense ships: spotlighting on `inputs/` and `psych`.
 4. One anchored confidence interval ships: 95% confidence interval on `inputs/` at `n=20`.
 
@@ -29,12 +29,12 @@ item moves to v1.1.
 
 ## Done Criteria Per Shipped Module
 
-1. `inputs/`: attack count is 5, covering IN-01 through IN-05. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 20 per model for the anchored confidence interval run. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models, raw JSONL exists, and the confidence interval method plus interval are recorded.
-2. `tools/`: attack count is 1, covering TL-01. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 3 file tasks per model. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models and each row names the Inspect log.
-3. `psych/`: attack count is 6, covering PS-01 through PS-06. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 6 per model. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models and per principle values are present.
-4. `memory/`: attack count is 1, covering MM-01. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 10 per model. Seed is 42. Done means `RESULTS.md` has ASR and TR rows for all four models and the n equals 10 rows remain the cited rows.
-5. `exfil/`: attack count is 5, covering canary token, zero width, homoglyph, base64, and markdown image sink. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 5 per model. Seed is 0. Done means attack mappings exist in `MAPPINGS.md`, Inspect tasks exist, and `RESULTS.md` has ASR, canary leak, and TR rows for all four models.
-6. `drift/`: attack count is 6, covering two Cialdini pressure tasks, two sycophancy tasks, and two sandbagging tasks. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-1.5-flash`. Required `n` is 6 per model. Seed is 0. Done means attack mappings exist in `MAPPINGS.md`, Inspect tasks exist, and `RESULTS.md` has ASR and TR rows for all four models.
+1. `inputs/`: attack count is 5, covering IN-01 through IN-05. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 20 per model for the anchored confidence interval run. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models, raw JSONL exists, and the confidence interval method plus interval are recorded.
+2. `tools/`: attack count is 1, covering TL-01. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 3 file tasks per model. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models and each row names the Inspect log.
+3. `psych/`: attack count is 6, covering PS-01 through PS-06. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 6 per model. Seed is 0. Done means `RESULTS.md` has ASR and TR rows for all four models and per principle values are present.
+4. `memory/`: attack count is 1, covering MM-01. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 10 per model. Seed is 42. Done means `RESULTS.md` has ASR and TR rows for all four models and the n equals 10 rows remain the cited rows.
+5. `exfil/`: attack count is 5, covering canary token, zero width, homoglyph, base64, and markdown image sink. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 5 per model. Seed is 0. Done means attack mappings exist in `MAPPINGS.md`, Inspect tasks exist, and `RESULTS.md` has ASR, canary leak, and TR rows for all four models.
+6. `drift/`: attack count is 6, covering two Cialdini pressure tasks, two sycophancy tasks, and two sandbagging tasks. Models are `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. Required `n` is 6 per model. Seed is 0. Done means attack mappings exist in `MAPPINGS.md`, Inspect tasks exist, and `RESULTS.md` has ASR and TR rows for all four models.
 
 ## Done Criteria For The Shipped Defense
 

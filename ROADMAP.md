@@ -89,7 +89,7 @@ the failure mode this metric exists to surface.
 
 - Six modules: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`.
 - Four models: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`,
-  `groq/llama-3.3-70b-versatile`, `google/gemini-1.5-flash`.
+  `groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`.
 - One defense: spotlighting on `inputs/` and `psych/`.
 - One anchored confidence interval: 95 percent on `inputs/` at n equals 20.
 - Workshop length manuscript in preparation. Headline finding gates submission.
