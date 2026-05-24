@@ -1,0 +1,17 @@
+# Agent Shield eval approval policy
+# Follows Inspect AI approval DSL extended to eval-suite level.
+# LOW/MEDIUM: auto-proceed. HIGH/CRITICAL: require --confirm-high-risk flag.
+# CRITICAL attacks not cleared in ETHICS.md: hard-block regardless of flag.
+
+auto_approve:
+  - severity: LOW
+  - severity: MEDIUM
+
+require_confirmation:
+  - severity: HIGH
+  - severity: CRITICAL
+
+ethics_clearance_required:
+  - severity: CRITICAL
+
+confirmation_flag: "--confirm-high-risk"

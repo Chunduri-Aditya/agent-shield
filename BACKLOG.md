@@ -80,10 +80,20 @@ sit with them, revise doc.
   the phrase list only matches narrower variants. Decide before larger sweeps
   whether phrase matching is intentionally strict or should move to a judge.
 
+## Promoted directly to active checklist (bypassed BACKLOG)
+
+Items added here were never in BACKLOG — they were discussed and moved straight to `AGENT_SHIELD_TODO.md` by explicit decision. Logged here for auditability.
+
+- **Human-readable reporting layer** (added to `AGENT_SHIELD_TODO.md` §13.5)
+- **CIA Triad check** (added to `CLAUDE.md` session protocol + `AGENT_SHIELD_TODO.md` §13.6) — Fact-check and firewall layer on every user query before any action. Checks Confidentiality, Integrity, and Availability in plain English so the output is readable with or without a security background. Agent-level check is live in `CLAUDE.md`; code-level CIA mapping in `risk_registry.py` and report output are on the build checklist.
+- **Risk review system** (added to `AGENT_SHIELD_TODO.md` §13.6 + `CLAUDE.md`) — Session-level and eval-level LOW/MEDIUM/HIGH risk gate. Agent sessions classify task risk before acting; eval harness classifies attack risk before running. HIGH blocks execution and requires human confirmation or an `ETHICS.md` clearance entry. — Plain English vulnerability explanations on top of eval results. Per-attack explanation registry, `make report` target, `--explain` flag, sample output in `docs/sample_report.md`. Rationale: makes the framework accessible to non-security engineers and is a meaningful differentiator for recruiters and workshop reviewers.
+
+---
+
 ## Rejected
 
 - [ ] ~~Bespoke web UI for eval visualization~~. Inspect AI already ships
-  one. Use `uv run inspect view`.
+  one. Use `uv run inspect view`. Note: distinct from the plain-language reporting layer (§13.5) — that is markdown output, not a UI.
 - [ ] ~~Custom scoring DSL~~. Inspect AI scorers are flexible enough.
   Reinventing this wastes sprint hours.
 - [ ] ~~Running every eval on every model every day~~. API cost alone kills

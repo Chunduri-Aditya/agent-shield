@@ -8,12 +8,13 @@ harness from a fresh clone.
 
 ## Providers
 
-| Provider | Env var | Default model string | Make target |
-|---|---|---|---|
-| Ollama (local) | none | `ollama/llama3.1:8b` | `make eval-inputs` (with `MODEL=ollama/llama3.1:8b`) |
-| Anthropic | `ANTHROPIC_API_KEY` | `anthropic/claude-sonnet-4-5` | `make eval-inputs` (default `MODEL`) |
-| Groq | `GROQ_API_KEY` | `groq/llama-3.3-70b-versatile` | `make eval-inputs-groq`, `make eval-psych-groq` |
-| Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-3.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini` |
+| Provider | Env var | Default model string | Make target | Paper set |
+|---|---|---|---|---|
+| Ollama (local) | none | `ollama/llama3.1:8b` | `make eval-inputs MODEL=ollama/llama3.1:8b` | v1.0.0 |
+| Anthropic | `ANTHROPIC_API_KEY` | `anthropic/claude-sonnet-4-5` | `make eval-inputs` (default) | v1.0.0 |
+| Groq | `GROQ_API_KEY` (gsk_ prefix) | `groq/llama-3.3-70b-versatile` | `make eval-inputs-groq`, `make eval-psych-groq`, `make eval-tools-groq`, `make eval-memory-groq`, `make eval-exfil-groq`, `make eval-drift-groq` | v1.0.0 |
+| Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-3.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini`, `make eval-exfil-gemini`, `make eval-drift-gemini` | v1.0.0 |
+| xAI (Grok) | `XAI_API_KEY` (xai- prefix) | `openai/grok-2-latest` via `https://api.x.ai/v1` | `make eval-inputs-grok`, `make eval-psych-grok`, `make eval-tools-grok`, `make eval-memory-grok`, `make eval-exfil-grok`, `make eval-drift-grok` | extended |
 
 Defaults live in the [`Makefile`](../Makefile). Override per call:
 
