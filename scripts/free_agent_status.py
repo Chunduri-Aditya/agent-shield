@@ -93,6 +93,12 @@ FREE_AGENTS: tuple[FreeAgent, ...] = (
         required_env=("MODEL_PROXY_API_KEY",),
         note="Notebook flow, not a plain Inspect endpoint.",
     ),
+    FreeAgent(
+        name="xAI Grok (extended sweep)",
+        command="make eval-inputs-grok",
+        required_env=("XAI_API_KEY",),
+        note="OpenAI-compatible endpoint at api.x.ai/v1. Outside v1.0.0 paper set. Key prefix: xai-",
+    ),
 )
 
 

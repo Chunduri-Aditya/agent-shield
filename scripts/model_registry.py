@@ -73,6 +73,16 @@ class ModelSpec:
     local_model_key: str | None = None
     """For local servers: env var holding the pulled model name (e.g. OLLAMA_MODEL)."""
 
+    env_overrides: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    """Extra env vars to inject for this model's subprocess calls.
+    Each entry is (KEY, VALUE) where VALUE is either a literal string or
+    a '$VARNAME' reference resolved from os.environ at run time.
+    Example: (('OPENAI_API_KEY', '$XAI_API_KEY'), ('OPENAI_BASE_URL', 'https://api.x.ai/v1'))
+    """
+
+    paper_set: bool = True
+    """True = v1.0.0 paper table; False = extended sweep only (outside SHIP_LINE.md)."""
+
 
 def _ping(url: str, timeout: float = 1.0) -> dict | None:
     """Return parsed JSON from url, or None on any error."""
@@ -128,6 +138,18 @@ MODELS: tuple[ModelSpec, ...] = (
         short="gemini-3.5-flash",
         required_env=("GOOGLE_API_KEY",),
         tier="free",
+    ),
+    # --- Extended sweep (outside v1.0.0 paper set per SHIP_LINE.md) ---
+    ModelSpec(
+        inspect_id="openai/grok-2-latest",
+        short="grok-2-latest",
+        required_env=("XAI_API_KEY",),
+        tier="paid",
+        env_overrides=(
+            ("OPENAI_API_KEY", "$XAI_API_KEY"),
+            ("OPENAI_BASE_URL", "https://api.x.ai/v1"),
+        ),
+        paper_set=False,
     ),
 )
 
@@ -267,16 +289,19 @@ def print_status() -> None:
 
     # Models
     print("### Models\n")
-    print("| Model | Tier | Status | Fix |")
-    print("|-------|------|--------|-----|")
+    print("| Model | Tier | Paper set | Status | Fix |")
+    print("|-------|------|-----------|--------|-----|")
     for spec in MODELS:
         ok, reason = model_status(spec)
         status_icon = "✓ ready" if ok else "✗ blocked"
         fix = "" if ok else reason
-        print(f"| {spec.short} | {spec.tier} | {status_icon} | {fix} |")
+        paper_col = "v1.0.0" if spec.paper_set else "extended"
+        print(f"| {spec.short} | {spec.tier} | {paper_col} | {status_icon} | {fix} |")
 
     live = sum(1 for m in MODELS if model_status(m)[0])
-    print(f"\n{live}/{len(MODELS)} models available.\n")
+    paper = sum(1 for m in MODELS if m.paper_set)
+    extended = sum(1 for m in MODELS if not m.paper_set)
+    print(f"\n{live}/{len(MODELS)} models available ({paper} paper set, {extended} extended).\n")
 
     # Modules
     print("### Modules\n")

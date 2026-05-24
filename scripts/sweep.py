@@ -60,12 +60,29 @@ def _placeholder_note(model: ModelSpec) -> str:
 # Subprocess runner
 # ---------------------------------------------------------------------------
 
+def _resolve_env_overrides(overrides: tuple[tuple[str, str], ...]) -> dict[str, str]:
+    """Resolve env_overrides into a dict, expanding $VAR references from os.environ."""
+    import os as _os
+    resolved: dict[str, str] = {}
+    for key, val in overrides:
+        if val.startswith("$"):
+            env_name = val[1:]
+            resolved[key] = _os.getenv(env_name, "")
+        else:
+            resolved[key] = val
+    return resolved
+
+
 def run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
     """
     Run all tasks in a module for one model via `uv run inspect eval`.
 
     Returns True on success (or dry_run), False on non-zero exit.
+    Applies model.env_overrides (e.g. OPENAI_BASE_URL for xAI Grok) to the
+    subprocess environment without mutating the parent process.
     """
+    import os as _os
+
     task_args: list[str] = []
     for task in module.tasks:
         task_args.append(f"{module.eval_file}@{task}")
@@ -77,12 +94,26 @@ def run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
         "--seed", str(module.seed),
     ]
 
-    print(f"  {'[DRY RUN] ' if dry_run else ''}$ {' '.join(cmd)}")
+    # Show env overrides in the printed command for auditability.
+    env_prefix = ""
+    if model.env_overrides:
+        resolved = _resolve_env_overrides(model.env_overrides)
+        env_prefix = " ".join(
+            f"{k}=***" if "KEY" in k or "TOKEN" in k else f"{k}={v}"
+            for k, v in resolved.items()
+        ) + " "
+
+    print(f"  {'[DRY RUN] ' if dry_run else ''}$ {env_prefix}{' '.join(cmd)}")
 
     if dry_run:
         return True
 
-    result = subprocess.run(cmd, cwd=_REPO_ROOT)
+    # Build subprocess env: inherit current env, apply overrides.
+    proc_env = _os.environ.copy()
+    if model.env_overrides:
+        proc_env.update(_resolve_env_overrides(model.env_overrides))
+
+    result = subprocess.run(cmd, cwd=_REPO_ROOT, env=proc_env)
     if result.returncode != 0:
         print(f"  [WARN] eval exited with code {result.returncode}")
         return False
