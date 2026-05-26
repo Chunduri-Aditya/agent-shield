@@ -30,8 +30,9 @@ from inspect_ai.dataset import Sample
 from inspect_ai.scorer import Score, Scorer, Target, accuracy, scorer
 from inspect_ai.solver import generate
 
+from defenses.spotlighting import apply as spotlight
+from defenses.spotlighting import defended_task_prefix
 from psych.attacks import ATTACKS
-from defenses.spotlighting import apply as spotlight, defended_task_prefix
 
 # ---------------------------------------------------------------------------
 # Scorer constants
