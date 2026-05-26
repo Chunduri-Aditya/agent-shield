@@ -15,15 +15,15 @@ The early data hints at a contrast worth watching. The same provider that scores
 
 ## Module coverage
 
-| Module | Status | What it probes | Task IDs |
+| Module | Status | What it probes | Attack IDs |
 |---|---|---|---|
-| `inputs/` | live | Prompt injection | IN-01..IN-05 |
-| `tools/`  | live | MCP tool poisoning | TL-01 |
-| `psych/`  | live | Cialdini grounded persuasion | PS-01..PS-06 |
-| `memory/` | live | RAG poisoning | MM-01 |
-| `exfil/`  | planned (v1.0.0) | Covert exfiltration channels | — |
-| `drift/`  | planned (v1.0.0) | Multi turn manipulation and behavioral drift | — |
-| `env/`    | deferred (v1.1) | PDF, image, calendar, email payloads | — |
+| `inputs/` | live | Prompt injection via direct instruction override | IN-01..IN-05 |
+| `tools/` | live | MCP tool poisoning via description and output injection | TL-01..TL-05 |
+| `psych/` | live | Cialdini grounded social engineering (6 principles) | PS-01..PS-06 |
+| `memory/` | live | RAG store poisoning via retrieval injection | MM-01 |
+| `exfil/` | live | Covert exfiltration channels (zero-width, homoglyph, base64, URL sink) | EX-01..EX-05 |
+| `drift/` | live | Multi-turn behavioral drift and sycophancy manipulation | DR-01..DR-06 |
+| `env/` | deferred (v1.1) | PDF, image, calendar, email payloads | — |
 | `multiagent/` | deferred (v1.1) | Adversarial peer and orchestrator attacks | — |
 
 Per module open questions in [ROADMAP.md](ROADMAP.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
@@ -37,7 +37,7 @@ Agent Shield targets **LLM agents**, not plain chat models in the abstract. The 
 - **L3** — attacker poisons memory or retrieval
 - **L4** — attacker acts as a peer agent in a multi-agent workflow
 
-Plain chat models are valid targets only for non agentic surfaces (`inputs/`, `drift/`, `psych/`, parts of `exfil/`). Full model in [THREAT_MODEL.md](THREAT_MODEL.md).
+Plain chat models are valid targets only for non-agentic surfaces (`inputs/`, `drift/`, `psych/`, parts of `exfil/`). Full model in [THREAT_MODEL.md](THREAT_MODEL.md).
 
 ## Metrics
 
@@ -52,26 +52,31 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-Four modules live with seeded results: `inputs/`, `tools/`, `psych/`, `memory/`. Two of the four ship line models logged across all four: `anthropic/claude-sonnet-4-5` and `ollama/llama3.1:8b`. The remaining two (`groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`) are scaffolded and waiting on the next sweep. Numbers, seeds, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+Six modules live across 27 attack IDs: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`. Two of the four ship line models logged across the first four modules: `anthropic/claude-sonnet-4-5` and `ollama/llama3.1:8b`. The remaining two (`groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`) are scaffolded and waiting on the next sweep. One defense baseline live: spotlighting on `inputs/` and `psych/`. Numbers, seeds, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
 
 ## Repo layout
 
 ```text
 agent-shield/
-├── evals/             Inspect AI task definitions
+├── evals/             Inspect AI task definitions (one file per module)
 ├── inputs/            Prompt injection attack registry
 ├── tools/             MCP attack registry and demo server
 ├── psych/             Cialdini grounded attack registry
 ├── memory/            RAG store and poisoning attack registry
-├── docs/              Reading notes, free agent backend reference
-├── scripts/           Run helpers and auth checks
+├── exfil/             Covert exfiltration attack registry
+├── drift/             Behavioral drift attack registry
+├── defenses/          Defense baselines (spotlighting)
+├── reports/           Plain-language report schema and latest output
+├── scripts/           Sweep runner, model registry, auth checks
 ├── tests/             Pytest suite
-├── notebooks/         Sweep runners
+├── docs/              Reading notes, free agent backend reference
+├── risk_registry.py   AIVSS-scored attack metadata with CIA and OWASP mappings
+├── report_generator.py Plain-language report builder (make report)
 ├── ROADMAP.md         Module status and per module open questions
 ├── SHIP_LINE.md       v1.0.0 scope lock and done criteria
 ├── THREAT_MODEL.md    Threat model and metric definitions
-├── MAPPINGS.md        OWASP and MITRE ATLAS attack registry
-├── RESULTS.md         Logged runs with seeds, dates, model IDs
+├── MAPPINGS.md        OWASP LLM, OWASP Agentic, MITRE ATLAS attack registry
+├── RESULTS.md         Logged runs with seeds, dates, model IDs, commit SHAs
 ├── BACKLOG.md         Out of scope ideas and v1.1 deferred items
 └── ETHICS.md          Responsible disclosure policy
 ```
@@ -96,9 +101,15 @@ uv sync
 make status         # check which models are available
 make eval           # Inspect harness smoke test
 make eval-inputs    # IN-01..IN-05
-make eval-tools     # TL-01
+make eval-tools     # TL-01..TL-05
 make eval-psych     # PS-01..PS-06
-make eval-all       # all implemented modules
+make eval-memory    # MM-01
+make eval-exfil     # EX-01..EX-05
+make eval-drift     # DR-01..DR-06
+make eval-all       # all six modules
+
+make sweep          # run all modules against all available models
+make report         # generate plain-language report from latest eval log
 
 make test           # pytest
 make lint           # ruff
@@ -113,13 +124,13 @@ Provider keys used by the repo:
 - `GOOGLE_API_KEY`
 - `GROQ_API_KEY`
 
-Keys live in `.env` (gitignored) — the full structure with placeholders is there. Free backend reference in [docs/free_agents.md](docs/free_agents.md).
+Keys live in `.env` (gitignored). Free backend reference in [docs/free_agents.md](docs/free_agents.md).
 
 ## Reproducibility
 
 Reproducibility trail kept in-repo:
 
-- [RESULTS.md](RESULTS.md) — run summaries with model IDs, seeds, timestamps
+- [RESULTS.md](RESULTS.md) — run summaries with model IDs, seeds, timestamps, commit SHAs
 - [MAPPINGS.md](MAPPINGS.md) — every attack mapped to OWASP LLM, OWASP Agentic, MITRE ATLAS
 - [docs/reading_notes.md](docs/reading_notes.md) — paper notes indexed by attack code
 
