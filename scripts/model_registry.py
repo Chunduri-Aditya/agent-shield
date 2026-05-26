@@ -22,7 +22,6 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-
 # ---------------------------------------------------------------------------
 # .env loader
 # ---------------------------------------------------------------------------
@@ -270,7 +269,7 @@ MODULES: tuple[ModuleSpec, ...] = (
         tasks=("drift_asr", "drift_transparency"),
         n=6,
         seed=0,
-        notes="6 drift attacks: Cialdini ×2, sycophancy ×2, sandbagging ×2",
+        notes="6 drift attacks: Cialdini ×2, sycophancy ×2, sandbagging ×2",  # noqa: RUF001
     ),
 )
 
@@ -309,7 +308,7 @@ def print_status() -> None:
     print("|--------|-----------|---|------|-------|-------|")
     for mod in MODULES:
         tasks_str = ", ".join(mod.tasks)
-        print(f"| {mod.name} | {mod.eval_file} | {mod.n} | {mod.seed} | {tasks_str} | {mod.notes} |")
+        print(f"| {mod.name} | {mod.eval_file} | {mod.n} | {mod.seed} | {tasks_str} | {mod.notes} |")  # noqa: E501
 
     print(f"\n{len(MODULES)}/6 modules registered.\n")
 
