@@ -134,6 +134,18 @@ Reproducibility trail kept in-repo:
 - [MAPPINGS.md](MAPPINGS.md) — every attack mapped to OWASP LLM, OWASP Agentic, MITRE ATLAS
 - [docs/reading_notes.md](docs/reading_notes.md) — paper notes indexed by attack code
 
+## Testing
+
+Agent Shield keeps model calls out of the unit-test path. Tests validate
+deterministic scoring, attack metadata consistency, paper-artifact
+reproducibility, risk-gate behavior, and report generation. The full suite
+runs without API keys, network access, or local model servers.
+
+```bash
+make test    # pytest — no API keys required
+make lint    # ruff + mypy
+```
+
 ## Security
 
 Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md).
