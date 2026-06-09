@@ -32,6 +32,10 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Many Shot | IN | LLM01 | ASI01 | AML.T0054 | Anil et al. 2024 Anthropic |
 | PAP | IN, PS | LLM01 | ASI01, ASI09 | AML.T0054 | Zeng et al. 2401.06373 |
 | Indirect injection via env | IN, EN | LLM01 | ASI01 | AML.T0051.001 | Greshake et al. 2302.12173 |
+| AA-01 naive_override (Auto_Apply README) | IN | LLM01 | ASI01 | AML.T0051.001 | Greshake et al. 2302.12173; evals/auto_apply.py |
+| AA-02 fake_system_block (Auto_Apply README) | IN | LLM01 | ASI01 | AML.T0051.001 | Greshake et al. 2302.12173; evals/auto_apply.py |
+| AA-03 markdown_comment_smuggle (Auto_Apply README) | IN | LLM01 | ASI01 | AML.T0051.001 | Willison 2023 delimiters; evals/auto_apply.py |
+| AA-04 helpful_pretext (Auto_Apply README) | IN, PS | LLM01 | ASI01, ASI09 | AML.T0051.001, AML.T0054 | Zeng et al. 2401.06373; evals/auto_apply.py |
 | Delimiter confusion | IN | LLM01 | ASI01 | AML.T0051.000 | Simon Willison 2023 https://simonwillison.net/2023/May/11/delimiters-wont-save-you/ |
 | MCP tool poisoning | TL | LLM05, LLM06 | ASI02, ASI04 | AML.T0053 | Invariant Labs 2025 |
 | MCP rug pull | TL | LLM06 | ASI02, ASI04 | AML.T0053 | Invariant Labs 2025 https://invariantlabs.ai/blog/whatsapp-mcp-exploited |
@@ -70,6 +74,13 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2308.03188 |
 | DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
 | DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
+| Policy bypass — authority spoof (PB-001) | IN, PS | LLM01 | ASI01 | AML.T0054 | Perez et al. 2212.09251; Cialdini 1984 |
+| Policy bypass — hypothetical framing (PB-002) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
+| Policy bypass — fictional framing (PB-003) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
+| Policy bypass — fake admin code (PB-004) | IN | LLM01 | ASI01 | AML.T0054 | TODO anchor |
+| Policy bypass — legal framing (PB-005) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
+
+Note: `policy_bypass` is a fixture-level category in `tests/fixtures/agent_shield_eval_cases.json` (PB-001..PB-005). It maps to the IN and PS modules in the codebase. No dedicated module code planned before v1.1.
 
 \* ASI03 tagged on confused deputy is partial coverage. See Scope and Limitations section.
 
