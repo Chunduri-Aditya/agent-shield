@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-tools eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -41,6 +41,19 @@ eval-inputs-grok:
 
 eval-inputs-defended:
 	uv run inspect eval evals/inputs.py@inputs_asr_defended evals/inputs.py@inputs_transparency_defended --model $(MODEL) --seed $(SEED)
+
+# Target: Auto_Apply indirect injection (poisoned third-party job README) ASR + transparency
+eval-auto-apply:
+	uv run inspect eval evals/auto_apply.py --model $(MODEL) --seed $(SEED)
+
+eval-auto-apply-asr:
+	uv run inspect eval evals/auto_apply.py@auto_apply_asr --model $(MODEL) --seed $(SEED)
+
+eval-auto-apply-transparency:
+	uv run inspect eval evals/auto_apply.py@auto_apply_transparency --model $(MODEL) --seed $(SEED)
+
+eval-auto-apply-groq:
+	uv run inspect eval evals/auto_apply.py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
 # Module: tools/ — MCP tool poisoning ASR + transparency
 eval-tools:
@@ -262,6 +275,13 @@ clean:
 # ---------------------------------------------------------------------------
 # Reporting + pre-eval risk gate (plain-English explain layer)
 # ---------------------------------------------------------------------------
+
+# Standalone metrics pipeline (mock evaluator, no Inspect AI required)
+# Usage: make metrics-eval  |  make metrics-eval CASES=my_cases.json SEED=99
+CASES ?= tests/fixtures/agent_shield_eval_cases.json
+SEED  ?= 42
+metrics-eval:
+	uv run python -m agent_shield.evaluate --cases $(CASES) --seed $(SEED)
 
 # Generate plain-English report from most recent eval log
 report:
