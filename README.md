@@ -52,7 +52,7 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-Six modules live across 27 attack IDs: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`. Two of the four ship line models logged across the first four modules: `anthropic/claude-sonnet-4-5` and `ollama/llama3.1:8b`. The remaining two (`groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`) are scaffolded and waiting on the next sweep. One defense baseline live: spotlighting on `inputs/` and `psych/`. Numbers, seeds, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+Six modules live across 27 attack IDs: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`. All four ship line models logged across the core modules: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. One defense baseline live: spotlighting on `inputs/` and `psych/`. Per-model, per-module coverage with seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
 
 ## Repo layout
 
