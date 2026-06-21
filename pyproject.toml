@@ -10,6 +10,17 @@ dependencies = [
     "groq>=1.2.0",
 ]
 
+# The agent_shield/ package (metrics, schema, targets) is pure-stdlib and is the
+# unit other projects import. The heavy harness deps above are only needed to run
+# the Inspect tasks under evals/. Downstream consumers that only want the metrics
+# layer install with: pip install -e . --no-deps
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agent_shield", "agent_shield.targets"]
+
 [dependency-groups]
 dev = [
     "inspect-ai>=0.3.207",
@@ -58,4 +69,13 @@ strict = true
 python_version = "3.11"
 explicit_package_bases = true
 files = ["evals", "inputs", "tools", "memory", "main.py", "tests"]
-exclude = "(^\\.claude/|^\\.venv/|^Papers/|^github_Repos/|^logs/)"
+# agent_shield/targets/ adapters intentionally import external sibling projects
+# (e.g. ai-health-journal) that are not dependencies, so mypy cannot resolve them.
+exclude = "(^\\.claude/|^\\.venv/|^Papers/|^github_Repos/|^logs/|^agent_shield/targets/)"
+
+# Skip analysing the target adapters even when a test imports them: they reach
+# into a sibling project that is not a static dependency.
+[[tool.mypy.overrides]]
+module = "agent_shield.targets.*"
+follow_imports = "skip"
+ignore_missing_imports = true
