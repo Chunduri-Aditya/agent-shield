@@ -35,6 +35,7 @@ from inspect_ai.dataset import Sample
 from inspect_ai.scorer import Score, Scorer, Target, accuracy, scorer
 from inspect_ai.solver import generate, use_tools
 from inspect_ai.tool import Tool, tool
+
 from tools.payloads import TL_01_POISONING_PAYLOAD  # noqa: F401  (re-exported for test sync)
 
 # ---------------------------------------------------------------------------

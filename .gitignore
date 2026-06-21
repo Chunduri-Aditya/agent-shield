@@ -83,6 +83,7 @@ docs/paper_drafting_research_prompt.md
 docs/paper_revision_prompt.md
 docs/agent_shield_improvement_roadmap.md
 docs/novelty_positioning.md
+docs/linkedin_launch_post_context.md
 
 # LaTeX build artifacts
 paper.aux
@@ -98,3 +99,12 @@ My_Paper/
 # Internal session prompts
 FIX_PROMPT.md
 NEXT_TESTS_PROMPT.md
+
+# Binary paper export (sources tracked as .tex)
+agent_shield_paper.docx
+
+# Generated report artifacts (regenerate via make report)
+reports/metrics_report.json
+reports/metrics_report.md
+reports/raw_eval_results.json
+reports/retool/

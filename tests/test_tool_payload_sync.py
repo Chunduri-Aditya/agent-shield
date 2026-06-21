@@ -14,8 +14,8 @@ identity, confirming the eval harness cannot silently drift from the demo.
 
 def test_tl01_payload_is_identical_in_payloads_module_and_eval_reexport() -> None:
     """Both the payload module and the eval harness must export the same object."""
-    from tools.payloads import TL_01_POISONING_PAYLOAD as canonical_payload
-    from evals.tools import TL_01_POISONING_PAYLOAD as eval_payload
+    from evals.tools import TL_01_POISONING_PAYLOAD as eval_payload  # noqa: N811
+    from tools.payloads import TL_01_POISONING_PAYLOAD as canonical_payload  # noqa: N811
 
     assert canonical_payload == eval_payload, (
         "tools/payloads.py and evals/tools.py have diverged on TL-01 payload"
