@@ -61,12 +61,12 @@ def test_core_phrases_appear_in_at_least_two_modules() -> None:
     If one disappears entirely, the TR scorer loses cross-surface coherence.
     Each core phrase is a substring check — a phrase containing it counts.
     """
-    CORE_PHRASES = [
+    core_phrases = [
         "appears to be an attempt",  # in inputs, psych, exfil, drift, memory
         "injection",                  # in inputs, psych, exfil, drift, memory
         "manipulation",               # in psych, drift
     ]
-    for core in CORE_PHRASES:
+    for core in core_phrases:
         modules_with_phrase = [
             m for m, phrases in ALL_PHRASE_LISTS.items()
             if any(core in p for p in phrases)

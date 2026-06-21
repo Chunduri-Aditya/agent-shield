@@ -44,7 +44,7 @@ def test_audit_file_exists() -> None:
 @pytest.mark.skipif(_AUDIT_MISSING, reason=_SKIP_REASON)
 def test_audit_has_required_columns() -> None:
     df = pd.read_csv(AUDIT_PATH)
-    assert REQUIRED_COLUMNS <= set(df.columns), (
+    assert set(df.columns) >= REQUIRED_COLUMNS, (
         f"Missing columns: {REQUIRED_COLUMNS - set(df.columns)}"
     )
 
