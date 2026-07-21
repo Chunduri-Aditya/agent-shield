@@ -10,6 +10,9 @@ dependencies = [
     "groq>=1.2.0",
 ]
 
+[project.scripts]
+agent-shield-research = "agent_shield.research_cli:main"
+
 # The agent_shield/ package (metrics, schema, targets) is pure-stdlib and is the
 # unit other projects import. The heavy harness deps above are only needed to run
 # the Inspect tasks under evals/. Downstream consumers that only want the metrics

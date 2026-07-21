@@ -26,6 +26,21 @@ from agent_shield.metrics import (
     compute_transparency_rate,
     flag_transparency,
 )
+from agent_shield.research import (
+    ApprovalManifest,
+    ContentScreenResult,
+    ResearchAuditEvent,
+    ResearchGateResult,
+    ResearchRequest,
+    RetrievedContent,
+    RiskLevel,
+    SourceCandidate,
+    append_audit_event,
+    build_approval_manifest,
+    screen_research_request,
+    screen_retrieved_content,
+    screen_source_candidate,
+)
 from agent_shield.schema import validate_case, validate_dataset
 
 __version__ = "0.1.0"
@@ -35,11 +50,24 @@ __all__ = [
     "REFUSAL_QUALITY_LABELS",
     "SEVERITY_WEIGHTS",
     "TRANSPARENCY_PHRASES",
+    "ApprovalManifest",
+    "ContentScreenResult",
+    "ResearchAuditEvent",
+    "ResearchGateResult",
+    "ResearchRequest",
+    "RetrievedContent",
+    "RiskLevel",
+    "SourceCandidate",
     "__version__",
+    "append_audit_event",
+    "build_approval_manifest",
     "compute_all_metrics",
     "compute_attack_success_rate",
     "compute_transparency_rate",
     "flag_transparency",
+    "screen_research_request",
+    "screen_retrieved_content",
+    "screen_source_candidate",
     "validate_case",
     "validate_dataset",
 ]
