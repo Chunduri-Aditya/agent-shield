@@ -6,6 +6,7 @@ import getpass
 import hashlib
 import json
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -34,6 +35,7 @@ from agent_shield.research import (
 )
 
 FIXTURE = Path(__file__).parent / "fixtures" / "research_safety_cases.json"
+BENIGN_CORPUS = Path(__file__).parent / "fixtures" / "research_benign_corpus.json"
 
 
 def _request(**overrides: object) -> ResearchRequest:
@@ -476,6 +478,92 @@ def test_content_screen_redacts_public_identifier_without_over_refusal() -> None
     assert result.allowed
     assert result.risk_level is RiskLevel.MEDIUM
     assert result.confidentiality_status == "AFFECTED"
+
+
+def test_benign_corpus_excerpts_do_not_trip_the_credential_screen() -> None:
+    """Real technical documentation must not read as a credential leak.
+
+    The corpus is twenty authoritative documents retrieved through the bounded
+    research workflow, all benign. Under ruleset research-content-v1.1.2 five were
+    quarantined and none carried an attack, a 25 percent false positive rate. Two of
+    those were the credential pattern matching ordinary prose, and this test is the
+    guard against that class returning.
+
+    Only the matched spans are asserted, because full documents are not redistributed.
+    Document level decisions live in the fixture as study data, not as assertions.
+    """
+
+    corpus = json.loads(BENIGN_CORPUS.read_text())
+    superseded = [case for case in corpus["cases"] if case.get("superseded_signals")]
+    assert superseded, "corpus must retain the spans that caused the original quarantine"
+
+    checked = 0
+    for case in superseded:
+        for signal in case["superseded_signals"]:
+            assert signal["matches_under_current"] is False, signal
+            result = screen_retrieved_content(_content(signal["excerpt"]))
+            assert not any(
+                "basic auth" in reason.lower() for reason in result.reasons
+            ), f"{case['id']} excerpt reads as a credential: {signal['excerpt']!r}"
+            checked += 1
+    assert checked >= 3, f"expected the three recovered spans, checked {checked}"
+
+
+def test_benign_corpus_is_internally_consistent() -> None:
+    """A mislabelled corpus teaches the suite the wrong lesson, so check it holds."""
+
+    corpus = json.loads(BENIGN_CORPUS.read_text())
+    cases = corpus["cases"]
+    assert len({case["id"] for case in cases}) == len(cases), "duplicate case id"
+    allowed_adjudications = {
+        "clean",
+        "false_positive_fixed",
+        "false_positive_open",
+        "true_positive_benign_artifact",
+    }
+    for case in cases:
+        assert case["malicious"] is False, f"{case['id']} is not benign"
+        assert case["adjudication"] in allowed_adjudications, case["adjudication"]
+        assert re.fullmatch(r"[0-9a-f]{64}", case["content_sha256"]), case["id"]
+        assert case["url"].startswith("https://"), case["id"]
+        # A document still quarantined must say why, so no verdict rests on nothing.
+        if case["latest_decision"] != "safe_for_synthesis":
+            assert case["signals"], f"{case['id']} is quarantined with no recorded signal"
+        # A cleared regression must record the ruleset that changed the verdict.
+        if case["adjudication"] == "false_positive_fixed":
+            assert case["first_pass_ruleset"] != case["latest_ruleset"], case["id"]
+
+
+def test_benign_corpus_measurement_matches_its_cases() -> None:
+    """A quoted rate that no longer matches its data is worse than no rate at all."""
+
+    corpus = json.loads(BENIGN_CORPUS.read_text())
+    cases = corpus["cases"]
+    measurement = corpus["measurement"]
+    total = len(cases)
+
+    assert measurement["documents"] == total
+    assert measurement["true_attacks_present"] == 0
+    assert all(case["malicious"] is False for case in cases)
+
+    first_quarantined = sum(
+        1 for case in cases if case["first_pass_decision"] != "safe_for_synthesis"
+    )
+    latest_quarantined = sum(
+        1 for case in cases if case["latest_decision"] != "safe_for_synthesis"
+    )
+    open_false_positives = sum(
+        1 for case in cases if case["adjudication"] == "false_positive_open"
+    )
+
+    assert measurement["quarantined_under_research-content-v1.1.2"] == first_quarantined
+    assert measurement["quarantined_under_research-content-v1.1.3"] == latest_quarantined
+    assert measurement["false_positive_rate_v1.1.2"] == round(first_quarantined / total, 4)
+    assert measurement["false_positive_rate_v1.1.3"] == round(open_false_positives / total, 4)
+
+    for adjudication, count in measurement["adjudication_counts"].items():
+        actual = sum(1 for case in cases if case["adjudication"] == adjudication)
+        assert actual == count, f"{adjudication}: fixture says {count}, cases give {actual}"
 
 
 def test_seeded_security_fixture_has_zero_asr_and_full_transparency() -> None:

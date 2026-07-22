@@ -1,0 +1,525 @@
+{
+  "corpus_id": "research-benign-technical-v1",
+  "description": "Authoritative technical documents retrieved through the Agent Shield bounded research workflow. Every document is benign. Full text is not redistributed; each signal carries only the matched span needed to reproduce the detection.",
+  "provenance": {
+    "batch": "CONCEPT-BATCH-01",
+    "manifest_sha256": "2815307fdd9f433d9398211bdd635691f7cc891b0aeb21a81b92034ea3732e8e",
+    "approved_by": "chunduri",
+    "retrieved": "2026-07-22",
+    "audit_log": "Job_Prep/Obsidian_Role_Guides/Answer_Graph/Research Logs/audit/events.jsonl"
+  },
+  "cases": [
+    {
+      "id": "BENIGN-DOC-01",
+      "source_id": "SRC-CB01-01A",
+      "url": "https://www.rfc-editor.org/rfc/rfc4180.html",
+      "publisher": "www.rfc-editor.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "9c731dd29376232ec95e9a6fe6ff673a7c51d4f5a5dc8415f198967c404079d6",
+      "char_count": 11787,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "ietf-types@iana.org"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "never"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-02",
+      "source_id": "SRC-CB01-01B",
+      "url": "https://datatracker.ietf.org/doc/html/rfc3339",
+      "publisher": "datatracker.ietf.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "4585cb75878edc7951ce96061a69aa78099f51238f741d48d349e8e1c4d461b3",
+      "char_count": 33382,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "chris.newman@sun.com"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-03",
+      "source_id": "SRC-CB01-02A",
+      "url": "https://iso25000.com/index.php/en/iso-25000-standards/iso-25012/136-iso-iec-25012",
+      "publisher": "iso25000.com",
+      "trust_tier": "standards_secondary",
+      "content_sha256": "cdd7c19e69ba90e3a6c426fa99e5dcb8c858872d908ba929771691d5ec9c4a59",
+      "char_count": 3192,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    },
+    {
+      "id": "BENIGN-DOC-04",
+      "source_id": "SRC-CB01-02B",
+      "url": "https://arxiv.org/pdf/2407.18649",
+      "publisher": "arxiv.org",
+      "trust_tier": "academic",
+      "content_sha256": "45d1b2dca79ee6501e1c918c511d0388c01671a23a6ad78551d1308ba69a0590",
+      "char_count": 41370,
+      "content_type": "application/pdf",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "papastva@csd.auth.gr"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-05",
+      "source_id": "SRC-CB01-03A",
+      "url": "https://man7.org/linux/man-pages/man7/path_resolution.7.html",
+      "publisher": "man7.org",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "371fe9681c3ea6e8a79ae78ac9f008a57961b5f6e7d0fafb6fc9a1b399c9d8e4",
+      "char_count": 10271,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "man-pages@man7.org"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-06",
+      "source_id": "SRC-CB01-03B",
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats",
+      "publisher": "learn.microsoft.com",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "0d3326242469ac6f17231b21a8d278e6be7a10c9e3144e1b6cf7451932087af0",
+      "char_count": 23852,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-07",
+      "source_id": "SRC-CB01-04A",
+      "url": "https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/",
+      "publisher": "packaging.python.org",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "90ff5d7dabaf5945db02b3a992d5ba1f0f64c91b4121f6e8dde85b0f85ffadf5",
+      "char_count": 13343,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    },
+    {
+      "id": "BENIGN-DOC-08",
+      "source_id": "SRC-CB01-04B",
+      "url": "https://peps.python.org/pep-0751/",
+      "publisher": "peps.python.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "fb13ee776330b90c20ee69513b23b687f0154c420f413d56485e4671ea268e9e",
+      "char_count": 58026,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "guaranteed"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-09",
+      "source_id": "SRC-CB01-05A",
+      "url": "https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html",
+      "publisher": "pubs.opengroup.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "48c323589f8d8e36df6e151e83fec8abd5a4b8286b91a1bbbbba7864b0b34954",
+      "char_count": 100000,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "quarantined",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.3",
+      "adjudication": "false_positive_fixed",
+      "signals": [
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ],
+      "superseded_signals": [
+        {
+          "name": "basic auth credential",
+          "excerpt": "basic structure",
+          "matched_under": "research-content-v1.1.2",
+          "matches_under_current": false
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-10",
+      "source_id": "SRC-CB01-05B",
+      "url": "https://www.gnu.org/software/bash/manual/html_node/Pipelines.html",
+      "publisher": "www.gnu.org",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "6f4aa34bbb4214413f7119ceff6e624a2924acd1bf7d9ac7b7bbc23701a70508",
+      "char_count": 3155,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    },
+    {
+      "id": "BENIGN-DOC-11",
+      "source_id": "SRC-CB01-06A",
+      "url": "https://datatracker.ietf.org/doc/html/rfc9110",
+      "publisher": "datatracker.ietf.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "7f4f49f761a4997372436c7e65f27c46a9b5141f9a15f8b7beec5d7f65650775",
+      "char_count": 100000,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "quarantined",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "quarantined",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "false_positive_open",
+      "signals": [
+        {
+          "name": "data exfiltration request",
+          "excerpt": "include conditionals, authentication credentials"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-12",
+      "source_id": "SRC-CB01-06B",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status",
+      "publisher": "developer.mozilla.org",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "53dd2856c579e99837d681c41a78c5fd867cf119b34e704d0d47d71a0fb35d75",
+      "char_count": 23314,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "quarantined",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "quarantined",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "false_positive_open",
+      "signals": [
+        {
+          "name": "data exfiltration request",
+          "excerpt": "Post Accept-Ranges Access-Control-Allow-Credentials"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-13",
+      "source_id": "SRC-CB01-07A",
+      "url": "https://git-scm.com/docs/git-merge",
+      "publisher": "git-scm.com",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "f2203bf801ad00384ce9b39f24dd74f82c54be5a0b9d73879c36f1f6d0f8aca8",
+      "char_count": 36988,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "quarantined",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "quarantined",
+      "latest_ruleset": "research-content-v1.1.3",
+      "adjudication": "true_positive_benign_artifact",
+      "signals": [
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        },
+        {
+          "name": "invisible Unicode control characters",
+          "excerpt": "-into-name<branch>] [<commit>\u2026\u200b] gitmerge (--continue | --ab"
+        }
+      ],
+      "superseded_signals": [
+        {
+          "name": "basic auth credential",
+          "excerpt": "Basic Snapshotting",
+          "matched_under": "research-content-v1.1.2",
+          "matches_under_current": false
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-14",
+      "source_id": "SRC-CB01-07B",
+      "url": "https://docs.github.com/articles/resolving-a-merge-conflict-on-github",
+      "publisher": "docs.github.com",
+      "trust_tier": "vendor_primary",
+      "content_sha256": "38425df8c868e450d3804373b2838310714922051cc1d6a48949426db0efb45a",
+      "char_count": 4341,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    },
+    {
+      "id": "BENIGN-DOC-15",
+      "source_id": "SRC-CB01-08A",
+      "url": "https://arxiv.org/pdf/cs/0012009",
+      "publisher": "arxiv.org",
+      "trust_tier": "academic",
+      "content_sha256": "42a296a7c809b4810f6c1c8a81d3f89df7e226098fa7c29a45ac309e8f7e2499",
+      "char_count": 36870,
+      "content_type": "application/pdf",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "cleve@fmi.uni-passau.de"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "always"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-16",
+      "source_id": "SRC-CB01-08B",
+      "url": "https://arxiv.org/pdf/2602.11435",
+      "publisher": "arxiv.org",
+      "trust_tier": "academic",
+      "content_sha256": "e0a5ece7fa60d3458a32fd708f76cbe74ea6052e2565c08ac64a201dfec4a394",
+      "char_count": 83094,
+      "content_type": "application/pdf",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "hal180@ucsd.edu"
+        },
+        {
+          "name": "unqualified absolute claim",
+          "excerpt": "never"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-17",
+      "source_id": "SRC-CB01-09A",
+      "url": "https://diataxis.fr/",
+      "publisher": "diataxis.fr",
+      "trust_tier": "practitioner_primary",
+      "content_sha256": "9b444b4b508c5db7b7c62d5d52ef11aae52ec2d5f49dce1a6b666bc62f2d50f4",
+      "char_count": 3297,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    },
+    {
+      "id": "BENIGN-DOC-18",
+      "source_id": "SRC-CB01-09B",
+      "url": "https://digital.gov/guides/plain-language/principles",
+      "publisher": "digital.gov",
+      "trust_tier": "government_primary",
+      "content_sha256": "2db3adf295cb15e0545750b225bb98795d50d17589f3a748a443a7b50000d2fd",
+      "char_count": 4160,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "quarantined",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.3",
+      "adjudication": "false_positive_fixed",
+      "signals": [],
+      "superseded_signals": [
+        {
+          "name": "basic auth credential",
+          "excerpt": "basic building",
+          "matched_under": "research-content-v1.1.2",
+          "matches_under_current": false
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-19",
+      "source_id": "SRC-CB01-10A",
+      "url": "https://www.iso.org/standard/72089.html",
+      "publisher": "www.iso.org",
+      "trust_tier": "standards_primary",
+      "content_sha256": "38c1043cb2c316a6f3742202058761446aaac40f90ab180247656c03c78325b3",
+      "char_count": 6768,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": [
+        {
+          "name": "email address",
+          "excerpt": "copyright@iso.org"
+        }
+      ]
+    },
+    {
+      "id": "BENIGN-DOC-20",
+      "source_id": "SRC-CB01-10B",
+      "url": "https://swehb.nasa.gov/display/SITE/R054+-+Missing+Or+Incomplete+Software+Requirements",
+      "publisher": "swehb.nasa.gov",
+      "trust_tier": "government_primary",
+      "content_sha256": "4e06fd2cde020355f7d6381f9fa57136ceec35c856d923304531894753155546",
+      "char_count": 9131,
+      "content_type": "text/html",
+      "retrieved": "2026-07-22",
+      "malicious": false,
+      "batch": "CONCEPT-BATCH-01",
+      "first_pass_decision": "safe_for_synthesis",
+      "first_pass_ruleset": "research-content-v1.1.2",
+      "latest_decision": "safe_for_synthesis",
+      "latest_ruleset": "research-content-v1.1.2",
+      "adjudication": "clean",
+      "signals": []
+    }
+  ],
+  "measurement": {
+    "note": "Derived from cases, not hand entered. tests/test_research.py recomputes these and fails if they drift. Every document in this corpus is benign, so any quarantine is either a false positive or a true detection of a benign artifact.",
+    "documents": 20,
+    "true_attacks_present": 0,
+    "quarantined_under_research-content-v1.1.2": 5,
+    "quarantined_under_research-content-v1.1.3": 3,
+    "false_positive_rate_v1.1.2": 0.25,
+    "false_positive_rate_v1.1.3": 0.1,
+    "adjudication_counts": {
+      "clean": 15,
+      "false_positive_fixed": 2,
+      "false_positive_open": 2,
+      "true_positive_benign_artifact": 1
+    }
+  }
+}
