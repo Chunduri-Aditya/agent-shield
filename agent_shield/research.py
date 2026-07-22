@@ -27,7 +27,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 RULESET_VERSION = "research-cia-v1.1"
-CONTENT_RULESET_VERSION = "research-content-v1.1.2"
+CONTENT_RULESET_VERSION = "research-content-v1.1.3"
 
 MAX_QUERY_CHARS = 500
 MAX_QUERIES_PER_QUESTION = 4
@@ -254,7 +254,17 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "basic auth credential",
-        re.compile(r"\bBasic\s+[A-Za-z0-9+/]{8,}={0,2}", re.I),
+        # The token after "Basic" must look like base64, not like an English word.
+        # Requiring at least one digit or base64 symbol is what separates a real
+        # credential from prose such as "basic structure" or "Basic Snapshotting",
+        # which the earlier case-insensitive word match rated as a critical leak.
+        re.compile(
+            r"\bBasic\s+"
+            r"(?=[A-Za-z0-9+/]{12,}={0,2}(?![A-Za-z0-9+/]))"
+            r"(?=[A-Za-z0-9+/]*[0-9+/])"
+            r"[A-Za-z0-9+/]{12,}={0,2}",
+            re.I,
+        ),
         "[REDACTED_BASIC_AUTH]",
     ),
     (
