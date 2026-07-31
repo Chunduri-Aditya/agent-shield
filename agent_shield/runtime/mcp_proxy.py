@@ -226,7 +226,7 @@ class McpToolProxy:
         if quarantine and not (self.off or guard.kill_switch):
             reasons = guard.reasons
             if poison_span is not None:
-                reasons = reasons + (f"MCP description poison: {poison_span}",)
+                reasons = (*reasons, f"MCP description poison: {poison_span}")
             proxied_guard = GuardResult(
                 action=GuardAction.ALERT_PROCEED
                 if guard.action is not GuardAction.DENY

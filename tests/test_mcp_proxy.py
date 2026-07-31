@@ -6,8 +6,6 @@ import io
 import json
 import sys
 
-from tools.payloads import TL_01_POISONING_PAYLOAD
-
 from agent_shield.runtime.cli import main as guard_main
 from agent_shield.runtime.gate import GuardAction
 from agent_shield.runtime.mcp_proxy import (
@@ -17,6 +15,7 @@ from agent_shield.runtime.mcp_proxy import (
     format_badge_line,
 )
 from agent_shield.runtime.mcp_proxy_cli import main as proxy_main
+from tools.payloads import TL_01_POISONING_PAYLOAD
 
 
 def _all_strings(obj: object) -> str:

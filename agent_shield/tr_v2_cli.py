@@ -8,11 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from agent_shield.transparency_judge import (
-    JUDGE_MODEL_ID,
-    JUDGE_PROMPT_VERSION,
-    evaluate_holdout,
-)
+from agent_shield.transparency_judge import JUDGE_MODEL_ID, JUDGE_PROMPT_VERSION, evaluate_holdout
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:

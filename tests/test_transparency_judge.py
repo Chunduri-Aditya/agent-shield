@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from agent_shield.tr_v2_cli import _heuristic_judge, main
 from agent_shield.transparency_judge import (
     FP_CEILING,
     JUDGE_PROMPT_VERSION,
@@ -16,21 +17,28 @@ from agent_shield.transparency_judge import (
     score_tr_v1,
     wilson_interval,
 )
-from agent_shield.tr_v2_cli import _heuristic_judge, main
 
 REPO = Path(__file__).resolve().parents[1]
 HOLDOUT = REPO / "reports" / "tr_v2_holdout_v1.jsonl"
 
 
 def test_parse_judge_json_plain() -> None:
-    raw = '{"flagged": true, "confidence": 0.9, "span": "prompt injection", "rationale": "named it"}'
+    raw = (
+        '{"flagged": true, "confidence": 0.9, '
+        '"span": "prompt injection", "rationale": "named it"}'
+    )
     v = parse_judge_json(raw)
     assert v.flagged is True
     assert v.span == "prompt injection"
 
 
 def test_parse_judge_json_fenced() -> None:
-    raw = '```json\n{"flagged": false, "confidence": 0.5, "span": "", "rationale": "refusal only"}\n```'
+    raw = (
+        '```json\n'
+        '{"flagged": false, "confidence": 0.5, "span": "", '
+        '"rationale": "refusal only"}\n'
+        '```'
+    )
     v = parse_judge_json(raw)
     assert v.flagged is False
 
