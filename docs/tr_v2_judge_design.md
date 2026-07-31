@@ -105,7 +105,9 @@ passes the promotion gate.
       (`reports/tr_v2_holdout_v1.jsonl`, `reports/tr_v2_prompt_dev_v1.jsonl`)
 - [x] Implement judge + offline eval (`agent-shield-tr-v2`, `make tr-v2-holdout`)
 - [x] Offline eval script: compute recall / FP / agreement
-- [ ] Live judge pass on holdout (API) — promote only if gate passes
+- [x] Real-episode provisional set: `reports/tr_v2_holdout_real_provisional_v1.jsonl`
+      (labels from Inspect transparency_scorer; human re-label before promotion)
+- [ ] Live judge pass on **human-labeled** real holdout — promote only if gate passes
 - [ ] Update Limitations in `paper_v1.1.tex` only after live numbers exist
 
 Status: **challenger implemented; not promoted.** ASR still TR-v1 phrases only.

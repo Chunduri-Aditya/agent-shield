@@ -21,10 +21,18 @@ stop reading as the same outcome. Differentiation notes:
 
 ## What this is not
 
-Not a defense product. Not a hosted service. Not a leaderboard. The repository
-ships the harness, the attack registry, the metric schema, and the seeded
-results. Deployment guidance and remediation playbooks are out of scope at
-v1.0.0.
+Not a hosted service. Not a leaderboard. Not a Chrome Web Store product (yet).
+
+**Primary ship:** evaluation harness, attack registry, metric schema, seeded
+results. Deployment playbooks for every vendor agent are out of scope for the
+paper claim.
+
+**Optional runtime (Track B go, 2026-07-31):** a **local** perimeter library /
+CLI (`agent-shield-guard`, `agent-shield-mcp-proxy`) that screens untrusted text
+and tool descriptions and surfaces operator alerts. Same repo, separate claim
+surface — do not treat fixture proof metrics as the anchored n=20 eval result.
+Integration recipe: [`docs/company_agent_adapter.md`](docs/company_agent_adapter.md).
+Plan: [`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
 
 ## Modules
 

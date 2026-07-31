@@ -69,7 +69,7 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 - `inputs/` (non-agentic) at n=20 (seed 0, Wilson 95% CI): Sonnet 4.5 is the only model with non-zero TR (0.150); Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini 3.5 Flash sit at TR=0.000 (upper bound 0.161). Silent resistance is the default.
 - `tools/` (agentic TL-01) at n=20 (seed 0): Sonnet and Llama both ASR=0.000 / TR=0.000 (Wilson upper 0.161). Gemini row pending if the provider hung mid-run — see RESULTS. Groq excluded (chat-only tool envelopes).
 
-**Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md). Improvement track: [docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md). Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+**Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md). Improvement track: [docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md). Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md). Company agent wiring: [docs/company_agent_adapter.md](docs/company_agent_adapter.md).
 
 ## Repo layout
 

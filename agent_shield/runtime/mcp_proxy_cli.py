@@ -148,8 +148,28 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     if args.command == "screen-catalog":
-        raw = json.load(sys.stdin)
-        tools = catalog_from_jsonable(raw)
+        raw_text = sys.stdin.read()
+        if not raw_text.strip():
+            print(
+                "error: empty stdin — pass a JSON tool catalog "
+                '(list or {"tools": [...]})',
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            raw = json.loads(raw_text)
+        except json.JSONDecodeError as exc:
+            print(
+                f"error: malformed catalog JSON at line {exc.lineno} "
+                f"col {exc.colno}: {exc.msg}",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            tools = catalog_from_jsonable(raw)
+        except (TypeError, KeyError, ValueError) as exc:
+            print(f"error: invalid catalog shape: {exc}", file=sys.stderr)
+            return 1
         return _run_catalog(
             tools,
             mode=args.mode,

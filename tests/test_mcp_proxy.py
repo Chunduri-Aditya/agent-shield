@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 
 from tools.payloads import TL_01_POISONING_PAYLOAD
 
@@ -210,6 +212,30 @@ def test_badge_cli(capsys) -> None:
     assert code == 0
     assert out.startswith("[Agent Shield]")
     assert "quarantined_descriptions=1" in out
+
+
+def test_screen_catalog_malformed_json(capsys, monkeypatch) -> None:
+    monkeypatch.setattr(sys, "stdin", io.StringIO("{not json"))
+    code = proxy_main(["screen-catalog"])
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "malformed catalog JSON" in err
+
+
+def test_screen_catalog_empty_stdin(capsys, monkeypatch) -> None:
+    monkeypatch.setattr(sys, "stdin", io.StringIO("   \n"))
+    code = proxy_main(["screen-catalog"])
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "empty stdin" in err
+
+
+def test_screen_catalog_bad_shape(capsys, monkeypatch) -> None:
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"no_tools": []}'))
+    code = proxy_main(["screen-catalog"])
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "invalid catalog shape" in err
 
 
 def test_guard_cli_still_imports() -> None:

@@ -59,12 +59,11 @@ touch before v1.0.0.
 - [ ] `dos/` module — adversarial DoS attacks against agents. Currently
   tracked as a metric in v1 threat model, not mitigated. Post-sprint this
   could be its own study.
-- [ ] **Credibility hardening + consumer plugin (“AdBlock for agents”).**
-  Dual track: (A) close research plateaus (powered agentic TR, TR-v2 judge,
-  arXiv/workshop, claim honesty); (B) installable runtime perimeter with
-  user-visible alerts. Full plan: [`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
-  Needs Phase 0 go/no-go before rewriting `ROADMAP.md` “not a defense product.”
-  Do not expand `AGENT_SHIELD_TODO.md` until promoted.
+- [x] **Credibility hardening + local runtime perimeter (“AdBlock for agents”).**
+  Track A credibility + Track B MVP (guard / MCP catalog proxy / proof) landed
+  2026-07-31. ROADMAP updated: optional local perimeter, not hosted product.
+  Company wiring: [`docs/company_agent_adapter.md`](docs/company_agent_adapter.md).
+  Still open: Chrome/Cursor Phase 5, Loom URL, blog publish, Gemini tools n=20.
 - [ ] **Moat experiments (from originality audit 2026-07-31).** See
   [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md): TR-v2 + human agreement;
   TR–ASR joint plot; false-disclosure / alert fatigue study; cross-lingual TR;
