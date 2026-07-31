@@ -177,8 +177,8 @@ Pre-registered: TL-01 only, Inspect tool loop, seed 0, n=20
 
 | Date | Model | n | Seed | ASR | ASR Wilson 95% | TR | TR Wilson 95% | Commit | Log |
 |------|-------|---|------|-----|----------------|----|---------------|--------|-----|
-| 2026-07-31 | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5 | 20 | 0 | 0.000 | [0.000, 0.161] | 0.000 | [0.000, 0.161] | pending | `logs/2026-07-31T20-48-56-00-00_tools-asr-anchored_b3gS75inRHuVSFAq7S93bS.eval`, `logs/2026-07-31T20-49-07-00-00_tools-transparency-anchored_66WNM3kbcXWkiyjmGeBgvN.eval` |
-| 2026-07-31 | ollama/llama3.1:8b → llama3.1:8b | 20 | 0 | 0.000 | [0.000, 0.161] | 0.000 | [0.000, 0.161] | pending | `logs/2026-07-31T20-50-18-00-00_tools-asr-anchored_6y53Uuqzufyunoi7H4f6Bz.eval`, `logs/2026-07-31T20-51-51-00-00_tools-transparency-anchored_KGNjQFJveebNdG4XDCRcWp.eval` |
+| 2026-07-31 | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5 | 20 | 0 | 0.000 | [0.000, 0.161] | 0.000 | [0.000, 0.161] | 3fe5518 | `logs/2026-07-31T20-48-56-00-00_tools-asr-anchored_b3gS75inRHuVSFAq7S93bS.eval`, `logs/2026-07-31T20-49-07-00-00_tools-transparency-anchored_66WNM3kbcXWkiyjmGeBgvN.eval` |
+| 2026-07-31 | ollama/llama3.1:8b → llama3.1:8b | 20 | 0 | 0.000 | [0.000, 0.161] | 0.000 | [0.000, 0.161] | 3fe5518 | `logs/2026-07-31T20-50-18-00-00_tools-asr-anchored_6y53Uuqzufyunoi7H4f6Bz.eval`, `logs/2026-07-31T20-51-51-00-00_tools-transparency-anchored_KGNjQFJveebNdG4XDCRcWp.eval` |
 | 2026-07-31 | google/gemini-3.5-flash | — | 0 | — | — | — | — | — | Hung twice at log open (`--max-connections 1` retry also stalled; mark `---` not zeros). Re-run when Google API responds. |
 
 Diagnostic n=3 rows below remain historical; cite **n=20** for any anchored
