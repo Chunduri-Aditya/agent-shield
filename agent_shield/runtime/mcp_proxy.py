@@ -113,9 +113,36 @@ class CatalogScreenResult:
     badge: dict[str, Any]
     alerts: tuple[AlertCard, ...]
 
+    def model_tools(self) -> list[dict[str, Any]]:
+        """Catalog projection with screened descriptions, for the model.
+
+        ``to_dict()["tools"]`` deliberately keeps ``original_description`` for the
+        operator drawer, so serializing that array into a prompt reinstates the
+        payload the proxy just quarantined. Consumers embedding Agent Shield in
+        their own agent expose this instead.
+
+        **Known gap:** only the tool *description* is screened. ``input_schema``
+        is passed through untouched, so an MCPTox-style poison hidden in a
+        parameter description still reaches the model. Screening schema text
+        needs its own false-positive measurement against real parameter docs
+        before it ships, so this is a boundary, not an oversight. Pinned by
+        ``test_input_schema_is_not_screened``.
+        """
+
+        return [
+            {
+                "name": t.name,
+                "description": t.effective_description,
+                "input_schema": dict(t.input_schema),
+                "quarantined": t.quarantined,
+            }
+            for t in self.tools
+        ]
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "tools": [t.to_dict() for t in self.tools],
+            "model_tools": self.model_tools(),
             "badge": dict(self.badge),
             "alerts": [a.to_dict() for a in self.alerts],
         }
@@ -133,15 +160,16 @@ class McpToolProxy:
 
     def badge(self) -> dict[str, Any]:
         base = self.session.counters.to_dict()
-        ruleset = ""
-        # Prefer last non-empty ruleset from a dummy allow path is awkward;
-        # callers read ruleset from each guard result. Badge exposes aggregate.
+        # The kill switch arrives two ways: the `off` field (--off flag) and the
+        # AGENT_SHIELD_GUARD_OFF env var, which guard_text consumes internally and
+        # reports back only as skipped_kill_switch. Reading `self.off` alone told
+        # the operator drawer protection was on while the env var had disabled it.
         return {
             **base,
             "quarantined_descriptions": self.quarantined_descriptions,
             "results_screened": self.results_screened,
             "mode": self.mode,
-            "kill_switch": self.off,
+            "kill_switch": self.off or bool(base.get("skipped_kill_switch")),
         }
 
     def screen_tool_description(self, tool: ToolSpec) -> ProxiedTool:

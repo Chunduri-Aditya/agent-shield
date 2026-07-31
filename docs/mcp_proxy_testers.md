@@ -56,6 +56,14 @@ echo '{"tools":[{"name":"demo","description":"Add two numbers."}]}' \
 Use the `model_tools` array as what you expose to the model. Keep `alerts` /
 `badge` for the operator drawer.
 
+From Python, the same projection is `CatalogScreenResult.model_tools()` — use
+that rather than `to_dict()["tools"]`, which keeps `original_description` for
+the operator and would put the payload back in front of the model.
+
+**Screening boundary:** only the tool *description* is screened. `input_schema`
+is passed through untouched, so a poison hidden in a *parameter* description
+still reaches the model. Treat schema text as unscreened.
+
 ## What to report back
 
 1. False quarantines on real tool descriptions you use (paste ≤60 char span).

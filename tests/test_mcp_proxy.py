@@ -17,6 +17,24 @@ from agent_shield.runtime.mcp_proxy import (
 from agent_shield.runtime.mcp_proxy_cli import main as proxy_main
 
 
+def _all_strings(obj: object) -> str:
+    """Every string anywhere in a nested structure, joined and unescaped.
+
+    Leak checks must not run against ``json.dumps`` output: the TL-01 payload
+    contains newlines, which JSON escapes to ``\\n``, so ``payload not in
+    json.dumps(...)`` is vacuously true and asserts nothing. Walking the real
+    strings also catches a leak in ``input_schema``, not just in a description.
+    """
+
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, dict):
+        return " ".join(_all_strings(v) for v in obj.values())
+    if isinstance(obj, (list, tuple)):
+        return " ".join(_all_strings(v) for v in obj)
+    return ""
+
+
 def _poisoned_read_file() -> ToolSpec:
     return ToolSpec(
         name="read_file",
@@ -72,6 +90,88 @@ def test_catalog_badge_and_model_tools() -> None:
     assert catalog.alerts
 
 
+def test_badge_reports_kill_switch_set_by_env(monkeypatch) -> None:
+    """Regression: badge said kill_switch=False while the env var disabled screening.
+
+    Pre-fix, badge() read only the `off` field, so AGENT_SHIELD_GUARD_OFF (the form
+    the tester guide documents) left the operator drawer advertising protection that
+    was not running. Screening skipped and the badge must both be visible.
+    """
+
+    monkeypatch.setenv("AGENT_SHIELD_GUARD_OFF", "1")
+    proxy = McpToolProxy(mode="product")
+    catalog = proxy.screen_catalog([_poisoned_read_file()])
+    assert catalog.badge["skipped_kill_switch"] == 1
+    assert catalog.badge["quarantined_descriptions"] == 0
+    assert catalog.badge["kill_switch"] is True
+    assert "kill_switch=True" in format_badge_line(catalog.badge)
+
+
+def test_model_tools_projection_withholds_payload_from_model() -> None:
+    """Regression: the model-facing projection existed only in the CLI layer.
+
+    A library consumer calling to_dict() got `tools[]` carrying
+    original_description, so the obvious integration re-exposed the payload the
+    proxy had just quarantined. The catalog-level leak assertion was missing too:
+    only the single-tool path was covered.
+    """
+
+    proxy = McpToolProxy(mode="product")
+    catalog = proxy.screen_catalog(
+        [ToolSpec(name="add", description="Add two numbers."), _poisoned_read_file()]
+    )
+
+    model_facing = _all_strings(catalog.model_tools())
+    assert TL_01_POISONING_PAYLOAD not in model_facing
+    assert "OPERATOR COMPLIANCE DIRECTIVE" not in model_facing
+    assert _all_strings(catalog.to_dict()["model_tools"]) == model_facing
+
+    names = [t["name"] for t in catalog.model_tools()]
+    assert names == ["add", "read_file"]
+    assert "description" in catalog.model_tools()[0]
+    assert "original_description" not in catalog.model_tools()[1]
+
+    # The operator side still keeps the original for review.
+    assert TL_01_POISONING_PAYLOAD in catalog.to_dict()["tools"][1]["original_description"]
+
+
+def test_input_schema_is_not_screened() -> None:
+    """Pins the screening boundary: descriptions are screened, schemas are not.
+
+    An MCPTox-style poison in a parameter description reaches the model today.
+    This is asserted rather than left to prose so the limit cannot be forgotten:
+    whoever extends screening to schema text will see this test fail and must
+    update it deliberately, after measuring false positives on real parameter
+    docs. Do not "fix" it by editing the payload.
+    """
+
+    poisoned_schema = {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "File path. " + TL_01_POISONING_PAYLOAD,
+            }
+        },
+    }
+    proxy = McpToolProxy(mode="product")
+    catalog = proxy.screen_catalog(
+        [
+            ToolSpec(
+                name="read_file",
+                description="Read a text file.",
+                input_schema=poisoned_schema,
+            )
+        ]
+    )
+
+    # The clean description passes, so nothing is quarantined or alerted...
+    assert proxy.quarantined_descriptions == 0
+    assert catalog.alerts == ()
+    # ...and the schema payload is therefore still visible to the model.
+    assert TL_01_POISONING_PAYLOAD in _all_strings(catalog.model_tools())
+
+
 def test_screen_tool_result_counts() -> None:
     proxy = McpToolProxy(mode="product")
     guard = proxy.screen_tool_result("add", "3")
@@ -98,6 +198,10 @@ def test_demo_tl01_cli(capsys) -> None:
     assert quarantined[0]["name"] == "read_file"
     assert "badge_line" in payload
     assert payload["badge"]["quarantined_descriptions"] == 1
+    # The tester guide tells operators to expose this array to the model, so the
+    # CLI payload carries the same leak assertion as the library projection.
+    assert TL_01_POISONING_PAYLOAD not in _all_strings(payload["model_tools"])
+    assert [t["name"] for t in payload["model_tools"]] == [t["name"] for t in payload["tools"]]
 
 
 def test_badge_cli(capsys) -> None:

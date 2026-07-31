@@ -129,18 +129,10 @@ def _run_catalog(
         print(format_badge_line(result.badge))
         return 0
 
+    # to_dict() already carries model_tools (effective descriptions only) so the
+    # library and the CLI cannot drift apart on what the model is allowed to see.
     payload: dict[str, Any] = result.to_dict()
     payload["badge_line"] = format_badge_line(result.badge)
-    # Model-facing catalog: effective descriptions only
-    payload["model_tools"] = [
-        {
-            "name": t.name,
-            "description": t.effective_description,
-            "input_schema": t.input_schema,
-            "quarantined": t.quarantined,
-        }
-        for t in result.tools
-    ]
     print(json.dumps(payload, indent=2, sort_keys=True))
     if not as_json:
         # Human footer on stderr so stdout stays JSON-pipeable

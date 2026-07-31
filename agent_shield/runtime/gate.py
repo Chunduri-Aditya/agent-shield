@@ -38,6 +38,29 @@ def _looks_like_hard_secret(screen: ContentScreenResult) -> bool:
     )
 
 
+def _only_oversize_signal(screen: ContentScreenResult) -> bool:
+    """True when sheer length is the *sole* reason risk was raised.
+
+    The shared research screener flags content past the synthesis limit as an
+    Availability concern. That is right for a synthesis budget and wrong as a
+    product alert: every long benign document (a large PDF, a log dump) would
+    raise a HIGH card with ``flagged_attack`` False, and that fatigue is what
+    drives operators to hit the kill switch.
+
+    Every other risk escalation in ``screen_retrieved_content`` marks
+    Confidentiality (secrets, PII) or Integrity (injection signals, unsupported
+    content type), so requiring those two to be clean keeps padding from
+    laundering an attack: oversized content carrying a signal still alerts.
+    """
+
+    return (
+        screen.availability_status == "AFFECTED"
+        and screen.integrity_status != "AFFECTED"
+        and screen.confidentiality_status != "AFFECTED"
+        and not screen.flagged_attack
+    )
+
+
 def decide_action(
     screen: ContentScreenResult,
     *,
@@ -49,7 +72,8 @@ def decide_action(
     product: HIGH injection → alert+proceed (disclosure without silent DoS).
     CRITICAL hard secrets → deny (alert+proceed if confirmed).
     Soft PII / emails at medium → alert+proceed, never silent deny.
-    strict: not allowed → deny (research quarantine semantics).
+    Oversize-only content → allow (operational, not adversarial).
+    strict: not allowed → deny (research quarantine semantics, oversize included).
     """
 
     if mode not in {"product", "strict"}:
@@ -64,9 +88,17 @@ def decide_action(
             return GuardAction.ALERT_PROCEED if confirmed else GuardAction.DENY
         return GuardAction.DENY
 
-    # product mode — prefer visible alerts over silent quarantine for injection
+    # product mode — prefer visible alerts over silent quarantine for injection.
+    # hard_secret stays ahead of the oversize carve-out: both guards are load
+    # bearing, and dropping either one lets padded credentials through.
     if hard_secret:
         return GuardAction.ALERT_PROCEED if confirmed else GuardAction.DENY
+
+    # Length alone is an operational signal, not an attack. The reason stays on
+    # GuardResult.reasons for the host; it just does not spend the alert channel.
+    # ALLOW here means "not adversarial", never "this fits your context window".
+    if _only_oversize_signal(screen):
+        return GuardAction.ALLOW
 
     if screen.flagged_attack or screen.risk_level in {
         RiskLevel.HIGH,

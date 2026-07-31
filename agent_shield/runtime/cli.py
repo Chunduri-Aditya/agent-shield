@@ -84,6 +84,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"alert: {result.alert.title}")
             print(f"evidence: {result.alert.evidence}")
             print(f"remediation: {result.alert.remediation}")
+        elif result.action is GuardAction.ALLOW and (
+            result.kill_switch or result.risk_level != "low"
+        ):
+            # Allowed, but not a clean pass: oversize content, or screening was
+            # skipped entirely. Surface it as a note so dropping the alert card
+            # does not turn into silence. A genuinely clean allow stays quiet.
+            for reason in result.reasons:
+                print(f"note: {reason}")
         c = session.counters
         print(
             f"counters: blocked={c.denied} alerted={c.alerted} "
