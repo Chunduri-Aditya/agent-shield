@@ -59,6 +59,26 @@ touch before v1.0.0.
 - [ ] `dos/` module — adversarial DoS attacks against agents. Currently
   tracked as a metric in v1 threat model, not mitigated. Post-sprint this
   could be its own study.
+- [ ] **Credibility hardening + consumer plugin (“AdBlock for agents”).**
+  Dual track: (A) close research plateaus (powered agentic TR, TR-v2 judge,
+  arXiv/workshop, claim honesty); (B) installable runtime perimeter with
+  user-visible alerts. Full plan: [`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
+  Needs Phase 0 go/no-go before rewriting `ROADMAP.md` “not a defense product.”
+  Do not expand `AGENT_SHIELD_TODO.md` until promoted.
+- [ ] **Moat experiments (from originality audit 2026-07-31).** See
+  [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md): TR-v2 + human agreement;
+  TR–ASR joint plot; false-disclosure / alert fatigue study; cross-lingual TR;
+  MCP-native TR on live servers (after powered `tools/` n=20).
+
+## Rejected (duplicate of existing suites — do not rebuild)
+
+From [`docs/originality_audit_2026-07-31.md`](docs/originality_audit_2026-07-31.md):
+
+- Another AgentDojo-style banking/Slack/travel injection ASR suite → AgentDojo
+- Standalone MCP tool-poisoning ASR benchmark → MCPTox (AAAI 2026)
+- Memory + backdoor + defenses matrix across many backbones → ASB
+- Transcript → safe/unsafe risk-awareness judge suite → R-Judge / AgentSafetyBench
+- MCP static scanner / honeytoken deception layer product → mcp-scan / arXiv AgentShield (2605.11026)
 
 ## Open threat-model questions (revisit before THREAT_MODEL v2)
 

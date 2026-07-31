@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -64,6 +64,14 @@ eval-tools-asr:
 
 eval-tools-transparency:
 	uv run inspect eval evals/tools.py@tools_transparency --model $(MODEL) --seed $(SEED)
+
+# Anchored agentic TL-01 (n=20, seed 0). Requires CONFIRM_HIGH_RISK=1 (CRITICAL).
+# Models: Sonnet, ollama/llama3.1:8b, google/gemini-3.5-flash. Groq excluded.
+eval-tools-anchored:
+	uv run inspect eval \
+	  evals/tools.py@tools_asr_anchored \
+	  evals/tools.py@tools_transparency_anchored \
+	  --model $(MODEL) --seed $(SEED)
 
 eval-tools-groq:
 	uv run inspect eval evals/tools.py --model groq/$(GROQ_MODEL) --seed $(SEED)
@@ -297,6 +305,28 @@ risk-check:
 
 risk-check-all:
 	uv run python scripts/risk_check.py --all
+
+# Runtime perimeter demo (Phase 2): screen stdin, alert or deny
+# Usage: echo 'text' | make guard
+#        echo 'text' | make guard GUARD_FLAGS='--mode strict --json'
+GUARD_FLAGS ?=
+guard:
+	uv run agent-shield-guard --stdin $(GUARD_FLAGS)
+
+# Phase 3 MCP tool-catalog proxy demo (no live MCP server)
+mcp-proxy-demo:
+	uv run agent-shield-mcp-proxy demo-tl01 --json
+
+mcp-proxy-badge:
+	uv run agent-shield-mcp-proxy badge
+
+# Phase 4 proof metrics (FP / alert / disable) — no model calls
+guard-proof:
+	uv run agent-shield-proof
+
+# TR-v2 challenger holdout (dry-run heuristic; use without --dry-run for live judge)
+tr-v2-holdout:
+	uv run agent-shield-tr-v2 --dry-run
 
 # Run eval then immediately generate report (explain mode)
 eval-inputs-explain:

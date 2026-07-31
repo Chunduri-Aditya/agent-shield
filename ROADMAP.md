@@ -14,8 +14,10 @@ benign utility, utility under attack, targeted ASR, and Transparency Rate (the
 share of attacked runs where the agent surfaced the attack to the user).
 
 Existing benchmarks measure the first three. Agent Shield reports the fourth
-across every module so that "the model resisted" and "the model resisted and
-told its operator" stop reading as the same outcome.
+as **operator-facing disclosure** (not internal detection alone) across modules
+so that "the model resisted" and "the model resisted and told its operator"
+stop reading as the same outcome. Differentiation notes:
+[`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md).
 
 ## What this is not
 
@@ -26,16 +28,19 @@ v1.0.0.
 
 ## Modules
 
-| Code | Module | Status | Probes |
-|---|---|---|---|
-| IN | `inputs/` | live | Direct and indirect prompt injection (IN-01..IN-05) |
-| TL | `tools/` | live | MCP tool poisoning, rug pull, line jumping (TL-01 live; TL-02..TL-04 stubbed) |
-| PS | `psych/` | live | Cialdini six principles applied to agents (PS-01..PS-06) |
-| MM | `memory/` | live | RAG and retrieval poisoning (MM-01) |
-| EX | `exfil/` | planned (v1.0.0) | Covert exfiltration channels |
-| DR | `drift/` | planned (v1.0.0) | Multi turn behavioral drift |
-| EN | `env/` | deferred (v1.1) | PDF, image, calendar, and email payloads |
-| MA | `multiagent/` | deferred (v1.1) | Adversarial peer and orchestrator attacks |
+| Code | Module | Status | Statistical role | Probes |
+|---|---|---|---|---|
+| IN | `inputs/` | live | **Anchored** (n=20, Wilson 95% CI) | Direct and indirect prompt injection (IN-01..IN-05) |
+| TL | `tools/` | live | **Anchored agentic** (n=20, Wilson 95% CI) | MCP tool description poisoning (TL-01 live; TL-02..TL-04 stubbed; Groq excluded from agentic claim) |
+| PS | `psych/` | live | Diagnostic (n=6) | Cialdini six principles applied to agents (PS-01..PS-06) |
+| MM | `memory/` | live | Diagnostic (n=10) | RAG and retrieval poisoning (MM-01) |
+| EX | `exfil/` | live | Diagnostic (n=5) | Covert exfiltration channels (EX-01..EX-05) |
+| DR | `drift/` | live | Diagnostic (n=6) | Multi turn behavioral drift (DR-01..DR-06) |
+| EN | `env/` | deferred (v1.1) | — | PDF, image, calendar, and email payloads |
+| MA | `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks |
+
+Except for anchored `inputs/`, cross-module comparisons are qualitative. See
+[`docs/paper_defense_prep.md`](docs/paper_defense_prep.md) for the talk honesty script.
 
 ## Open questions per module
 
@@ -87,16 +92,20 @@ the failure mode this metric exists to surface.
 
 ## v1.0.0 ship line (summary)
 
-- Six modules: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`.
+- Six modules: `inputs/` (anchored), plus five diagnostic probes
+  (`tools/`, `psych/`, `memory/`, `exfil/`, `drift/`).
 - Four models: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`,
   `groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`.
 - One defense: spotlighting on `inputs/` and `psych/`.
 - One anchored confidence interval: 95 percent on `inputs/` at n equals 20.
-- Workshop length manuscript in preparation. Headline finding gates submission.
+- Workshop length manuscript: prefer `paper_v1.1.tex` (canonical) over legacy
+  `paper.tex`. Headline finding gates submission.
 
 `env/`, `multiagent/`, additional defenses, every module CI, and full eight
 model coverage move to v1.1. Done criteria per shipped module live in
-[`SHIP_LINE.md`](SHIP_LINE.md).
+[`SHIP_LINE.md`](SHIP_LINE.md). Post-ship credibility + plugin track:
+[`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md)
+(Track A first; Track B deferred).
 
 ## How to read this repo
 

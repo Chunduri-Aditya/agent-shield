@@ -1,0 +1,10 @@
+{"session_id": "S1", "event": "screen", "source": "tool_desc:add", "action": "allow"}
+{"session_id": "S1", "event": "screen", "source": "tool_desc:read_file", "action": "alert_proceed"}
+{"session_id": "S1", "event": "kill_switch_on", "reason": "alert_fatigue"}
+{"session_id": "S2", "event": "screen", "source": "tool_desc:add", "action": "allow"}
+{"session_id": "S2", "event": "screen", "source": "stdin", "action": "allow"}
+{"session_id": "S3", "event": "screen", "source": "tool_desc:read_file", "action": "alert_proceed"}
+{"session_id": "S3", "event": "screen", "source": "tool_result:read_file", "action": "allow"}
+{"session_id": "S4", "event": "kill_switch_on", "reason": "tester_probe"}
+{"session_id": "S4", "event": "kill_switch_off"}
+{"session_id": "S5", "event": "screen", "source": "stdin", "action": "deny"}

@@ -13,6 +13,10 @@ docs/session_handoff.md
 kaggle.json
 .kaggle/
 
+# Local reference archive (stray duplicates, external tool logs — not project code)
+_project_archive/
+compass_artifact_*.md
+
 # Python
 __pycache__/
 *.py[cod]
@@ -84,12 +88,16 @@ docs/paper_revision_prompt.md
 docs/agent_shield_improvement_roadmap.md
 docs/novelty_positioning.md
 docs/linkedin_launch_post_context.md
+docs/agent_shield_why_convergence.md
+docs/research_prompt_post_and_outreach.md
+docs/phd_applications_prompt.md
 
 # LaTeX build artifacts
 paper.aux
 paper.log
 paper.out
 paper.pdf
+paper_v1.1.pdf
 paper.tex
 
 # Generated release bundle (attach to GitHub release, not committed)

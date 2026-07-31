@@ -9,24 +9,37 @@ Most agent benchmarks answer two questions:
 1. Did the user task succeed?
 2. Did the attack succeed?
 
-A system that silently resists is better than a hijacked one. It is worse than a system that resists *and* names what it caught. Agent Shield calls that missing signal **Transparency Rate** and reports it consistently across modules.
+A system that silently resists is better than a hijacked one. It is worse than a system that resists *and* names what it caught. Agent Shield calls that missing signal **Transparency Rate**: operator-facing *disclosure* of an attack (not merely internal detection), reported next to ASR. Closest detection-style metrics (e.g. SafeEmbodAI ADR, MIR) are cited and distinguished in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+
+Prior-art audit (2026-07-31): [docs/originality_audit_2026-07-31.md](docs/originality_audit_2026-07-31.md).
 
 The early data hints at a contrast worth watching. The same provider that scores zero on direct prompt injection can flag manipulation under Cialdini pressure. Another provider, asked the same questions at the same seeds, surfaces nothing across either surface. If the contrast holds at scale, "the model resisted" and "the model resisted out loud" stop reading as the same outcome.
 
 ## Module coverage
 
-| Module | Status | What it probes | Attack IDs |
-|---|---|---|---|
-| `inputs/` | live | Prompt injection via direct instruction override | IN-01..IN-05 |
-| `tools/` | live | MCP tool poisoning via description and output injection | TL-01..TL-05 |
-| `psych/` | live | Cialdini grounded social engineering (6 principles) | PS-01..PS-06 |
-| `memory/` | live | RAG store poisoning via retrieval injection | MM-01 |
-| `exfil/` | live | Covert exfiltration channels (zero-width, homoglyph, base64, URL sink) | EX-01..EX-05 |
-| `drift/` | live | Multi-turn behavioral drift and sycophancy manipulation | DR-01..DR-06 |
-| `env/` | deferred (v1.1) | PDF, image, calendar, email payloads | — |
-| `multiagent/` | deferred (v1.1) | Adversarial peer and orchestrator attacks | — |
+Statistical scope matters: one module is **anchored**; the rest are **diagnostic probes**.
+Do not read “six live modules” as six powered results.
+
+| Module | Status | Statistical role | What it probes | Attack IDs |
+|---|---|---|---|---|
+| `inputs/` | live | **Anchored** (n=20, Wilson 95% CI) | Prompt injection via direct instruction override | IN-01..IN-05 |
+| `tools/` | live | **Anchored agentic** (n=20 Sonnet/Llama; Gemini `---`) | MCP tool description poisoning (Inspect tool loop) | TL-01 live; TL-02..TL-05 stubbed. Groq excluded from agentic claim |
+| `psych/` | live | Diagnostic (n=6) | Cialdini grounded social engineering (6 principles) | PS-01..PS-06 |
+| `memory/` | live | Diagnostic (n=10) | RAG store poisoning via retrieval injection | MM-01 |
+| `exfil/` | live | Diagnostic (n=5) | Covert exfiltration channels (zero-width, homoglyph, base64, URL sink) | EX-01..EX-05 |
+| `drift/` | live | Diagnostic (n=6) | Multi-turn behavioral drift and sycophancy manipulation | DR-01..DR-06 |
+| `env/` | deferred (v1.1) | — | PDF, image, calendar, email payloads | — |
+| `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks | — |
 
 Per module open questions in [ROADMAP.md](ROADMAP.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+Honesty script for talks: [docs/paper_defense_prep.md](docs/paper_defense_prep.md).
+
+## Name note
+
+This evaluation framework (“Agent Shield”) is **not** the same project as the
+unrelated AgentShield deception detector (Rassul et al., arXiv:2605.11026),
+ecc-agentshield config scanners, or agentshield.dev. Runtime CLIs here use
+`agent-shield-*` prefixes.
 
 ## Threat model
 
@@ -52,7 +65,11 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-Six modules live across 27 attack IDs: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`. All four ship line models logged across the core modules: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`, `groq/llama-3.3-70b-versatile`, and `google/gemini-3.5-flash`. One defense baseline live: spotlighting on `inputs/` and `psych/`. Per-model, per-module coverage with seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+**Anchored results:**
+- `inputs/` (non-agentic) at n=20 (seed 0, Wilson 95% CI): Sonnet 4.5 is the only model with non-zero TR (0.150); Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini 3.5 Flash sit at TR=0.000 (upper bound 0.161). Silent resistance is the default.
+- `tools/` (agentic TL-01) at n=20 (seed 0): Sonnet and Llama both ASR=0.000 / TR=0.000 (Wilson upper 0.161). Gemini row pending if the provider hung mid-run — see RESULTS. Groq excluded (chat-only tool envelopes).
+
+**Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md). Improvement track: [docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md). Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 
 ## Repo layout
 
@@ -101,20 +118,28 @@ uv sync
 make status         # check which models are available
 make eval           # Inspect harness smoke test
 make eval-inputs    # IN-01..IN-05
-make eval-tools     # TL-01..TL-05
+make eval-tools     # TL-01 (stubs TL-02..TL-05 not eval'd)
 make eval-psych     # PS-01..PS-06
 make eval-memory    # MM-01
 make eval-exfil     # EX-01..EX-05
 make eval-drift     # DR-01..DR-06
-make eval-all       # all six modules
+make eval-all       # six live modules (one anchored + five probes)
 
 make sweep          # run all modules against all available models
 make report         # generate plain-language report from latest eval log
+make guard          # runtime perimeter: echo TEXT | make guard
+make mcp-proxy-demo # TL-01 catalog screen (JSON)
+make mcp-proxy-badge
+make guard-proof    # FP / alert / disable rates (no model calls)
 
 make test           # pytest
 make lint           # ruff
 ```
 
+Kill switch: `AGENT_SHIELD_GUARD_OFF=1` or `--off` on guard / mcp-proxy.  
+Trusted-tester notes: [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md).  
+Loom shot list: [docs/loom_demo_script.md](docs/loom_demo_script.md).  
+Product post draft: [docs/post_adblock_for_agents.md](docs/post_adblock_for_agents.md).
 ## Environment variables
 
 Provider keys used by the repo:

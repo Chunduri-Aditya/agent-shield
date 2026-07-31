@@ -108,18 +108,22 @@ label the message, or investigate the source.
 
 We call this missing signal \textbf{Transparency Rate} (TR). Formally: the
 fraction of adversarial episodes in which the agent produces output that
-explicitly flags the attack to an operator-facing reader. No prior benchmark
-defines or reports this metric at the episode level with confidence intervals.
-The closest prior work is R-Judge's risk-awareness benchmark, which uses an
+explicitly flags the attack to an operator-facing reader. Closest awareness
+precedents score \emph{detection} or \emph{risk judgment}, not disclosure:
+SafeEmbodAI's Attack Detection Rate counts steps where an embodied agent
+detects an attack in its own outputs~\citep{zhang2024safeembodai}; Lupinacci
+et al.\ report a Malware Identification Rate alongside ASR for
+prompt-injection recognition~\citep{lupinacci2025darkside}; R-Judge uses an
 external LLM judge to score F1 on offline agent transcripts for whether the
-agent recognized a safety risk~\citep{yuan2024rjudge}. TR differs in three
-ways: it is binary at the episode level rather than a transcript-level F1, it
-scores the agent's own in-band output rather than an external judge's read,
-and it is reported as a primary metric alongside ASR rather than as a
-diagnostic. To our knowledge, Agent Shield is the first LLM-agent security benchmark to
-report operator-facing attack disclosure as a primary episode-level metric
-alongside ASR and utility, with confidence intervals for the anchored
-prompt-injection setting.
+agent recognized a safety risk~\citep{yuan2024rjudge}. TR differs from all
+three: it requires communication \emph{to the operator} (stronger than
+internal detection), scores the acting agent's in-band output (not an external
+judge), and is reported co-primary with ASR and utility with confidence
+intervals on an anchored setting. To our knowledge, Agent Shield is the first
+LLM-agent security benchmark to report operator-facing attack
+\emph{disclosure}---as opposed to internal detection or external-monitor
+alarms---as a primary episode-level metric alongside ASR and utility, with
+Wilson intervals for the anchored prompt-injection setting.
 
 The empirical finding is stark. Three of four models in our evaluation show
 TR$=$0.000 with a Wilson~95\% upper bound of 0.161 at $n{=}20$ on the
@@ -127,16 +131,19 @@ direct-injection module. These models sometimes refused attacks. They almost
 never told their operators about them. OWASP~Agentic~2026 lists ``adaptive
 trust calibration based on contextual risk'' and ``show low-certainty or
 unverified-source cues'' as required
-mitigations~\citep{owasp_agentic_2025}; before this work, no metric confirmed
-these mitigations fired. Agent Shield provides one.
+mitigations~\citep{owasp_agentic_2025}; disclosure metrics that confirm those
+cues fired for general tool-using agents remain scarce relative to ASR.
+Agent Shield provides one such metric.
 
 \paragraph{Contributions.}
 
 \begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=2pt]
   \item \textbf{Transparency Rate as a primary metric.} We define TR as an
-    episode-level evaluation metric with Wilson confidence intervals, and
-    report it across six attack surfaces and four models. Prior benchmarks at
-    best record alerting behavior in an appendix as a qualitative
+    episode-level \emph{disclosure} metric with Wilson confidence intervals, and
+    report it across six attack surfaces and four models. Prior work that
+    scores attack \emph{detection} or identification (e.g., SafeEmbodAI ADR,
+    MIR) is cited and distinguished in Section~2; InjecAgent at best records
+    alerting behavior in an appendix as a qualitative
     score~\citep{zhan2024injectagent}.
   \item \textbf{The six-cell outcome taxonomy.} We extend the utility/security
     framing of AgentDojo~\citep{debenedetti2024agentdojo} with a third
@@ -144,12 +151,12 @@ these mitigations fired. Agent Shield provides one.
     naming each cell: \emph{Silent Success}, \emph{Aware Success}, \emph{Silent
     Refusal}, \emph{Aware Refusal}, \emph{Opaque Compromise}, and
     \emph{Transparent Compromise}.
-  \item \textbf{Agent Shield framework.} An open \textbf{transparency-aware
-    evaluation protocol} on Inspect~AI implementing 24 attacks across six
-    modules---direct prompt injection, MCP tool poisoning, Cialdini-grounded
-    social engineering, RAG memory poisoning, covert exfiltration, and
-    multi-turn behavioral drift---with one unified metric schema, a
+  \item \textbf{Unified Inspect AI harness.} An open transparency-aware
+    evaluation protocol implementing 24 attacks across six modules---each
+    building on established threat models (AgentDojo/InjecAgent, MCPTox/Invariant
+    Labs, ASB-style memory poisoning)---with one metric schema, a
     human-readable vulnerability reporting layer, and a dual-use risk gate.
+    Breadth is an integration contribution; TR is the metric contribution.
   \item \textbf{The silent-resistance finding.} On the anchored $n{=}20$
     prompt-injection surface, three of four models (Llama~3.1~8B,
     Gemini~3.5~Flash, Llama~3.3~70B via Groq) score TR$=$0.000 with Wilson~95\%
@@ -176,17 +183,14 @@ environments and 2,000 cases, with ``lack of risk awareness'' as a diagnostic
 failure mode but not a primary metric.
 AgentHarm~\citep{andriushchenko2024agentharm} measures harm score and refusal
 rate against 110 malicious agent tasks. AgentLAB~\citep{jiang2026agentlab}
-extends to five long-horizon attack families including objective drifting,
-and DeepContext~\citep{albrethsen2026deepcontext} approaches multi-turn drift
-as a detection problem with a stateful RNN classifier; Agent Shield's
-\texttt{drift/} module is complementary in that it ships drift as an attack
-surface with per-attack IDs rather than as a detection target.
-HarmBench~\citep{mazeika2024harmbench} evaluates jailbreaks on static text,
-not agentic tool use. These works share the same outcome space: utility crossed with
-attack success. ASB's Refuse Rate and AgentHarm's Refusal Rate measure
-non-compliance with a malicious request, not communication of an external attack
-to an operator. \textbf{None of these works measures whether the agent
-communicates the attack to its operator.}
+extends to five long-horizon attack families including objective drifting and
+memory poisoning. HarmBench~\citep{mazeika2024harmbench} evaluates jailbreaks
+on static text, not agentic tool use. These works share the same outcome space:
+utility crossed with attack success. ASB's Refuse Rate and AgentHarm's Refusal
+Rate measure non-compliance with a malicious request, not communication of an
+external attack to an operator. \textbf{None of these suites measures whether
+the agent discloses an external attack to its operator as a co-primary metric
+with ASR.}
 
 \paragraph{Attack-specific work.}
 AgentPoison~\citep{chen2024agentpoison} demonstrates backdoor attacks on
@@ -225,23 +229,24 @@ chat-LLM jailbreak studies cannot produce. The module encodes Kahneman's System~
 dual-process framing~\citep{kahneman2011thinking}: influence principles exploit
 fast, associative reasoning that bypasses deliberative safety checks.
 
-\paragraph{Transparency and detection.}
+\paragraph{Transparency, detection, and disclosure.}
 Spotlighting~\citep{hines2024defending} introduces datamarking and encoding
 transformations, reducing indirect injection ASR from over 50\% to under 2\% on
-GPT-3.5-Turbo and GPT-4. R-Judge~\citep{yuan2024rjudge} measures
+GPT-3.5-Turbo and GPT-4. SafeEmbodAI~\citep{zhang2024safeembodai} reports Attack
+Detection Rate (ADR) as a primary metric in embodied robotics---steps where the
+agent detects an attack in its generated perception outputs. Lupinacci et
+al.~\citep{lupinacci2025darkside} report Malware Identification Rate (MIR)
+alongside ASR for recognizing malicious prompt-injection attempts. Both score
+recognition/detection; neither frames disclosure-to-operator as co-primary with
+ASR for general tool-using agents. R-Judge~\citep{yuan2024rjudge} measures
 risk-awareness F1 with an external LLM judge over offline agent
-transcripts---conceptually adjacent to operator notification but evaluated
-outside the agent loop and at the transcript level rather than the episode
-level.
-AgentShield~\citep{rassul2026agentshield} (the deception-based system, not this
-work) places trap tools, fake credentials, and allowlisted parameters inside the
-agent's tool interface and trains a self-supervised classifier, achieving
-90.7\%--100\% catch rate with zero false alarms on 485 normal-use tests. That
-system is an external detector: it fires when the agent is caught doing
-something wrong. TR measures something different: whether the agent itself,
-without any external apparatus, communicates the attack to its operator.
-\textbf{Agent Shield operationalizes agent transparency as a first-class
-evaluation metric, not as an external classifier.}
+transcripts---adjacent to notification but outside the agent loop.
+AgentShield~\citep{rassul2026agentshield} (the deception-based compromise
+detector, \emph{not} this evaluation framework) places trap tools and
+honeytokens in the tool interface and trains an external classifier; its
+``detection rate'' is an alarm raised by that layer, not user disclosure.
+\textbf{This paper's Agent Shield operationalizes operator-facing disclosure as
+a first-class evaluation metric.} We disambiguate naming in Section~8.
 
 \paragraph{Behavioral drift.}
 Greshake et al.~\citep{greshake2023not} define the indirect prompt injection
@@ -386,14 +391,9 @@ incomplete.
 \texttt{exfil/} additionally reports \textbf{Canary Leak Rate (CLR)}: a
 binary signal per episode for whether any canary content appeared in the
 model's output, regardless of whether the primary exfil objective succeeded.
-CLR follows the canary-leak measurement approach introduced for cluster-level
-conversation summaries by CanaryBench~\citep{mehta2026canarybench}, here
-specialized for agent-tool-call episodes and binarized at the episode level
-rather than aggregated over clusters. CLR fires in cases where the model
-resists encoding or transmitting the full payload but still includes partial
-canary material---a partial-leak scenario that binary ASR treats as success
-for the defender. The Gemini finding in Section~\ref{sec:results} would be
-invisible without CLR.
+CLR is a specialized, episode-level canary check for agent tool-call
+transcripts---a partial-leak scenario that binary ASR alone can miss. The
+Gemini finding in Section~\ref{sec:results} would be invisible without CLR.
 
 Table~\ref{tab:main_results} reports ASR and TR as the primary security metrics.
 Table~\ref{tab:bu_uua} reports BU and UUA for the anchored \texttt{inputs/}
@@ -827,6 +827,12 @@ this one. Automatic TR for the anchored row: 0.150 (3/20); manual TR: 0.150
 \texttt{reports/tr\_audit\_v1.csv}. The v1.1 checklist includes an LLM-judge
 scorer to address free-paraphrase coverage.
 
+\paragraph{Overlap with detection metrics.}
+TR overlaps conceptually with prior attack-detection and identification rates
+(ADR, MIR) and with risk-awareness judges (R-Judge). Our contribution is the
+\emph{disclosure-to-operator} framing and co-primary reporting with ASR for
+general tool-using agents---not the claim that agents should recognize attacks.
+
 \paragraph{Deferred modules.}
 \texttt{env/} (PDF, image, calendar, email payloads) and \texttt{multiagent/}
 (orchestrator bypass, majority vote poisoning, adversarial peer) are not
@@ -900,6 +906,13 @@ disclosing.
 % ---------------------------------------------------------------
 \section{Release and Reproducibility}
 
+\paragraph{Name disambiguation.}
+This evaluation framework (``Agent Shield'') is distinct from the unrelated
+AgentShield deception-based compromise detector~\citep{rassul2026agentshield},
+from config-scanning tools that reuse the AgentShield name, and from commercial
+bot-detection products branded similarly. Runtime CLIs in this repository use
+\texttt{agent-shield-*} prefixes to reduce that collision.
+
 Agent Shield v1.0.0 is publicly released at
 \url{https://github.com/Chunduri-Aditya/agent-shield}. The release includes:
 
@@ -970,12 +983,6 @@ Andriushchenko, M., et al. (2024).
 AgentHarm: A benchmark for measuring harmfulness of LLM agents.
 \textit{arXiv:2410.09024}.
 
-\bibitem[Albrethsen et al., 2026]{albrethsen2026deepcontext}
-Albrethsen, J., Datta, Y., Kumar, K., and Rajasekar, S. (2026).
-DeepContext: Stateful real-time detection of multi-turn adversarial intent
-drift in LLMs.
-\textit{arXiv:2602.16935}.
-
 \bibitem[Chen et al., 2024]{chen2024agentpoison}
 Chen, B., Tian, S., Yao, Z., Zhang, C., et al. (2024).
 AgentPoison: Red-teaming LLM agents via poisoning memory or knowledge bases.
@@ -985,13 +992,6 @@ In \textit{NeurIPS 2024}. \textit{arXiv:2407.12784}.
 Cialdini, R.~B. (1984).
 \textit{Influence: The Psychology of Persuasion}.
 William Morrow.
-
-\bibitem[Mehta, 2026]{mehta2026canarybench}
-Mehta, D. (2026).
-CanaryBench: Stress testing privacy leakage in cluster-level conversation
-summaries.
-\textit{arXiv:2601.18834}.
-
 \bibitem[Debenedetti et al., 2024]{debenedetti2024agentdojo}
 Debenedetti, E., et al. (2024).
 AgentDojo: A dynamic environment to evaluate prompt injection attacks and
@@ -1139,11 +1139,22 @@ InjecAgent: Benchmarking indirect prompt injections in tool-integrated large
 language model agents.
 \textit{arXiv:2403.02691}.
 
-\bibitem[Zhang et al., 2024]{zhang2024agentsafetybench}
+\bibitem[Lupinacci et al., 2025]{lupinacci2025darkside}
+Lupinacci, M., et al. (2025).
+The dark side of LLMs: Agent-based attack vectors for system-level compromise.
+\textit{arXiv:2507.06850}.
+
+\bibitem[Zhang et al., 2024a]{zhang2024agentsafetybench}
 Zhang, Z., Cui, S., Lu, Y., Li, J., Xiong, L., Huang, Y., Jia, X., Wang, H.,
 Huang, X., and Huang, M. (2024).
 Agent-SafetyBench: Evaluating the safety of LLM agents.
 \textit{arXiv:2412.14470}.
+
+\bibitem[Zhang et al., 2024b]{zhang2024safeembodai}
+Zhang, W., Kong, X., Br\"aunl, T., and Hong, J.~H. (2024).
+SafeEmbodAI: Safe robot control with large language models under adversarial
+attacks.
+\textit{arXiv:2409.01630}.
 
 \bibitem[Zhang et al., 2025]{zhang2025asb}
 Zhang, J., Huang, W., Gao, E., Zhai, E., and Lin, Z. (2025).

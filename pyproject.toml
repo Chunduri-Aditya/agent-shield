@@ -12,8 +12,12 @@ dependencies = [
 
 [project.scripts]
 agent-shield-research = "agent_shield.research_cli:main"
+agent-shield-guard = "agent_shield.runtime.cli:main"
+agent-shield-mcp-proxy = "agent_shield.runtime.mcp_proxy_cli:main"
+agent-shield-proof = "agent_shield.runtime.proof_cli:main"
+agent-shield-tr-v2 = "agent_shield.tr_v2_cli:main"
 
-# The agent_shield/ package (metrics, schema, targets) is pure-stdlib and is the
+# The agent_shield/ package (metrics, schema, targets, runtime) is pure-stdlib and is the
 # unit other projects import. The heavy harness deps above are only needed to run
 # the Inspect tasks under evals/. Downstream consumers that only want the metrics
 # layer install with: pip install -e . --no-deps
@@ -22,7 +26,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["agent_shield", "agent_shield.targets"]
+packages = ["agent_shield", "agent_shield.targets", "agent_shield.runtime"]
 
 [dependency-groups]
 dev = [
