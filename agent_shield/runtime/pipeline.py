@@ -94,8 +94,10 @@ def guard_text(
 
     if kill_switch_engaged(explicit_off=off):
         if session is not None:
+            # Kill-switch skips are not "allowed after screening" — keep the
+            # allowed counter for real ALLOW decisions only so the badge cannot
+            # inflate a safe-looking allowed count while protection is off.
             session.counters.skipped_kill_switch += 1
-            session.counters.allowed += 1
         return GuardResult(
             action=GuardAction.ALLOW,
             kill_switch=True,

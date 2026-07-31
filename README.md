@@ -2,7 +2,11 @@
 
 An evaluation framework for LLM agents under adversarial pressure. Runs on the [Inspect AI](https://inspect.aisi.org.uk) harness. Compatible with AgentDojo. Reports the axis most agent benchmarks skip: whether the agent told its operator it was under attack.
 
-Optional **local runtime perimeter** (same repo, separate claim): screen untrusted text and MCP tool descriptions, quarantine poisons before the model sees them, and surface operator alerts. Not a hosted firewall or store listing. Wire it into a company agent with [docs/company_agent_adapter.md](docs/company_agent_adapter.md).
+Optional **local runtime perimeter** (same repo, separate claim from the eval
+numbers): screen untrusted text and MCP tool descriptions, quarantine known
+TL-01-style poisons, and surface operator alerts. Not a hosted firewall or
+store listing. Details below and in
+[docs/company_agent_adapter.md](docs/company_agent_adapter.md).
 
 ## Why this exists
 
@@ -76,7 +80,43 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 **Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md).
 
-**Runtime perimeter (optional):** `agent_shield.runtime` + CLIs above. Proof fixtures report FP / alert / quarantine / disable rates without model calls (`make guard-proof`). Plan: [docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md). Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md). Company wiring: [docs/company_agent_adapter.md](docs/company_agent_adapter.md).
+**Runtime perimeter:** installable locally (see next section). Plan:
+[docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
+Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+
+## Local runtime perimeter (optional)
+
+Same repository, **separate claim** from the eval tables. Package:
+`agent_shield.runtime`. No model calls for the proof CLI.
+
+| CLI | Role |
+|---|---|
+| `agent-shield-guard` | Screen stdin / untrusted text (`product` or `strict`) |
+| `agent-shield-mcp-proxy` | Screen MCP tool catalogs; quarantine poisoned descriptions |
+| `agent-shield-proof` | Deterministic FP / alert / split recall / disable rates |
+
+**Honest limits (read before integrating):**
+
+- TL-01-style **description** poisons are caught by **proxy-local heuristics**,
+  not by the research screener’s `flagged_attack`. Email-redacted TL-01 is a
+  clean ALLOW on `agent-shield-guard` alone. Always run catalogs through the
+  proxy. Expose `model_tools` to the model — never `tools[].original_description`.
+- **`input_schema` is not screened** (parameter descriptions, `examples`,
+  `$defs`). Do not re-merge raw upstream `title` / annotations into the
+  model-facing catalog after screening.
+- Product mode: HIGH injection → alert and proceed; hard secrets →
+  `require_confirm` (elevate with `--confirm`). Kill switch:
+  `AGENT_SHIELD_GUARD_OFF=1` or `--off`.
+- Proof recall is **split**: `recall_alert_on_text_attack` (text path) vs
+  `recall_quarantine_on_attack` (catalog quarantine only).
+
+| Doc | Audience |
+|---|---|
+| [docs/company_agent_adapter.md](docs/company_agent_adapter.md) | Drop-in wiring for an internal agent loop |
+| [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md) | Trusted-tester guide |
+| [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md) | Miss corpus / FP gate research (not a shipped attack pack) |
+| [docs/loom_demo_script.md](docs/loom_demo_script.md) | 90s demo shot list (recording pending) |
+| [docs/post_adblock_for_agents.md](docs/post_adblock_for_agents.md) | Product post draft (publish pending) |
 
 ## Repo layout
 
@@ -93,8 +133,8 @@ agent-shield/
 ├── defenses/          Defense baselines (spotlighting)
 ├── reports/           Plain-language reports, TR audits, TR-v2 holdouts
 ├── scripts/           Sweep runner, model registry, auth checks
-├── tests/             Pytest suite
-├── docs/              Adapter, originality audit, paper prep, free agents
+├── tests/             Pytest suite (includes runtime perimeter pins)
+├── docs/              Adapter, originality audit, aggressive-testing research, paper prep
 ├── risk_registry.py   AIVSS-scored attack metadata with CIA and OWASP mappings
 ├── report_generator.py Plain-language report builder (make report)
 ├── ROADMAP.md         Module status, eval + optional local runtime posture
@@ -139,9 +179,9 @@ make report         # generate plain-language report from latest eval log
 
 # Optional local perimeter (no model required for proof)
 make guard          # echo TEXT | make guard
-make mcp-proxy-demo # TL-01 catalog screen (JSON)
+make mcp-proxy-demo # TL-01 catalog screen (JSON) — use model_tools for the model
 make mcp-proxy-badge
-make guard-proof    # FP / alert / disable rates
+make guard-proof    # FP / alert / split recall / disable rates
 make tr-v2-holdout  # TR-v2 challenger dry-run (heuristic; not promotion)
 
 make test           # pytest
@@ -149,10 +189,6 @@ make lint           # ruff + mypy
 ```
 
 Kill switch: `AGENT_SHIELD_GUARD_OFF=1` or `--off` on guard / mcp-proxy.
-Trusted-tester notes: [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md).
-Company agent adapter: [docs/company_agent_adapter.md](docs/company_agent_adapter.md).
-Loom shot list (recording pending): [docs/loom_demo_script.md](docs/loom_demo_script.md).
-Product post draft (publish pending): [docs/post_adblock_for_agents.md](docs/post_adblock_for_agents.md).
 
 ## Environment variables
 
@@ -179,9 +215,10 @@ Reproducibility trail kept in-repo:
 
 Agent Shield keeps model calls out of the unit-test path. Tests validate
 deterministic scoring, attack metadata consistency, paper-artifact
-reproducibility, risk-gate behavior, runtime guard / MCP proxy / proof metrics,
-TR-v2 parse + dry-run holdout, and report generation. The full suite
-runs without API keys, network access, or local model servers.
+reproducibility, risk-gate behavior, runtime guard / MCP proxy / proof metrics
+(including TL-01 honesty pins and schema-boundary pins), TR-v2 parse + dry-run
+holdout, and report generation. The full suite runs without API keys, network
+access, or local model servers.
 
 ```bash
 make test    # pytest — no API keys required
@@ -192,7 +229,7 @@ Always use `uv run` / `make` so the project venv is active.
 
 ## Security
 
-Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md). Dual-use attacks stay gated by the risk check / `CONFIRM_HIGH_RISK=1` for CRITICAL evals.
+Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md). Dual-use attacks stay gated by the risk check / `CONFIRM_HIGH_RISK=1` for CRITICAL evals. Runtime aggressive-testing research stays plan-only until ETHICS clearance for any HIGH dual-use fixture rows — see [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md).
 
 ## License
 

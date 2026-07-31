@@ -61,8 +61,16 @@ that rather than `to_dict()["tools"]`, which keeps `original_description` for
 the operator and would put the payload back in front of the model.
 
 **Screening boundary:** only the tool *description* is screened. `input_schema`
-is passed through untouched, so a poison hidden in a *parameter* description
-still reaches the model. Treat schema text as unscreened.
+(parameter descriptions, `examples`, `$defs`) is passed through untouched, so a
+poison hidden there still reaches the model. Treat schema text as unscreened.
+Do not merge raw upstream fields such as `title` / annotations back into the
+model-facing catalog after screening.
+
+**TL-01 honesty:** quarantine of compliance-directive poisons comes from
+**proxy-local heuristics**, not from the research content ruleset’s
+`flagged_attack`. Email-redacted TL-01 is a clean ALLOW on `agent-shield-guard`.
+Paraphrases without the marker phrases are a known miss (pinned in tests). See
+[`runtime_aggressive_testing_research.md`](runtime_aggressive_testing_research.md).
 
 ## What to report back
 

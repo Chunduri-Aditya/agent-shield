@@ -26,17 +26,42 @@ uv sync
 ```python
 from __future__ import annotations
 
-from agent_shield.runtime import GuardAction, McpToolProxy, ToolSpec, guard_text
+from agent_shield.runtime import (
+    GuardAction,
+    GuardSession,
+    McpToolProxy,
+    ToolSpec,
+    guard_text,
+)
 
 
-def screen_inbound_text(text: str, *, session_id: str = "default") -> dict:
-    """Call before the model sees untrusted page/doc/tool-result text."""
-    result = guard_text(text, session_id=session_id, mode="product")
+def screen_inbound_text(
+    text: str,
+    *,
+    source_id: str = "inbound",
+    session: GuardSession | None = None,
+) -> dict:
+    """Call before the model sees untrusted page/doc/tool-result text.
+
+    This path uses the research content ruleset. It does **not** apply the
+    MCP TL-01 description heuristics — those live only in ``McpToolProxy``.
+    """
+    result = guard_text(
+        text,
+        mode="product",
+        source_id=source_id,
+        session=session,
+    )
+    alert = None if result.alert is None else result.alert.to_dict()
     return {
         "action": result.action.value,
-        "alerts": [a.to_dict() for a in result.alerts],
+        "alert": alert,
+        "alerts": [] if alert is None else [alert],
         "content_ruleset_version": result.content_ruleset_version,
-        # Prefer alert_proceed over silent deny for HIGH injection (product mode).
+        "flagged_attack": result.flagged_attack,
+        "reasons": list(result.reasons),
+        # Product mode: HIGH injection → alert_proceed (show the card, still
+        # pass text unless you redact). Hard secrets → require_confirm / deny.
         "allow_model": result.action
         in (GuardAction.ALLOW, GuardAction.ALERT_PROCEED),
     }
@@ -59,10 +84,23 @@ def screen_tool_catalog(raw_tools: list[dict], *, off: bool = False) -> dict:
         "alerts": [a.to_dict() for a in screened.alerts],
         # THIS is what the model must see — never original poisoned text.
         "model_tools": screened.model_tools(),
+        # Operator drawer only — includes original_description.
         "operator_tools": [t.to_dict() for t in screened.tools],
     }
 ```
 
+### Limits you must not paper over
+
+* **TL-01 class tool poisons** are caught by `McpToolProxy` description
+  heuristics, not by `guard_text` / `flagged_attack`. Email-redacted TL-01 is
+  a clean ALLOW on the text path. Always run catalogs through the proxy.
+* **`input_schema` is not screened** (parameter descriptions, examples,
+  `$defs`). Do not merge raw upstream catalog fields (`title`, annotations)
+  back into what the model sees.
+* **`screen_tool_result` / inbound text alert but do not rewrite.** If
+  `allow_model` is true and an alert fired, show the card or redact yourself.
+* Aggressive miss corpus and next experiments:
+  [`docs/runtime_aggressive_testing_research.md`](runtime_aggressive_testing_research.md).
 ## Where to hook in a typical agent loop
 
 ```text

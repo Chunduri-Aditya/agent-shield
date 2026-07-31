@@ -2,6 +2,13 @@
 
 Deterministic: all scoring in Python. Inputs are fixtures / JSONL session logs.
 Does not call models or the network.
+
+Recall fields are intentionally split:
+
+* ``recall_alert_on_text_attack`` — text cases where the guard alerted or denied
+  (or required confirm). Catalog quarantine is irrelevant here.
+* ``recall_quarantine_on_attack`` — MCP catalog tools labelled as attacks that
+  were quarantined. Text cases do not contribute.
 """
 
 from __future__ import annotations
@@ -22,11 +29,14 @@ class ProofMetrics:
 
     n_benign: int
     n_attack: int
+    n_text_attack: int
+    n_catalog_attack: int
     false_positive_denies: int
     false_positive_quarantines: int
     false_positive_rate: float
     alert_rate_benign: float
     alert_rate_attack: float
+    recall_alert_on_text_attack: float
     recall_quarantine_on_attack: float
     n_sessions: int
     n_sessions_disabled: int
@@ -61,7 +71,7 @@ def measure_text_cases(
 
     for case in benign:
         result = guard_text(str(case["text"]), mode=mode, source_id=str(case.get("id", "b")))
-        if result.action is GuardAction.DENY:
+        if result.action in {GuardAction.DENY, GuardAction.REQUIRE_CONFIRM}:
             fp_deny += 1
         if result.action is not GuardAction.ALLOW:
             alerts_benign += 1
@@ -70,7 +80,15 @@ def measure_text_cases(
         result = guard_text(str(case["text"]), mode=mode, source_id=str(case.get("id", "a")))
         if result.action is not GuardAction.ALLOW:
             alerts_attack += 1
-        if result.flagged_attack or result.action is GuardAction.DENY:
+        if (
+            result.flagged_attack
+            or result.action
+            in {
+                GuardAction.DENY,
+                GuardAction.REQUIRE_CONFIRM,
+                GuardAction.ALERT_PROCEED,
+            }
+        ):
             attack_caught += 1
 
     return {
@@ -165,12 +183,14 @@ def compute_proof_metrics(
     notes: list[str] = []
     n_benign = 0
     n_attack = 0
+    n_text_attack = 0
+    n_catalog_attack = 0
     fp_deny = 0
     fp_q = 0
     alerts_b = 0
     alerts_a = 0
-    catalog_n_attack = 0
     attack_q = 0
+    text_caught = 0
     den_b = 0
     den_a = 0
 
@@ -178,19 +198,25 @@ def compute_proof_metrics(
         t = measure_text_cases(text_cases, mode=mode)
         n_benign += t["n_benign"]
         n_attack += t["n_attack"]
+        n_text_attack = t["n_attack"]
         fp_deny += t["false_positive_denies"]
         alerts_b += t["alerts_benign"]
         alerts_a += t["alerts_attack"]
+        text_caught = t["attack_caught"]
         den_b += t["n_benign"]
         den_a += t["n_attack"]
         notes.append("text cases included")
+        notes.append(
+            "recall_alert_on_text_attack counts text attacks only "
+            "(alert_proceed / require_confirm / deny)"
+        )
 
     if catalog_tools is not None:
         labels = catalog_labels or {}
         c = measure_tool_catalog(catalog_tools, labels, mode=mode)
         n_benign += c["n_benign"]
         n_attack += c["n_attack"]
-        catalog_n_attack = c["n_attack"]
+        n_catalog_attack = c["n_attack"]
         fp_q += c["false_positive_quarantines"]
         alerts_b += c["alerts_benign"]
         alerts_a += c["alerts_attack"]
@@ -198,6 +224,10 @@ def compute_proof_metrics(
         den_b += c["n_benign"]
         den_a += c["n_attack"]
         notes.append("MCP catalog included")
+        notes.append(
+            "recall_quarantine_on_attack counts catalog labels only "
+            "(text cases do not contribute)"
+        )
 
     disable = {"n_sessions": 0, "n_sessions_disabled": 0, "disable_rate": 0.0}
     if session_events is not None:
@@ -208,12 +238,15 @@ def compute_proof_metrics(
     return ProofMetrics(
         n_benign=n_benign,
         n_attack=n_attack,
+        n_text_attack=n_text_attack,
+        n_catalog_attack=n_catalog_attack,
         false_positive_denies=fp_deny,
         false_positive_quarantines=fp_q,
         false_positive_rate=_rate(fp_events, n_benign),
         alert_rate_benign=_rate(alerts_b, den_b),
         alert_rate_attack=_rate(alerts_a, den_a),
-        recall_quarantine_on_attack=_rate(attack_q, catalog_n_attack),
+        recall_alert_on_text_attack=_rate(text_caught, n_text_attack),
+        recall_quarantine_on_attack=_rate(attack_q, n_catalog_attack),
         n_sessions=disable["n_sessions"],
         n_sessions_disabled=disable["n_sessions_disabled"],
         disable_rate=disable["disable_rate"],

@@ -15,8 +15,8 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="agent-shield-guard",
         description=(
             "Screen untrusted text on stdin. Product mode alerts on injection and "
-            "still proceeds; critical secrets are denied. Set AGENT_SHIELD_GUARD_OFF=1 "
-            "to disable."
+            "still proceeds; critical secrets require confirm. Set "
+            "AGENT_SHIELD_GUARD_OFF=1 to disable."
         ),
     )
     parser.add_argument(
@@ -98,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
             f"allowed={c.allowed} kill_switch_skips={c.skipped_kill_switch}"
         )
 
-    if result.action is GuardAction.DENY:
+    if result.action in {GuardAction.DENY, GuardAction.REQUIRE_CONFIRM}:
         return 1
     return 0
 

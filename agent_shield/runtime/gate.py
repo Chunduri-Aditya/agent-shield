@@ -70,7 +70,7 @@ def decide_action(
     """Choose an action from a ContentScreenResult.
 
     product: HIGH injection → alert+proceed (disclosure without silent DoS).
-    CRITICAL hard secrets → deny (alert+proceed if confirmed).
+    CRITICAL hard secrets → require_confirm (alert+proceed if confirmed).
     Soft PII / emails at medium → alert+proceed, never silent deny.
     Oversize-only content → allow (operational, not adversarial).
     strict: not allowed → deny (research quarantine semantics, oversize included).
@@ -91,8 +91,13 @@ def decide_action(
     # product mode — prefer visible alerts over silent quarantine for injection.
     # hard_secret stays ahead of the oversize carve-out: both guards are load
     # bearing, and dropping either one lets padded credentials through.
+    # Unconfirmed hard secrets use REQUIRE_CONFIRM (not DENY) so the operator
+    # drawer can demand an explicit confirm without looking like a hard block
+    # that has no unlock path. confirmed=True elevates to alert_proceed.
     if hard_secret:
-        return GuardAction.ALERT_PROCEED if confirmed else GuardAction.DENY
+        return (
+            GuardAction.ALERT_PROCEED if confirmed else GuardAction.REQUIRE_CONFIRM
+        )
 
     # Length alone is an operational signal, not an attack. The reason stays on
     # GuardResult.reasons for the host; it just does not spend the alert channel.

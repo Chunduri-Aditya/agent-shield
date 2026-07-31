@@ -134,11 +134,33 @@ def test_oversize_padding_does_not_launder_an_injection() -> None:
 
 
 def test_oversize_padding_does_not_launder_a_secret() -> None:
-    """Same bypass check on the deny path: a padded credential still denies."""
+    """Same bypass check on the confirm path: a padded credential still blocks."""
 
     text = _oversized() + "\nAuthorization: Basic ZmFrZXVzZXI6ZmFrZXBhc3N3b3Jk\n"
     result = guard_text(text, mode="product", source_id="test:long_secret")
-    assert result.action is GuardAction.DENY
+    assert result.action is GuardAction.REQUIRE_CONFIRM
+
+
+def test_hard_secret_requires_confirm_in_product() -> None:
+    """Product mode surfaces hard secrets as require_confirm, not a dead DENY."""
+
+    text = "Authorization: Basic ZmFrZXVzZXI6ZmFrZXBhc3N3b3Jk\n"
+    blocked = guard_text(text, mode="product", confirmed=False)
+    assert blocked.action is GuardAction.REQUIRE_CONFIRM
+    assert blocked.alert is not None
+    confirmed = guard_text(text, mode="product", confirmed=True)
+    assert confirmed.action is GuardAction.ALERT_PROCEED
+
+
+def test_kill_switch_does_not_inflate_allowed_counter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AGENT_SHIELD_GUARD_OFF", "1")
+    session = GuardSession()
+    guard_text("plain benign text about APIs", session=session)
+    assert session.counters.skipped_kill_switch == 1
+    assert session.counters.allowed == 0
+
 
 
 def test_strict_mode_still_quarantines_oversize() -> None:

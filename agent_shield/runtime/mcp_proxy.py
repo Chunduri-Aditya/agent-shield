@@ -122,11 +122,12 @@ class CatalogScreenResult:
         their own agent expose this instead.
 
         **Known gap:** only the tool *description* is screened. ``input_schema``
-        is passed through untouched, so an MCPTox-style poison hidden in a
-        parameter description still reaches the model. Screening schema text
-        needs its own false-positive measurement against real parameter docs
-        before it ships, so this is a boundary, not an oversight. Pinned by
-        ``test_input_schema_is_not_screened``.
+        (parameter descriptions, ``examples``, ``$defs``, …) is passed through
+        untouched, so an MCPTox-style poison hidden there still reaches the
+        model. Screening schema text needs its own false-positive measurement
+        against real parameter docs before it ships, so this is a boundary, not
+        an oversight. Pinned by ``test_input_schema_is_not_screened`` and
+        ``test_input_schema_examples_are_not_screened``.
         """
 
         return [
