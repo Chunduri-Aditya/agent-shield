@@ -5,7 +5,7 @@ submit step.
 Date: 2026-07-31  
 Canonical manuscript: `paper_v1.1.tex` (do **not** treat legacy `paper.tex` as
 submission source).  
-Related: `CHANGES_v1.1.md`, `docs/paper_defense_prep.md`, `SHIP_LINE.md`
+Related: `CHANGES_v1.1.md`, `SHIP_LINE.md`
 
 ## Claim discipline (must hold in PDF)
 
@@ -17,8 +17,6 @@ Related: `CHANGES_v1.1.md`, `docs/paper_defense_prep.md`, `SHIP_LINE.md`
 - Risk gate: available as `make risk-check` / `risk-preflight`; do not overclaim
   auto-wiring beyond Makefile reality.
 - Groq `tools/` not cited as agentic.
-
-Honesty opener: `docs/paper_defense_prep.md`.
 
 ## Source package
 

@@ -2,7 +2,7 @@
 
 Status: defensive measurement plan. The report intentionally omits exact encoded TL01 payloads and executable bypass sequences.
 
-Local evidence basis: [research prompt](../research_prompts/08_encoding_evasions.md), [aggressive runtime findings](../runtime_aggressive_testing_research.md), and [ethics controls](../../ETHICS.md).
+Local evidence basis: [aggressive runtime findings](../../runtime_aggressive_testing_research.md) and [ethics controls](../../../ETHICS.md).
 
 ## A. Psychology and HCI primary sources, ranked
 

@@ -1,7 +1,6 @@
 # Agent Shield — Differentiation (from 2026-07-31 prior-art audit)
 
-Source audit (full text): [`docs/originality_audit_2026-07-31.md`](originality_audit_2026-07-31.md)  
-Research prompt used: [`docs/research_prompt_similar_projects.md`](research_prompt_similar_projects.md)
+Source audit (full text): [`docs/originality_audit_2026-07-31.md`](originality_audit_2026-07-31.md)
 
 ## ADR verification (SafeEmbodAI, arXiv:2409.01630) — closed 2026-07-31
 

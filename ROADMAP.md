@@ -32,7 +32,6 @@ CLI (`agent-shield-guard`, `agent-shield-mcp-proxy`) that screens untrusted text
 and tool descriptions and surfaces operator alerts. Same repo, separate claim
 surface — do not treat fixture proof metrics as the anchored n=20 eval result.
 Integration recipe: [`docs/company_agent_adapter.md`](docs/company_agent_adapter.md).
-Plan: [`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
 
 ## Modules
 
@@ -47,8 +46,7 @@ Plan: [`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.m
 | EN | `env/` | deferred (v1.1) | — | PDF, image, calendar, and email payloads |
 | MA | `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks |
 
-Except for anchored `inputs/`, cross-module comparisons are qualitative. See
-[`docs/paper_defense_prep.md`](docs/paper_defense_prep.md) for the talk honesty script.
+Except for anchored `inputs/`, cross-module comparisons are qualitative.
 
 ## Open questions per module
 
@@ -111,9 +109,7 @@ the failure mode this metric exists to surface.
 
 `env/`, `multiagent/`, additional defenses, every module CI, and full eight
 model coverage move to v1.1. Done criteria per shipped module live in
-[`SHIP_LINE.md`](SHIP_LINE.md). Post-ship credibility + plugin track:
-[`docs/PLUGIN_AND_CREDIBILITY_PLAN.md`](docs/PLUGIN_AND_CREDIBILITY_PLAN.md)
-(Track A first; Track B deferred).
+[`SHIP_LINE.md`](SHIP_LINE.md).
 
 ## How to read this repo
 

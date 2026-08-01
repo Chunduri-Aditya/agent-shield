@@ -127,8 +127,7 @@ def screen_tool_catalog(raw_tools: list[dict], *, off: bool = False) -> dict:
 * Soft PII (e.g. emails) uses the **informational** alert class — not the
   injection card channel.
 * Aggressive miss corpus and research:
-  [`docs/runtime_aggressive_testing_research.md`](runtime_aggressive_testing_research.md),
-  [`docs/research_prompts/`](research_prompts/).
+  [`docs/runtime_aggressive_testing_research.md`](runtime_aggressive_testing_research.md).
 
 ## Where to hook in a typical agent loop
 

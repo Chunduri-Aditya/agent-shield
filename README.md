@@ -41,7 +41,6 @@ Do not read “six live modules” as six powered results.
 | `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks | — |
 
 Per module open questions in [ROADMAP.md](ROADMAP.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
-Honesty script for talks: [docs/paper_defense_prep.md](docs/paper_defense_prep.md).
 
 ## Name note
 
@@ -83,8 +82,7 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 **Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md).
 
-**Runtime perimeter:** installable locally (see next section). Plan:
-[docs/PLUGIN_AND_CREDIBILITY_PLAN.md](docs/PLUGIN_AND_CREDIBILITY_PLAN.md).
+**Runtime perimeter:** installable locally (see next section).
 Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 
 ## Local runtime perimeter (optional)
@@ -118,8 +116,6 @@ Same repository, **separate claim** from the eval tables. Package:
 | [docs/company_agent_adapter.md](docs/company_agent_adapter.md) | Drop-in wiring for an internal agent loop |
 | [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md) | Trusted-tester guide |
 | [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md) | Miss corpus / FP gate research (not a shipped attack pack) |
-| [docs/loom_demo_script.md](docs/loom_demo_script.md) | 90s demo shot list (recording pending) |
-| [docs/post_adblock_for_agents.md](docs/post_adblock_for_agents.md) | Product post draft (publish pending) |
 
 ## Repo layout
 

@@ -2,7 +2,7 @@
 
 Status: policy analysis. Current behavior remains factual: `alert_proceed` can let the host forward poisoned tool output to the model. A perimeter alert and acting agent disclosure remain separate events.
 
-Local evidence basis: [research prompt](../research_prompts/07_tool_result_trust.md), [aggressive runtime findings](../runtime_aggressive_testing_research.md), and [method](../research_prompts/_METHOD.md).
+Local evidence basis: [aggressive runtime findings](../../runtime_aggressive_testing_research.md).
 
 ## A. Psychology primary sources, ranked
 

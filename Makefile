@@ -326,7 +326,7 @@ guard-proof:
 
 # External corpus Phase 1 (public replay import; counts only by default)
 # Optional: make corpus-import CORPUS_FLAGS='--write --out-dir reports/external_corpus'
-# Snapshot root defaults to the Codex compare tree; override with CORPUS_SNAPSHOT=...
+# Snapshot root is a local, gitignored tree; override with CORPUS_SNAPSHOT=...
 CORPUS_SNAPSHOT ?= external_corpus_snapshot
 CORPUS_FLAGS ?=
 corpus-import:

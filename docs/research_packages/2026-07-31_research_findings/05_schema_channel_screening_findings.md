@@ -2,7 +2,7 @@
 
 Status: phased design, not an implementation. Current pinned behavior remains valid: `input_schema` and its examples are not screened. The proposed flag is off by default until its corpus and false positive gates pass.
 
-Local evidence basis: [research prompt](../research_prompts/05_schema_channel_screening.md), [aggressive runtime findings](../runtime_aggressive_testing_research.md), and [method](../research_prompts/_METHOD.md).
+Local evidence basis: [aggressive runtime findings](../../runtime_aggressive_testing_research.md).
 
 ## A. Psychology primary sources, ranked
 

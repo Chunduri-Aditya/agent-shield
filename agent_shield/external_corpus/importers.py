@@ -14,9 +14,9 @@ from agent_shield.external_corpus.schemas import (
     sha256_text,
 )
 
-DEFAULT_SNAPSHOT_ROOT = Path(
-    "external_corpus_snapshot"
-)
+# Local, gitignored snapshot tree of the Phase 1 approved sources. Override with
+# --snapshot-root on the CLI or CORPUS_SNAPSHOT= on the make target.
+DEFAULT_SNAPSHOT_ROOT = Path("external_corpus_snapshot")
 
 
 def _require_approved(source_repository: str) -> dict[str, str]:

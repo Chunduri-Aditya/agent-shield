@@ -156,9 +156,6 @@ and ETHICS clearance is recorded for any HIGH dual-use rows.
 
 ## Next concrete actions
 
-0. Run interdisciplinary research prompts (psych × cyber) before widening
-   heuristics or schema screens:
-   [`research_prompts/`](research_prompts/) especially `04`, `05`, `06`, `08`.
 1. Collect 50 benign parameter descriptions (public MCP / OpenAPI); store hashes
    + ≤60 char excerpts only.  
 2. Author 30 paraphrase cases (A1–A7) as JSONL with `expect: miss`.  

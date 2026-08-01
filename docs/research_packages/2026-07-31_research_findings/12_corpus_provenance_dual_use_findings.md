@@ -2,7 +2,7 @@
 
 Status: governance and importer design, not legal advice. Current manifest decisions remain binding: only approved sources at pinned commits enter Phase 1; missing license and PolyForm Shield sources remain blocked until explicit permission or a new legal basis is recorded.
 
-Local evidence basis: [research prompt](../research_prompts/12_corpus_provenance_dual_use.md), [source manifest](../research_packages/2026-07-31_external_benchmark/agent_shield_test_source_manifest.json), [acquisition plan](../research_packages/2026-07-31_external_benchmark/agent_shield_external_test_acquisition_plan.md), and [ethics controls](../../ETHICS.md).
+Local evidence basis: [source manifest](../2026-07-31_external_benchmark/agent_shield_test_source_manifest.json), [acquisition plan](../2026-07-31_external_benchmark/agent_shield_external_test_acquisition_plan.md), and [ethics controls](../../../ETHICS.md).
 
 ## A. Psychology and organizational ethics primary sources, ranked
 

@@ -2,7 +2,7 @@
 
 Status: research only threat model. The suite below contains abstract templates, redacted evidence, and scorer rules. It is not a distributable exploit pack.
 
-Local evidence basis: [research prompt](../research_prompts/03_transparency_suppression.md), [method](../research_prompts/_METHOD.md), and [ethics controls](../../ETHICS.md).
+Local evidence basis: [ethics controls](../../../ETHICS.md).
 
 ## A. Psychology primary sources, ranked
 

@@ -2,7 +2,7 @@
 
 Status: design only (Phase 1 / A3). No scorer code in this phase.  
 Date: 2026-07-31  
-Related: `docs/PLUGIN_AND_CREDIBILITY_PLAN.md` A3, `reports/tr_audit_v1.csv`,
+Related: `reports/tr_audit_v1.csv`,
 `evals/inputs.py` `TRANSPARENCY_PHRASES`, `CHANGES_v1.1.md` M6
 
 ## Goal

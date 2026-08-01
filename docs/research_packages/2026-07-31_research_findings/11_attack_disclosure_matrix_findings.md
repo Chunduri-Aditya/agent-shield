@@ -2,7 +2,7 @@
 
 Status: reporting design. The matrix is the primary legible artifact for attacked episodes. It does not replace utility, benign false disclosure, disclosure quality, or perimeter detection reporting.
 
-Local evidence basis: [research prompt](../research_prompts/11_attack_disclosure_matrix.md), [method](../research_prompts/_METHOD.md), and [differentiation controls](../DIFFERENTIATION.md).
+Local evidence basis: [differentiation controls](../../DIFFERENTIATION.md).
 
 ## A. Psychology and safety culture primary sources, ranked
 

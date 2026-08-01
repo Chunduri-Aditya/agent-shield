@@ -106,7 +106,7 @@ Full threat model: [`THREAT_MODEL.md`](../THREAT_MODEL.md).
 | `env/` | Deferred v1.1 | PDF / image / calendar / email payloads |
 | `multiagent/` | Deferred v1.1 | Adversarial peers / orchestrators |
 
-**Honesty rule:** do not read “six live modules” as six powered results. Talk script: [`paper_defense_prep.md`](paper_defense_prep.md).
+**Honesty rule:** do not read “six live modules” as six powered results.
 
 ### Metrics (every eval)
 
@@ -197,7 +197,6 @@ This layer exists so TR is not only a paper number — it can become an operator
 | Wire the local perimeter | [`company_agent_adapter.md`](company_agent_adapter.md) |
 | Dual-use rules | [`ETHICS.md`](../ETHICS.md) |
 | Recruiter-facing sample | [`sample_report.md`](sample_report.md) |
-| Psychology × cyber research prompts (per improvement) | [`research_prompts/`](research_prompts/) |
 | Run commands | [`README.md`](../README.md) Quickstart |
 
 ---

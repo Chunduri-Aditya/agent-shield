@@ -2,7 +2,7 @@
 
 Status: measurement and UX design. The literature does not establish universal FDR bands that predict Agent Shield disable behavior. Those bands must be measured under controlled conditions.
 
-Local evidence basis: [research prompt](../research_prompts/06_alert_fatigue_kill_switch.md), [aggressive runtime findings](../runtime_aggressive_testing_research.md), and [method](../research_prompts/_METHOD.md).
+Local evidence basis: [aggressive runtime findings](../../runtime_aggressive_testing_research.md).
 
 ## A. Psychology and human factors primary sources, ranked
 

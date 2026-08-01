@@ -1,7 +1,7 @@
 # Research findings package — 2026-07-31
 
 Completed psych × cybersecurity research memos for the twelve improvement
-prompts in [`docs/research_prompts/`](../../research_prompts/).
+areas below.
 
 **Status:** evidence for implementation. Not a ship-line expansion of
 `SHIP_LINE.md`. Dual-use / HIGH rows still require `ETHICS.md` clearance.
@@ -21,11 +21,6 @@ prompts in [`docs/research_prompts/`](../../research_prompts/).
 | 11 | [`11_attack_disclosure_matrix_findings.md`](11_attack_disclosure_matrix_findings.md) | Disclosure matrix |
 | 12 | [`12_corpus_provenance_dual_use_findings.md`](12_corpus_provenance_dual_use_findings.md) | Provenance ethics |
 
-Source zip (local, not in git):  
-`local_snapshot.zip`
-
 ## Implementation map
 
-See [`docs/research_prompts/README.md`](../../research_prompts/README.md)
-findings table for landed Wave 1–8 artifacts (schemas, pins, corpus, docs).
 Do not treat these memos as automatic `SHIP_LINE.md` expansion.

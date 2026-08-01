@@ -2,7 +2,7 @@
 
 Status: science protocol, not importer code. Phase 1 remains limited to provenance importers for the two approved Apache 2.0 sources when implementation is separately authorized. Public replay is never described as unseen evidence.
 
-Local evidence basis: [research prompt](../research_prompts/09_five_lane_evidence.md), [external benchmark package](../research_packages/2026-07-31_external_benchmark/AGENT_SHIELD_START_HERE.md), and [differentiation controls](../DIFFERENTIATION.md).
+Local evidence basis: [differentiation controls](../../DIFFERENTIATION.md).
 
 ## A. Psychology and metascience primary sources, ranked
 

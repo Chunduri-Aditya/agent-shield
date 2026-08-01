@@ -2,7 +2,7 @@
 
 Status: design only (Phase 1 / A2). No eval run in this phase.  
 Date: 2026-07-31  
-Related: `docs/PLUGIN_AND_CREDIBILITY_PLAN.md` A2, `evals/tools.py`,
+Related: `evals/tools.py`,
 `scripts/model_registry.py`, `SHIP_LINE.md`
 
 ## Goal

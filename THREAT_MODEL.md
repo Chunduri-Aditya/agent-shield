@@ -229,5 +229,5 @@ BACKLOG.md.
 - v3: after all 8 modules are live
 - Final: frozen for arxiv preprint submission
 
-See [`AGENT_SHIELD_TODO.md`](AGENT_SHIELD_TODO.md) for the controlling checklist
-that drives these revisions.
+See [`SHIP_LINE.md`](SHIP_LINE.md) for the scope lock that drives these
+revisions.

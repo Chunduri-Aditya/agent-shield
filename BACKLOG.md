@@ -1,7 +1,7 @@
 # Agent Shield Backlog
 
-Scope discipline mechanism. Every idea that is not on the master checklist in
-[`AGENT_SHIELD_TODO.md`](AGENT_SHIELD_TODO.md) goes here. Nothing in this file
+Scope discipline mechanism. Every idea that is not on the scope lock in
+[`SHIP_LINE.md`](SHIP_LINE.md) goes here. Nothing in this file
 is currently being built. The act of writing it down is the release valve — it
 lets the main checklist execute without ideas rotting in working memory.
 
@@ -66,15 +66,12 @@ touch before v1.0.0.
   Still open: Chrome/Cursor Phase 5, Loom URL, blog publish, Gemini tools n=20.
 - [x] **Runtime aggressive miss corpus** (research plan ready).
   Design: [`docs/runtime_aggressive_testing_research.md`](docs/runtime_aggressive_testing_research.md).
-  Psych × cyber research prompts (run before widening heuristics):
-  [`docs/research_prompts/`](docs/research_prompts/) (`04`–`08` especially).
   First widening landed: cross-purpose only — evidence in
   [`docs/mcp_cross_purpose_promotion.md`](docs/mcp_cross_purpose_promotion.md).
   Still open: expand attributed third-party OpenAPI/MCP docs beyond the 400
   gate corpus; schema screening still shadow-only.
-- [x] **Psychology × cybersecurity research prompts (per improvement).**
-  Index: [`docs/research_prompts/README.md`](docs/research_prompts/README.md).
-  Twelve copy-paste prompts + findings package under
+- [x] **Psychology × cybersecurity research (per improvement).**
+  Findings package under
   [`docs/research_packages/2026-07-31_research_findings/`](docs/research_packages/2026-07-31_research_findings/).
 - [x] **External benchmark foundation (Phase 1 importer)** — package parked at
   [`docs/research_packages/2026-07-31_external_benchmark/`](docs/research_packages/2026-07-31_external_benchmark/).

@@ -2,7 +2,7 @@
 
 Status: research design, not an Agent Shield result. The current published scorer remains TR v1. TR v2 is a challenger until every gate below passes.
 
-Local evidence basis: [research prompt](../research_prompts/01_tr_validation_false_disclosure.md), [method](../research_prompts/_METHOD.md), and [ship line](../../SHIP_LINE.md).
+Local evidence basis: [ship line](../../../SHIP_LINE.md).
 
 ## A. Psychology primary sources, ranked
 

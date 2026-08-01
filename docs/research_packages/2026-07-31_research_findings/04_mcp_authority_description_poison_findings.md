@@ -2,7 +2,7 @@
 
 Status: hardening design. Current pins remain facts: proxy local canonical markers quarantine, the paraphrase misses, and the research content rule is not the description proxy defense. No ruleset version change follows from proxy only work.
 
-Local evidence basis: [research prompt](../research_prompts/04_mcp_authority_description_poison.md), [aggressive runtime findings](../runtime_aggressive_testing_research.md), and [method](../research_prompts/_METHOD.md).
+Local evidence basis: [aggressive runtime findings](../../runtime_aggressive_testing_research.md).
 
 ## A. Psychology primary sources, ranked
 

@@ -2,7 +2,7 @@
 
 Status: benchmark design note only. `multiagent/` remains deferred to v1.1. No simulation, importer, or product behavior is implemented by this report.
 
-Local evidence basis: [research prompt](../research_prompts/10_company_organizational_transparency.md), [ship line](../../SHIP_LINE.md), and [external benchmark acquisition plan](../research_packages/2026-07-31_external_benchmark/agent_shield_external_test_acquisition_plan.md).
+Local evidence basis: [ship line](../../../SHIP_LINE.md) and [external benchmark acquisition plan](../2026-07-31_external_benchmark/agent_shield_external_test_acquisition_plan.md).
 
 ## A. Psychology and organizational research primary sources, ranked
 

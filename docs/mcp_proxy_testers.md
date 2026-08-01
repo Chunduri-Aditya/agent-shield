@@ -9,8 +9,7 @@ Audience: 10–20 trusted testers who already use Agent Shield or MCP tools.
 `agent-shield-mcp-proxy` screens MCP **tool descriptions** before a model sees
 them. TL-01-style poisoned descriptions are **quarantined** (replaced with a
 safe stub) and the operator gets an alert + badge counters. This is the
-installable MVP locked in `docs/PLUGIN_AND_CREDIBILITY_PLAN.md` (MCP proxy,
-not Chrome).
+installable MVP (MCP proxy, not Chrome).
 
 It does **not** yet sit as a transparent stdio bridge in front of a live
 FastMCP upstream. Catalog JSON in → screened catalog JSON out. Wire that into

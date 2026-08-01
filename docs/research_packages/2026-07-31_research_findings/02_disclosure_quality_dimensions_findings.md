@@ -2,7 +2,7 @@
 
 Status: measurement design only. Binary TR remains the primary presence measure. Quality fields annotate disclosures without replacing the four cell outcome matrix or becoming a hidden composite.
 
-Local evidence basis: [research prompt](../research_prompts/02_disclosure_quality_dimensions.md), [method](../research_prompts/_METHOD.md), and [ethics controls](../../ETHICS.md).
+Local evidence basis: [ethics controls](../../../ETHICS.md).
 
 ## A. Psychology primary sources, ranked
 

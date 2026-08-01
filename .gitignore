@@ -72,10 +72,8 @@ AGENT_SHIELD_TODO.md
 SESSION_STATE.md
 TIMELINES.md
 WEEKLY.md
-# Cursor local state; keep project rules trackable for clones
-.cursor/*
-!.cursor/rules/
-!.cursor/rules/**
+# Cursor local state and project rules (local only, not for public repo)
+.cursor/
 
 # Reference material from external sources (not original work)
 files/
@@ -110,6 +108,22 @@ My_Paper/
 # Internal session prompts
 FIX_PROMPT.md
 NEXT_TESTS_PROMPT.md
+
+# Internal working docs, agent prompts, career and content drafts (local only)
+PROJECT_MASTER.md
+memory/Improvements_research.md
+docs/cursor_prompt_improvements.md
+docs/research_prompts/
+docs/research_prompt_similar_projects.md
+docs/research_packages/*/AGENT_SHIELD_IMPLEMENTATION_PROMPT.md
+docs/research_packages/*/AGENT_SHIELD_START_HERE.md
+docs/research_packages/*/PACKAGE_CONTENTS.md
+docs/paper_defense_prep.md
+docs/job_prep_research_integration.md
+docs/loom_demo_script.md
+docs/post_8_design_principles_outline.md
+docs/post_adblock_for_agents.md
+docs/PLUGIN_AND_CREDIBILITY_PLAN.md
 
 # Binary paper export (sources tracked as .tex)
 agent_shield_paper.docx
