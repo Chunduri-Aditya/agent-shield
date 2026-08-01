@@ -72,7 +72,10 @@ AGENT_SHIELD_TODO.md
 SESSION_STATE.md
 TIMELINES.md
 WEEKLY.md
-.cursor/
+# Cursor local state; keep project rules trackable for clones
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Reference material from external sources (not original work)
 files/
