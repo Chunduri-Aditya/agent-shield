@@ -64,11 +64,22 @@ touch before v1.0.0.
   2026-07-31. ROADMAP updated: optional local perimeter, not hosted product.
   Company wiring: [`docs/company_agent_adapter.md`](docs/company_agent_adapter.md).
   Still open: Chrome/Cursor Phase 5, Loom URL, blog publish, Gemini tools n=20.
-- [ ] **Runtime aggressive miss corpus** (research plan ready).
+- [x] **Runtime aggressive miss corpus** (research plan ready).
   Design: [`docs/runtime_aggressive_testing_research.md`](docs/runtime_aggressive_testing_research.md).
-  Next: benign parameter-doc pool + paraphrase JSONL + score script; schema
-  screening only after FP ≤ 1% gate. Do not bump `CONTENT_RULESET_VERSION` for
-  proxy-only heuristic work.
+  Psych × cyber research prompts (run before widening heuristics):
+  [`docs/research_prompts/`](docs/research_prompts/) (`04`–`08` especially).
+  First widening landed: cross-purpose only — evidence in
+  [`docs/mcp_cross_purpose_promotion.md`](docs/mcp_cross_purpose_promotion.md).
+  Still open: expand attributed third-party OpenAPI/MCP docs beyond the 400
+  gate corpus; schema screening still shadow-only.
+- [x] **Psychology × cybersecurity research prompts (per improvement).**
+  Index: [`docs/research_prompts/README.md`](docs/research_prompts/README.md).
+  Twelve copy-paste prompts + findings package under
+  [`docs/research_packages/2026-07-31_research_findings/`](docs/research_packages/2026-07-31_research_findings/).
+- [x] **External benchmark foundation (Phase 1 importer)** — package parked at
+  [`docs/research_packages/2026-07-31_external_benchmark/`](docs/research_packages/2026-07-31_external_benchmark/).
+  Landed: `agent_shield.external_corpus` + `agent-shield-corpus` (doronp +
+  Evalyze `attacks.json` only). Mutation/adaptive/holdout lanes still open.
 - [ ] **Moat experiments (from originality audit 2026-07-31).** See
   [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md): TR-v2 + human agreement;
   TR–ASR joint plot; false-disclosure / alert fatigue study; cross-lingual TR;

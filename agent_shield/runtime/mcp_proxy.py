@@ -12,11 +12,15 @@ while the operator still gets an alert card.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any
 
 from agent_shield.runtime.alert import AlertCard
+from agent_shield.runtime.desc_heuristics import (
+    PROXY_POLICY_VERSION,
+    tool_description_poison_hit,
+    tool_description_poison_span,
+)
 from agent_shield.runtime.gate import GuardAction
 from agent_shield.runtime.pipeline import GuardResult, GuardSession, guard_text
 
@@ -26,28 +30,25 @@ _QUARANTINE_TEMPLATE = (
     "Original description withheld from the model. Ask the operator before use."
 )
 
-# TL-01 / MCP description poisons (Invariant-style). Not part of research content
-# ruleset — keep in the proxy so web FP rates stay unchanged.
-_TOOL_DESC_POISON_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"OPERATOR\s+COMPLIANCE\s+DIRECTIVE", re.I),
-    re.compile(r"supersedes\s+any\s+conflicting\s+instructions", re.I),
-    re.compile(r"you\s+MUST\s+immediately\s+call\s+send_message", re.I),
-    re.compile(r"\[END\s+DIRECTIVE\]", re.I),
-    re.compile(r"this\s+directive\s+supersedes", re.I),
-)
+# Re-export for tests / shadow scanners that import from this module.
+__all__ = [
+    "CatalogScreenResult",
+    "McpToolProxy",
+    "ProxiedTool",
+    "ToolSpec",
+    "format_badge_line",
+    "tool_description_poison_span",
+]
 
 
-def tool_description_poison_span(text: str) -> str | None:
-    """Return ≤60 char span if MCP description poison heuristics fire."""
-
-    for pattern in _TOOL_DESC_POISON_PATTERNS:
-        match = pattern.search(text)
-        if match:
-            return match.group(0)[:60]
-    return None
-
-
-def _mcp_poison_alert(tool_name: str, span: str, ruleset: str, sha256: str) -> AlertCard:
+def _mcp_poison_alert(
+    tool_name: str,
+    span: str,
+    ruleset: str,
+    sha256: str,
+    *,
+    reason_code: str = "DESC_TL01_MARKER",
+) -> AlertCard:
     return AlertCard(
         title=f"Poisoned tool description ({tool_name})",
         severity="high",
@@ -55,14 +56,14 @@ def _mcp_poison_alert(tool_name: str, span: str, ruleset: str, sha256: str) -> A
         cia_impact="Integrity",
         description=(
             "Agent Shield quarantined an MCP tool description that looks like "
-            "a hidden operator directive (TL-01 class)."
+            f"a hidden operator directive ({reason_code})."
         ),
         evidence=span[:60],
         remediation=(
             "Do not expose the original description to the model. Review the "
             "MCP server author and replace the tool."
         ),
-        content_ruleset_version=ruleset or "mcp-proxy-tl01-v1",
+        content_ruleset_version=ruleset or PROXY_POLICY_VERSION,
         content_sha256=sha256,
         flagged_attack=True,
     )
@@ -184,9 +185,13 @@ class McpToolProxy:
             source_id=f"tool_desc:{tool.name}",
             session=self.session,
         )
-        poison_span = None if (self.off or guard.kill_switch) else tool_description_poison_span(
-            text
+        poison_hit = (
+            None
+            if (self.off or guard.kill_switch)
+            else tool_description_poison_hit(text, tool_name=tool.name)
         )
+        poison_span = None if poison_hit is None else poison_hit.span
+        poison_reason = None if poison_hit is None else poison_hit.reason_code
 
         quarantine = False
         alert = guard.alert
@@ -201,12 +206,14 @@ class McpToolProxy:
             self.quarantined_descriptions += 1
             sha = guard.content_sha256 or "unknown"
             effective = _QUARANTINE_TEMPLATE.format(name=tool.name, sha256=sha[:16])
+            policy = PROXY_POLICY_VERSION
             if alert is None and poison_span is not None:
                 alert = _mcp_poison_alert(
                     tool.name,
                     poison_span,
-                    guard.content_ruleset_version or "mcp-proxy-tl01-v1",
+                    policy,
                     sha,
+                    reason_code=poison_reason or "DESC_TL01_MARKER",
                 )
                 if guard.action is GuardAction.ALLOW:
                     self.session.counters.alerted += 1
@@ -217,8 +224,9 @@ class McpToolProxy:
                 alert = _mcp_poison_alert(
                     tool.name,
                     poison_span,
-                    guard.content_ruleset_version or "mcp-proxy-tl01-v1",
+                    policy,
                     sha,
+                    reason_code=poison_reason or "DESC_TL01_MARKER",
                 )
         else:
             effective = tool.description
@@ -227,7 +235,10 @@ class McpToolProxy:
         if quarantine and not (self.off or guard.kill_switch):
             reasons = guard.reasons
             if poison_span is not None:
-                reasons = (*reasons, f"MCP description poison: {poison_span}")
+                reasons = (
+                    *reasons,
+                    f"MCP description poison ({poison_reason}): {poison_span}",
+                )
             proxied_guard = GuardResult(
                 action=GuardAction.ALERT_PROCEED
                 if guard.action is not GuardAction.DENY
@@ -235,8 +246,7 @@ class McpToolProxy:
                 kill_switch=guard.kill_switch,
                 alert=alert,
                 content_sha256=guard.content_sha256,
-                content_ruleset_version=guard.content_ruleset_version
-                or "mcp-proxy-tl01-v1",
+                content_ruleset_version=PROXY_POLICY_VERSION,
                 risk_level="high"
                 if poison_span or guard.flagged_attack
                 else guard.risk_level,

@@ -1,0 +1,406 @@
+{
+  "schema_version": "schema-benign-inventory-v1",
+  "notes": "F5.0 floor: >=50 independent parameter description hashes. Spans <=60 chars. Synthetic inventory for walker coverage; expand with attributed real docs before F5.3 enablement.",
+  "entries": [
+    {
+      "id": "benign-param-01",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Absolute filesystem path to read",
+      "content_sha256": "94e7e669e6ad5ed763dfaf7b6d037803be38d82b73a174daf767bb29801418f5",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-02",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Relative path under the workspace root",
+      "content_sha256": "2eea22efc5527391f8ed4e3e8b8287629cc7c51a04e89153ea7471a10c214cb6",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-03",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "UTF-8 text body for the message",
+      "content_sha256": "f01c4e5d55ca4bb5d27cc92622ec4a9a71050c29d5c5ebe032ac0f62a6dccaf0",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-04",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Recipient email address (RFC 5322)",
+      "content_sha256": "293f9a79a13c9e0007cfa42c5811e27c4b5e26a95f94f10e4e650f8b5524cd8c",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-05",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "ISO-8601 timestamp for the event start",
+      "content_sha256": "673b409342cd2dfe0d59599344f7a2caf7b539d45a19d84c09dafe61d947dc0f",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-06",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Optional ISO-8601 end time inclusive",
+      "content_sha256": "fc6e2677d91771a7ab5b5385041105d97114bb28ebe1efed086eacf3504bd36c",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-07",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Currency code as three-letter ISO 4217",
+      "content_sha256": "ea2c39365dca22390b513731b3aadae8dd481030b5717c8887b5941c0c48d6ce",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-08",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Amount in minor units (integer cents)",
+      "content_sha256": "30eec2f51fe8ca9f663f02359cce5493d3a606ced3d257d75e0fff12189a017e",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-09",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Opaque idempotency key for retries",
+      "content_sha256": "70ba6df7e567de37620b609f3f003b309700a4cfc46316683c0c64222e584db9",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-10",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Pagination cursor from the prior page",
+      "content_sha256": "6ceb59d8de3464a7a50f879e4c45bd4f2bfe787f9d80d9097ecb48a53f8067f1",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-11",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Maximum number of rows to return",
+      "content_sha256": "a9486bec95ef1aa85b47a88bc6bcb6bd07539fedb7fd44ec4b6a6357c18ea71b",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-12",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Sort field name from the allowlist",
+      "content_sha256": "c08d9871f3aa51f2e8c3e3865a96a02540d4c69c64242589791b3c14db6b5fae",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-13",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Sort direction: ascending or descending",
+      "content_sha256": "828851ff604332c5e521f46713a6efa05ba4151e23cdac8c24732c51bababd67",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-14",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Filter expression using documented operators",
+      "content_sha256": "3e6ff7ed00e320f50e9e46ae4c913a7d8eee4d8ad40421620a0dd1c9c6aa5147",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-15",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Boolean flag to include archived records",
+      "content_sha256": "9e1917b2f59fa4ba4035944b48c01bf051b641d2a105367c250fd947ba2cc6a6",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-16",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "MIME type for the uploaded blob",
+      "content_sha256": "8bdbc82a4da5011e8e74fec239d30f069d27467c646190359cdc37df1ed253c5",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-17",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Base64 content for small inline blobs",
+      "content_sha256": "bd3a83824f437b461dbb492955dfe052972f68ce6d535b26d337e3ebbc54c017",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-18",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "External object storage URL (https only)",
+      "content_sha256": "ba846042b009ffecb0d2209d6d703e05d86aa77d1520868e96a1b768023e5e4c",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-19",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Webhook callback URL for status updates",
+      "content_sha256": "bab0d5d6db98feadffea93178cd0698bd2c14c06b5da38e9bcdde9b83378dc5c",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-20",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "OAuth scope string granted by the user",
+      "content_sha256": "5babd3129327c5aaa884b98ec77fabca9a9af0f8605813187298846c366eb5f7",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-21",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Tenant identifier for multi-tenant hosts",
+      "content_sha256": "262af7a7fefba901579795bdd8e6c7b6612b02ea65d5d188f79a2eeaa382470f",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-22",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Workspace slug used in routing",
+      "content_sha256": "0349a365a9ee1c8684353b2a4d8ebe4f2055d11e3f1eee3b729a9b6a44e1c82e",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-23",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Human-readable display name",
+      "content_sha256": "986d7614c823ffca8cf69dca0ec3a6dcd9634d894886b7032f1e0947ca36ee7c",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-24",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Short description shown in the UI",
+      "content_sha256": "37f63f94da657c70089dfd922124e3a401e0cc82e442f35e93c148cf4f534afd",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-25",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Locale tag such as en-US",
+      "content_sha256": "0587f4ccdab94cc4e5852928593f0686f16dd484613c7c8bc95114c9ae9a79dc",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-26",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "IANA time zone identifier",
+      "content_sha256": "cfa9407ac7a7fad0ea20ffda17e62623aee17a92e4e1da9d3b963e26dc429566",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-27",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Priority level from the enum",
+      "content_sha256": "ff17a599bf4db9a56d2b5b751a14486df2ec642f714a5a2f65400e9188052519",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-28",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Severity label for logging",
+      "content_sha256": "deff2eefd968a1221ebb4b598f66408fa3477e3df71a7dd815becf097f1e257f",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-29",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Correlation id for distributed traces",
+      "content_sha256": "4e6dbaee7acefa997195b2b22bdfbf522c40c72488f6886032107dbed4e38f50",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-30",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Parent span id when nesting spans",
+      "content_sha256": "661ea03e2a9df5ffd6c471cc55fd0019096a683d892298ee05f89d05c78fb1b0",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-31",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "JSON object of arbitrary metadata",
+      "content_sha256": "e7c49e9fb00497d572a251de7a9ce25b06386960eb34f17c8f58b47695e17355",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-32",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Array of tag strings",
+      "content_sha256": "e6f5879673a4406dab38a881eb4a9a6227afdefb624b9f56eff832881e58e8d7",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-33",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Channel id in the messaging system",
+      "content_sha256": "195ccee218980db129b5e7f35c3fda4dfe2c206116fa3ed4fcbaab21fbf5ef36",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-34",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Thread id for reply chains",
+      "content_sha256": "7560a3eaf2bee22c5e5d6cf75f3adcc62a4155967bb0e558a30761c88329a959",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-35",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "User id of the acting principal",
+      "content_sha256": "d782ac613e312d7ac8814721b43b93f4b068cf9fc3aa5caba74a9c300d26f3fc",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-36",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Role name from the RBAC catalog",
+      "content_sha256": "96ee02083bb7639f2e1bb0c1e92705d03ef50026404f56e9a83c3cd034ba2eaa",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-37",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Permission predicate evaluated by host",
+      "content_sha256": "0943b80ef6e88da553a0a4528616a8d4f1209f5e4cb877f1dc81b2c365274a84",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-38",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Resource URN for the target object",
+      "content_sha256": "cc0d6f5c237948ea54b5272b5987c1fc35f68484b93a4e30285f81403232a5b4",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-39",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Checksum algorithm name (sha256)",
+      "content_sha256": "b629ce7b5cc5d9e11e35262dda378ce3c38854f72e0639aef8f6937a4ffc63e3",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-40",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Hex-encoded content digest",
+      "content_sha256": "823fb059b8418f4450fa2053625e64b00410cf8dc48411d92dff2f32a46a63f3",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-41",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Compression codec if any",
+      "content_sha256": "3e11a70f5eaeb438671155319aa1468ad3b2ab4f6e1a0aba4e7bc72107585000",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-42",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Encryption key id reference",
+      "content_sha256": "d1cb5d46b996e508eb05cc47590dc8c9bacdd3ca625951ae2e6c318175e526c1",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-43",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Retry count remaining for the job",
+      "content_sha256": "3d28eba3cad1fb7f071c84ee929797510a1ac925078a3b72fc19c91e5daf5d08",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-44",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Backoff delay in milliseconds",
+      "content_sha256": "05a0378dc9e0b7cb84b76612ea7302ae55b99bcfb547b0ba482189208de10246",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-45",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Deadline as unix epoch seconds",
+      "content_sha256": "4cfe9f6994b5668c5633147bb8053fbac71f06313175f764988055ac3f5fe6ca",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-46",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Feature flag name to evaluate",
+      "content_sha256": "69b8cca04273758ad34532f64cf48d153e7d0e2b5d8a06e29965918ab07d4866",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-47",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Experiment cohort assignment key",
+      "content_sha256": "964900a2a4a2407eb86d007e3870e42aff225c4c75c6e1f4833bfa34755f1fe6",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-48",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Sampling rate between 0 and 1",
+      "content_sha256": "6ffe4ccec5cd427cbd59ad1f56f56969f3023c8e7b17a3cdabbfb70a6f93805b",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-49",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Log verbosity level",
+      "content_sha256": "4d70b66ce8a9d5cb0af02f3d2ab24cb0ebf3137e757f5900974a8953f5e599fd",
+      "label": "clean"
+    },
+    {
+      "id": "benign-param-50",
+      "source_project": "synthetic_openapi_inventory",
+      "field_kind": "description",
+      "span": "Debug boolean for verbose traces",
+      "content_sha256": "88a3f6d9764c8345b5af07555a7c1c4989a10d30addabbc8d12c6f7d274f5e24",
+      "label": "clean"
+    }
+  ]
+}

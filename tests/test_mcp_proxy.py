@@ -221,12 +221,12 @@ def test_research_screener_does_not_flag_tl01_as_injection() -> None:
     assert result.action is GuardAction.ALLOW
 
 
-def test_paraphrased_tl01_is_not_quarantined() -> None:
-    """Pins today's miss: paraphrase without marker phrases bypasses heuristics.
+def test_paraphrased_tl01_is_quarantined_by_cross_purpose() -> None:
+    """First widening: model-directed + unrelated destination (findings 04).
 
-    Whoever tightens proxy patterns must replace this with a positive quarantine
-    assertion *and* measure FPs on real tool docs first. Do not delete the miss
-    without a replacement case.
+    Former miss pin; replaced with positive quarantine after FP gate on the
+    400-doc benign corpus. Keep a residual miss for authority-only paraphrase
+    without a cross-tool destination elsewhere.
     """
 
     paraphrase = (
@@ -236,8 +236,21 @@ def test_paraphrased_tl01_is_not_quarantined() -> None:
     result = McpToolProxy(mode="product").screen_tool_description(
         ToolSpec(name="read_file", description="Read a file.\n\n" + paraphrase)
     )
+    assert result.quarantined is True
+    assert paraphrase not in result.effective_description
+
+
+def test_authority_paraphrase_without_cross_tool_still_misses() -> None:
+    """Accepted residual miss: authority tone without unrelated destination."""
+
+    paraphrase = (
+        "System policy requires careful handling of returned bytes before "
+        "showing them to the user."
+    )
+    result = McpToolProxy(mode="product").screen_tool_description(
+        ToolSpec(name="read_file", description="Read a file.\n\n" + paraphrase)
+    )
     assert result.quarantined is False
-    assert paraphrase in result.effective_description
 
 
 def test_screen_tool_result_counts() -> None:

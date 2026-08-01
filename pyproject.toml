@@ -16,6 +16,7 @@ agent-shield-guard = "agent_shield.runtime.cli:main"
 agent-shield-mcp-proxy = "agent_shield.runtime.mcp_proxy_cli:main"
 agent-shield-proof = "agent_shield.runtime.proof_cli:main"
 agent-shield-tr-v2 = "agent_shield.tr_v2_cli:main"
+agent-shield-corpus = "agent_shield.external_corpus.cli:main"
 
 # The agent_shield/ package (metrics, schema, targets, runtime) is pure-stdlib and is the
 # unit other projects import. The heavy harness deps above are only needed to run
@@ -26,7 +27,13 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["agent_shield", "agent_shield.targets", "agent_shield.runtime"]
+packages = [
+    "agent_shield",
+    "agent_shield.targets",
+    "agent_shield.runtime",
+    "agent_shield.disclosure",
+    "agent_shield.external_corpus",
+]
 
 [dependency-groups]
 dev = [
