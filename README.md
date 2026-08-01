@@ -8,6 +8,9 @@ TL-01-style poisons, and surface operator alerts. Not a hosted firewall or
 store listing. Details below and in
 [docs/company_agent_adapter.md](docs/company_agent_adapter.md).
 
+Full orientation (goals, modules, runtime, what success looks like):
+[docs/WHAT_AGENT_SHIELD_DOES.md](docs/WHAT_AGENT_SHIELD_DOES.md).
+
 ## Why this exists
 
 Most agent benchmarks answer two questions:

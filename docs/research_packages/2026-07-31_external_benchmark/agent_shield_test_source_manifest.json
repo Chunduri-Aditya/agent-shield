@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_date": "2026-07-31",
+  "execution_status": "downloaded_and_inspected_not_executed",
+  "sources": [
+    {
+      "repository": "doronp/agentshield-benchmark",
+      "commit": "a0eb8fbc0d1a099da9299575013639168c98441b",
+      "license": "Apache-2.0",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"portable_cases": 537, "format": "jsonl"},
+      "lane": "behavioral_public_replay"
+    },
+    {
+      "repository": "Evalyze-Labs/AgentShield-Bench",
+      "commit": "0f8f1f2f8f8e1a20e151a05aa7e0950554e2bc7b",
+      "license": "Apache-2.0",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"attack_cases_v1": 130, "memory_cases": 320, "v3_dataset_scenarios": 250, "v3_seed_scenarios": 100, "overlap_check_required": true},
+      "lane": "behavioral_public_replay"
+    },
+    {
+      "repository": "jang1563/agentshield",
+      "commit": "e24ca6da64f4ad5ad7a9243a9efd397e288ef3b4",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"published_scenarios": 100, "distribution": "Hugging Face and Python source"},
+      "lane": "behavioral_research_comparison"
+    },
+    {
+      "repository": "Yassin-H-Rassul/AgentShield",
+      "commit": "5d9c3e862210ef8d36f3752b3f5964bf7fe27dae",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"adaptive_translations": 96, "benign_translations": 80, "attack_source": "Python and AgentDojo"},
+      "lane": "behavioral_adaptive_and_cross_lingual"
+    },
+    {
+      "repository": "cdayAI/Agent-Shield",
+      "commit": "63b15b59bd84287948329fcda1e009fc2c4271b5",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"portable_cases": 82, "attack_cases": 42, "benign_cases": 40, "format": "json"},
+      "lane": "behavioral_balanced_calibration"
+    },
+    {
+      "repository": "elliotllliu/agent-shield",
+      "commit": "8921cc2ce328b20ee65cd428d84576677874b0ce",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"malicious_fixture_groups": 63, "benign_fixture_groups": 66, "test_and_benchmark_files": 179},
+      "lane": "mcp_and_static_fixtures"
+    },
+    {
+      "repository": "affaan-m/agentshield",
+      "commit": "bdad15dd28da548a0586d6ca989cb5aa35a67ad6",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"vulnerable_config_cases": 11, "test_and_corpus_files": 71},
+      "lane": "static_configuration_and_policy"
+    },
+    {
+      "repository": "aiconnai/agentshield",
+      "commit": "d1f4f44b4eb638b0ea400d8ff2469d63727e432f",
+      "license": "MIT OR Apache-2.0",
+      "reuse_status": "approved_after_recording_selected_license",
+      "assets": {"test_and_benchmark_files": 86, "structured_data_fixtures": 33},
+      "lane": "structured_mcp_and_repository_fixtures"
+    },
+    {
+      "repository": "agentshield-ai/agentshield",
+      "commit": "1bd56f9854426e29d59715e81c45fcfe38c7ee0e",
+      "license": "Apache-2.0",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"integration_cases": 12, "test_and_benchmark_files": 32},
+      "lane": "runtime_tool_call_rules"
+    },
+    {
+      "repository": "mkarvan/AgentShield",
+      "commit": "b06dbaddfa90cf8b1f17bd1ea450559e9107c710",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"test_files": 105, "structured_data_fixtures": 6},
+      "lane": "supply_chain_and_agent_installs"
+    },
+    {
+      "repository": "keith991001/agent-shield",
+      "commit": "c8e007690c1b9bb85aa60248b1dc4f015bbaaed7",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"hand_labelled_scenarios": 14, "prompt_matrix": true},
+      "lane": "runtime_execution_policy"
+    },
+    {
+      "repository": "part-time-bros/Agent-Shield",
+      "commit": "352df1724fb45d4980a6425b2379f8ad3ec5e2a9",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"business_benchmark_json_cases": 8, "test_and_eval_files": 30},
+      "lane": "company_workflow_regression"
+    },
+    {
+      "repository": "0xtar0/AgentShield",
+      "commit": "d4c11b97a79a4ce03d88ae6d717ad38c6ff45ad9",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"test_files": 13},
+      "lane": "developer_host_posture"
+    },
+    {
+      "repository": "aviraldua93/agent-shield",
+      "commit": "00c298e49836da858b144836055043ca681a100e",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"test_files": 18},
+      "lane": "policy_and_latency"
+    },
+    {
+      "repository": "dl-eigenart/agentshield",
+      "commit": "ac1eea2e441e23d3ee27f5f3caca9132e19bd432",
+      "license": "MIT",
+      "reuse_status": "approved_with_attribution",
+      "assets": {"local_test_files": 11, "external_platform_metrics_not_transferable": true},
+      "lane": "web3_transaction_policy"
+    },
+    {
+      "repository": "AullChen/AgentShield-eBPF",
+      "commit": "fd265ce810f6dc9fbacd0be510896fa93dabe167",
+      "license": null,
+      "reuse_status": "blocked_pending_permission",
+      "assets": {"test_files": 2},
+      "lane": "reference_only"
+    },
+    {
+      "repository": "CHATURTHINAIK/AgentShield",
+      "commit": "c10920229cd67ab82758a734d269f5d9370f5786",
+      "license": null,
+      "reuse_status": "blocked_pending_permission",
+      "assets": {"readme_claimed_prompt_dataset": 65, "test_files": 7},
+      "lane": "reference_only"
+    },
+    {
+      "repository": "Yassine-Sec/AgentShield",
+      "commit": "14d6f3186a7f4165bc9d09c5a7a0985114a8ce43",
+      "license": null,
+      "reuse_status": "blocked_pending_permission",
+      "assets": {"conventional_test_corpus_found": false},
+      "lane": "system_under_test_only"
+    },
+    {
+      "repository": "pixiebrix/agent-browser-shield",
+      "commit": "610f7d0a399c285fc63944f4c04afbf84713eb36",
+      "license": "PolyForm-Shield-1.0.0",
+      "reuse_status": "blocked_pending_terms_review_or_permission",
+      "assets": {"browser_tasks": 19, "test_and_benchmark_files": 28},
+      "lane": "reference_only"
+    }
+  ]
+}
