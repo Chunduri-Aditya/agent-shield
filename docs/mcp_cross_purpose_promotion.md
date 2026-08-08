@@ -30,7 +30,7 @@ Authority paraphrase without a cross-tool destination stays unquarantined
 
 ## Note on the benign corpus
 
-n=400 with ≤10% per `source_project`. Mix of category-stratified synthetic
-inventory (explicit license label) plus capped AgentDojo attributed spans.
-Expand with more third-party attributed OpenAPI/MCP docs before claiming a
-production catalog FP rate beyond this gate corpus.
+Gate corpus lives at `tests/fixtures/mcp_benign_descriptions.json` (n≥400,
+≤10% per `source_project`). Mix of category-stratified synthetic inventory
+plus local MIT description strings. Expand with more third-party attributed
+OpenAPI/MCP docs before claiming a production catalog FP rate beyond this gate.

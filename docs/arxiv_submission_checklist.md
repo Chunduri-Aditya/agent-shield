@@ -9,8 +9,9 @@ Related: `CHANGES_v1.1.md`, `SHIP_LINE.md`
 
 ## Claim discipline (must hold in PDF)
 
-- Anchored result = `inputs/` n=20 Wilson CI only.
-- Other five modules = diagnostic probes (n=3–10).
+- Anchored results = `inputs/` n=20 Wilson CI **and** agentic `tools/` n=20
+  (Sonnet/Llama; Gemini/Groq may be `---`).
+- Other four modules = diagnostic probes (n=5–10).
 - “To our knowledge…” first-metric language only (no bare “first benchmark”).
 - Outcome **taxonomy**, not “cube.”
 - MCP: demo server in repo; Inspect `tools/` eval uses inline tool stubs.
@@ -22,6 +23,9 @@ Related: `CHANGES_v1.1.md`, `SHIP_LINE.md`
 
 - [ ] Compile `paper_v1.1.tex` under target workshop template (NeurIPS single-blind
       or venue template). Verify ~8–10 pages.
+- [x] Methodology registry gaps (ATLAS severity / CIA / autonomy gate) drafted
+      in `paper_v1.1.tex` (2026-07-31).
+- [x] Anchored `tools/` n=20 rows reflected in Results table (Gemini/Groq `---`).
 - [ ] Bibliography complete; preprint-only cites not overclaimed as venue accepts.
 - [ ] Fill any remaining placeholders (email, affiliation) before upload.
 - [ ] PDF text extract smoke: search for `cube`, `first benchmark`, `FastMCP`
@@ -32,12 +36,12 @@ Related: `CHANGES_v1.1.md`, `SHIP_LINE.md`
 | Artifact | Path | Role |
 |---|---|---|
 | TR audit | `reports/tr_audit_v1.csv` | Manual vs auto TR |
-| Reproducibility bundle | `reproducibility_bundle/` via `make bundle` | Logs + `manifest.json` |
+| Reproducibility bundle | `reproducibility_bundle/` via `make bundle` | Logs + `manifest.json` (regenerated 2026-07-31; includes tools n=20 anchors; gitignored) |
 | Results trail | `RESULTS.md` | Seeds, SHAs, n |
 | Code | public GitHub `Chunduri-Aditya/agent-shield` | MIT |
 
-- [ ] Regenerate bundle if logs moved: `make bundle`
-- [ ] Confirm `manifest.json` present_in_bundle flags for cited logs
+- [x] Regenerate bundle if logs moved: `make bundle` (2026-07-31: 36/36 present)
+- [x] Confirm `manifest.json` present_in_bundle flags for cited logs (36/36)
 
 ## arXiv metadata (draft)
 

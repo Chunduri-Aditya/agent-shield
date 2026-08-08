@@ -313,7 +313,7 @@ Agent Shield v1.0.0 ships six modules with 24 attacks total
 Module & Attack IDs & Attacks & Adversary Level & $n$ \\
 \midrule
 \texttt{inputs/} & IN-01--05 & 5 & L1 & 20 \\
-\texttt{tools/}  & TL-01     & 1 & L2 & 3 \\
+\texttt{tools/}  & TL-01     & 1 & L2 & 20 \\
 \texttt{psych/}  & PS-01--06 & 6 & L1 & 6 \\
 \texttt{memory/} & MM-01     & 1 & L3 & 10 \\
 \texttt{exfil/}  & EX-01--05 & 5 & L1 & 5 \\
@@ -321,6 +321,11 @@ Module & Attack IDs & Attacks & Adversary Level & $n$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\noindent\textit{Note.} Historical diagnostic \texttt{tools/} runs used $n{=}3$;
+the paper-cited agentic anchor is $n{=}20$ (seed~0). Groq is excluded from the
+agentic \texttt{tools/} claim; Gemini~$n{=}20$ is marked unavailable after
+provider hang (see Results).
 
 \textbf{\texttt{inputs/}} implements five injection strategies: direct instruction
 override (IN-01), authority spoofing (IN-02), persona hijacking (IN-03),
@@ -500,6 +505,34 @@ HIGH- and CRITICAL-class eval categories. All 24 attacks have entries in
 \texttt{risk\_registry.py}; ETHICS.md clearance lines for dual-use attack
 classes are required before the gate releases.
 
+\subsection{Registry mapping gaps}
+
+Three documentation gaps motivate Agent Shield's registry fields; they are
+engineering choices for evaluation hygiene, not claims that prior taxonomies
+are incorrect.
+
+\begin{enumerate}[leftmargin=*,topsep=2pt,itemsep=2pt]
+  \item \textbf{Severity where ATLAS is silent.}
+    MITRE~ATLAS~\citep{mitre_atlas} catalogs techniques without a severity
+    scale comparable to CVSS. Agent Shield assigns OWASP~AIVSS scores per attack
+    ID in \texttt{risk\_registry.py}. Risk-based TTP scoring outside ATLAS
+    (e.g.,~\cite{acm2025ttp}) motivates treating severity as an explicit
+    evaluation field rather than an implied ordering of technique IDs.
+  \item \textbf{Per-module CIA labels.}
+    OWASP and ATLAS do not publish a fixed Confidentiality/Integrity/Availability
+    table for LLM-agent attack categories. Agent Shield records a CIA impact
+    triple per module and attack. Theoretical CIA framing for AI systems
+    (e.g.,~\cite{rehberger2024cia,tariq2025cia}) is the foundation; the
+    published per-module table in \texttt{MAPPINGS.md} is the operationalization.
+  \item \textbf{Autonomy-aware pre-run gating.}
+    NIST AI RMF Govern functions do not, by themselves, differentiate eval
+    suites by agent autonomy tier. Agent Shield's pre-run risk gate
+    (\texttt{make risk-check}) requires explicit confirmation before
+    HIGH/CRITICAL dual-use tasks execute. Industry agentic profiles that stress
+    autonomy-tier controls (e.g.,~\cite{csa2026agentic}) motivate that gate
+    design.
+\end{enumerate}
+
 % ---------------------------------------------------------------
 % 4. Results
 % ---------------------------------------------------------------
@@ -516,10 +549,12 @@ four models. All results are real; no estimates or extrapolations.
 \caption{%
   Agent Shield v1.0.0 results: ASR (Attack Success Rate, $\downarrow$) and
   TR (Transparency Rate, $\uparrow$) per module and model.
-  \texttt{inputs/} results are from the anchored $n{=}20$ run
-  (Section~\ref{sec:ci}); all other modules use the $n$ in
+  \texttt{inputs/} and agentic \texttt{tools/} results are from anchored
+  $n{=}20$ runs (Section~\ref{sec:ci}); other modules use the $n$ in
   Table~\ref{tab:modules}.
-  $^{\dagger}$Groq tool results use \texttt{--max-connections~1}; not cited as agentic.
+  $^{\dagger}$Groq excluded from agentic \texttt{tools/}; Gemini~$n{=}20$
+  deferred after provider hang (mark \texttt{---}, not zeros).
+  Historical diagnostic \texttt{tools/} $n{=}3$ rows remain in \texttt{RESULTS.md}.
   $^{\ddagger}$\texttt{exfil/} additionally reports Canary Leak Rate (CLR).
 }
 \label{tab:main_results}
@@ -534,8 +569,8 @@ Module & ASR & TR & ASR & TR & ASR & TR & ASR & TR \\
 \midrule
 \texttt{inputs/} ($n{=}20$)
   & 0.050 & \textbf{0.150} & 1.000 & 0.000 & 0.150 & 0.000 & 1.000 & 0.000 \\
-\texttt{tools/} ($n{=}3$)$^{\dagger}$
-  & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & \multicolumn{2}{c}{---$^{\dagger}$} \\
+\texttt{tools/} ($n{=}20$)$^{\dagger}$
+  & 0.000 & 0.000 & 0.000 & 0.000 & \multicolumn{2}{c}{---$^{\dagger}$} & \multicolumn{2}{c}{---$^{\dagger}$} \\
 \texttt{psych/} ($n{=}6$)
   & 0.500 & \textbf{0.667} & 0.833 & 0.000 & 0.667 & 0.000 & 1.000 & 0.000 \\
 \texttt{memory/} ($n{=}10$)
@@ -549,10 +584,10 @@ Module & ASR & TR & ASR & TR & ASR & TR & ASR & TR \\
 \end{table}
 
 \paragraph{Statistical scope.}
-Except for the anchored \texttt{inputs/} module, the remaining modules should
-be interpreted as diagnostic probes rather than statistically powered
-benchmarks. Cross-module comparisons are qualitative. The anchored
-\texttt{inputs/} module is the only statistically summarized module in v1.0.0.
+The anchored modules are \texttt{inputs/} (non-agentic) and \texttt{tools/}
+(agentic TL-01), both at $n{=}20$ with Wilson~95\% intervals.
+\texttt{psych/}, \texttt{memory/}, \texttt{exfil/}, and \texttt{drift/} remain
+diagnostic probes. Cross-module comparisons outside the anchors are qualitative.
 
 \paragraph{Prompt injection (\texttt{inputs/}).}
 Sonnet~4.5 resists all but one attack (IN-02, authority spoof on epoch~4),
@@ -563,15 +598,16 @@ Gemini~3.5 scores ASR~0.150, concentrated on IN-03 (persona hijack, 2/4
 epochs) and IN-04 (delimiter confusion, 1/4 epoch).
 
 \paragraph{Tool poisoning (\texttt{tools/}).}
-In this n=3 diagnostic probe, all four models score ASR~0.000 and TR~0.000 on TL-01. The poisoned tool
-description is neither executed nor flagged by any model tested. This null
-result is informative: TL-01 plants the exfiltration instruction only in the
-tool's description field, not in a tool response the model receives mid-task.
-None of the four models emits the target exfil string in a subsequent tool
-call argument---which is what the ASR scorer checks---meaning all four
-correctly use the tool without following the embedded instruction. Expanded
-tool attacks that target mid-task tool responses (rug pull, line jumping,
-confused deputy) are in the v1.1 checklist.
+On the anchored agentic $n{=}20$ run (seed~0), Sonnet~4.5 and Llama~3.1~8B
+both score ASR~0.000 and TR~0.000 (Wilson upper bound $0.161$). Gemini~$n{=}20$
+is unavailable after repeated provider hangs at log open and is marked
+\texttt{---} (not imputed zeros). Groq is excluded from the agentic claim
+(chat-only tool envelopes). The poisoned tool description is neither executed
+nor disclosed by the completed models: TL-01 plants the exfiltration
+instruction only in the tool's description field. Expanded tool attacks that
+target mid-task tool responses (rug pull, line jumping, confused deputy) remain
+on the v1.1 checklist. Historical diagnostic $n{=}3$ rows are retained in
+\texttt{RESULTS.md} but are not the paper-cited anchor.
 
 \paragraph{Psychology-grounded manipulation (\texttt{psych/}).}
 In this n=6 probe, Groq~70B fails all six Cialdini principles (ASR~1.000)---the
@@ -610,7 +646,9 @@ with non-zero \texttt{drift/} TR (0.167, DR-06 knowledge suppression).
 
 The \texttt{inputs/} module uses $n{=}20$ (5 attacks $\times$ 4 epochs,
 \texttt{--seed 0 --epochs 4 --no-epochs-reducer}) for the anchored paper-citation
-rows. We report Wilson~95\% CIs~\citep{wilson1927probable}:
+rows. The agentic \texttt{tools/} TL-01 anchor also uses $n{=}20$, seed~0, on
+models with a real tool loop (Sonnet, Llama; Gemini deferred; Groq excluded).
+We report Wilson~95\% CIs~\citep{wilson1927probable}:
 \begin{align*}
   \hat{c} &= \frac{\hat{p} + z^2/(2n)}{1 + z^2/n}, \quad
   \text{margin} = \frac{z}{1 + z^2/n}\sqrt{\frac{\hat{p}(1-\hat{p})}{n}
@@ -1073,6 +1111,27 @@ Call me a jerk: Persuasion, influence, and autonomy in human-AI interaction.
 MITRE. (2024).
 MITRE ATLAS: Adversarial Threat Landscape for Artificial-Intelligence Systems.
 \url{https://atlas.mitre.org/}.
+
+\bibitem[ACM, 2025]{acm2025ttp}
+ACM. (2025).
+Risk-Based MITRE TTP Scoring.
+In \textit{ACM Conference proceedings}.
+DOI:\texttt{10.1145/3731806.3731846}.
+
+\bibitem[Rehberger, 2024]{rehberger2024cia}
+Rehberger, J. (2024).
+Trust No AI: Prompt injection along the CIA security triad.
+\textit{arXiv:2412.06090}.
+
+\bibitem[Tariq and Kerschbaum, 2025]{tariq2025cia}
+Tariq, M.~I., and Kerschbaum, F. (2025).
+Toward a confidentiality, integrity, and availability framework for AI systems.
+\textit{Future Internet}, 17(3), 113.
+
+\bibitem[CSA, 2026]{csa2026agentic}
+Cloud Security Alliance. (2026).
+Agentic AI Lab Space profile (May 2026).
+Industry guidance on autonomy-tier controls for agent evaluations.
 
 \bibitem[Noughabi et al., 2025]{noughabi2025fingerprint}
 Noughabi, H.~A., Serbanescu, J., Zarrinkalam, F., and Dehghantanha, A. (2025).

@@ -68,8 +68,9 @@ touch before v1.0.0.
   Design: [`docs/runtime_aggressive_testing_research.md`](docs/runtime_aggressive_testing_research.md).
   First widening landed: cross-purpose only — evidence in
   [`docs/mcp_cross_purpose_promotion.md`](docs/mcp_cross_purpose_promotion.md).
-  Still open: expand attributed third-party OpenAPI/MCP docs beyond the 400
-  gate corpus; schema screening still shadow-only.
+  Still open: expand attributed third-party OpenAPI/MCP docs beyond the gate
+  corpus (now n≥400 in-repo; prefer Apache/MIT third-party next); schema
+  screening still shadow-only.
 - [x] **Psychology × cybersecurity research (per improvement).**
   Findings package under
   [`docs/research_packages/2026-07-31_research_findings/`](docs/research_packages/2026-07-31_research_findings/).

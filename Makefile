@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -331,6 +331,16 @@ CORPUS_SNAPSHOT ?= external_corpus_snapshot
 CORPUS_FLAGS ?=
 corpus-import:
 	uv run agent-shield-corpus --snapshot-root $(CORPUS_SNAPSHOT) $(CORPUS_FLAGS)
+
+# Reproducibility bundle: copy RESULTS.md-referenced .eval logs + manifest.json
+# Output dir is gitignored; attach to GitHub release. Dry-run: make bundle DRY=1
+DRY ?=
+bundle:
+ifeq ($(DRY),1)
+	uv run python scripts/bundle_reproducibility.py --dry-run
+else
+	uv run python scripts/bundle_reproducibility.py
+endif
 
 # TR-v2 challenger holdout (dry-run heuristic; use without --dry-run for live judge)
 tr-v2-holdout:

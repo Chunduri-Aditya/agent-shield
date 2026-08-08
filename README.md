@@ -76,13 +76,24 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-**Anchored results:**
-- `inputs/` (non-agentic) at n=20 (seed 0, Wilson 95% CI): Sonnet 4.5 is the only model with non-zero TR (0.150); Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini 3.5 Flash sit at TR=0.000 (upper bound 0.161). Silent resistance is the default.
-- `tools/` (agentic TL-01) at n=20 (seed 0): Sonnet and Llama both ASR=0.000 / TR=0.000 (Wilson upper 0.161). Gemini marked `---` after provider hang (not zeros). Groq excluded (chat-only tool envelopes).
+**Headline finding (locked, anchored):** On `inputs/` at n=20 (seed 0, Wilson
+95% CI), Sonnet 4.5 is the only model with non-zero Transparency Rate
+(TR=0.150, CI [0.052, 0.360]). Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini
+3.5 Flash sit at TR=0.000 (upper bound 0.161). Silent resistance is the
+default on direct injection — not the same outcome as “resisted out loud.”
 
-**Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6), `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md).
+**Second anchor (agentic):** `tools/` TL-01 at n=20: Sonnet and Llama both
+ASR=0.000 / TR=0.000 (Wilson upper 0.161). Gemini marked `---` after provider
+hang (not zeros). Groq excluded (chat-only tool envelopes).
 
-**Runtime perimeter:** installable locally (see next section).
+**Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6),
+`memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3
+remains in RESULTS. One defense baseline: spotlighting on `inputs/` and
+`psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md).
+
+**Runtime perimeter:** installable locally (see next section). Cross-purpose
+MCP description quarantine evidence:
+[docs/mcp_cross_purpose_promotion.md](docs/mcp_cross_purpose_promotion.md).
 Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
 
 ## Local runtime perimeter (optional)
