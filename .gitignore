@@ -133,3 +133,13 @@ reports/metrics_report.json
 reports/metrics_report.md
 reports/raw_eval_results.json
 reports/retool/
+
+# Ruflo/Claude Flow local tooling state, not project code
+.claude-flow/
+.agents/
+.mcp.json
+.swarm/
+.ruflo_pre_install_backup_*/
+ruvector.db
+graphify-out
+.claude-flow/sessions/
