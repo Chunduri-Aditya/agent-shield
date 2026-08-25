@@ -128,6 +128,61 @@ Same repository, **separate claim** from the eval tables. Package:
 | [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md) | Trusted-tester guide |
 | [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md) | Miss corpus / FP gate research (not a shipped attack pack) |
 
+## DPO/LoRA fine-tuning spike
+
+This repo also contains a small end-to-end DPO/LoRA preference-tuning spike,
+separate from the six security-evaluation modules covered in
+[`RESULTS.md`](RESULTS.md).
+
+**Scope.** This is preference tuning on response verbosity, not a security
+evaluation. It reports no Attack Success Rate, Utility Under Attack, or
+Transparency Rate, and has no corresponding Inspect AI task. For that reason it
+is intentionally excluded from `RESULTS.md` — that table's schema requires model
+ID, seed, eval file, task name, n samples, date, and commit SHA per row, none of
+which apply to a preference-tuning run. Including it there would place an
+unrelated result inside the table this repo's paper cites.
+
+**What was run.** TRL `DPOTrainer` plus PEFT LoRA against
+`HuggingFaceTB/SmolLM2-135M-Instruct`: rank 8 on the attention projections,
+beta 0.1, learning rate 5e-5, six epochs, **40 training pairs and 12 held-out
+pairs**. Six scripts and 1422 insertions in commit `9b86e32`, with the results
+entry in `d1af723`. No checkpoints, `.safetensors`, or optimizer state are
+tracked — all training artifacts stay behind `.gitignore` and every result
+regenerates in under a minute.
+
+**Measured results on the held-out set** (full entry in
+[`BACKLOG.md`](BACKLOG.md) under Post-ship):
+
+| Metric | Before | After |
+|---|---|---|
+| Implicit DPO reward margin | — | +1.05 (12/12 pairs positive) |
+| Mean generation length | 32.5 | 29.8 |
+| Answer-key rate | 0.750 | 0.833 |
+| Degenerate outputs | 0 | 0 |
+| Greedy generations changed | — | 4/12 |
+
+The preference signal generalizes to unseen pairs while behavior moves only
+slightly. Length fell without answer retention falling with it, which is what
+separates concision from degeneration.
+
+**Two transferable findings from the run:**
+
+1. Generating in `train()` mode with gradient checkpointing enabled degenerates
+   output into one token followed by endless newlines. This reproduces on the
+   **untrained** base model, so it is a decode-time bug independent of the
+   preference-tuning objective entirely.
+2. Stripped-text postprocessing hides that degradation rather than surfacing it:
+   forty generated newline tokens render as the string `'The'`. The failure mode
+   is easy to misread as brevity collapse without raw-output inspection.
+
+Both are now guarded in code — generation refuses to run from a model left in
+training state, and every generation carries token ids, token count, and stop
+reason.
+
+```bash
+uv run --no-project scripts/dpo_lora_spike.py --axis verbosity
+```
+
 ## Repo layout
 
 ```text
@@ -142,7 +197,7 @@ agent-shield/
 ├── drift/             Behavioral drift attack registry
 ├── defenses/          Defense baselines (spotlighting)
 ├── reports/           Plain-language reports, TR audits, TR-v2 holdouts
-├── scripts/           Sweep runner, model registry, auth checks
+├── scripts/           Sweep runner, model registry, auth checks, DPO/LoRA spike
 ├── tests/             Pytest suite (includes runtime perimeter pins)
 ├── docs/              Adapter, originality audit, aggressive-testing research, paper prep
 ├── risk_registry.py   AIVSS-scored attack metadata with CIA and OWASP mappings
