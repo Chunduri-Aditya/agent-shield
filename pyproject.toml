@@ -67,6 +67,13 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 
+# scripts/dpo_pairs.py stores preference-pair prose as string literals. Reflowing
+# them to satisfy the line limit would join across newlines, which can silently
+# add or drop a space and change the training data itself. The payloads are
+# evidence, so the data file is exempted rather than edited to please the linter.
+[tool.ruff.lint.per-file-ignores]
+"scripts/dpo_pairs.py" = ["E501"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests", "evals"]
 norecursedirs = [

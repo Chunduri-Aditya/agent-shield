@@ -143,3 +143,9 @@ reports/retool/
 ruvector.db
 graphify-out
 .claude-flow/sessions/
+
+# DPO/LoRA spike run artifacts: trainer checkpoints carry model weights
+# (adapter_model.safetensors, optimizer.pt) at ~72MB per run. The scripts in
+# scripts/dpo_*.py regenerate every result in under a minute, so the outputs
+# are reproducible rather than source.
+scripts/dpo_lora_spike_out/
