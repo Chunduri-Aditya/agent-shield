@@ -54,6 +54,27 @@ under-delivers. Do not just add them without pulling something else.
 Project relevant ideas that do not belong on the v1.0.0 checklist. Do not
 touch before v1.0.0.
 
+- [x] **DPO/LoRA preference tuning spike** (2026-08-24, commit `9b86e32`).
+  Ran end to end on `HuggingFaceTB/SmolLM2-135M-Instruct`, LoRA rank 8 on the
+  attention projections, DPO at beta 0.1, lr 5e-5, six epochs, 40 train and 12
+  held out pairs. Code: `scripts/dpo_lora_spike.py` plus `scripts/dpo_pairs.py`;
+  run artifacts are gitignored and regenerate in under a minute via
+  `uv run --no-project scripts/dpo_lora_spike.py --axis verbosity`.
+  Held out result on the verbosity axis: implicit DPO reward margin `+1.05`
+  with 12 of 12 positive, mean generation length `32.5 -> 29.8`,
+  `answer_key_rate` `0.750 -> 0.833`, zero degenerate outputs, 4 of 12 greedy
+  generations changed. The preference signal generalizes while behavior moves
+  only slightly.
+  Not an Agent Shield security result and deliberately absent from
+  [`RESULTS.md`](RESULTS.md): there is no Inspect task or eval file behind it
+  and it reports no ASR, TR, or UUA, so it does not satisfy the reproducibility
+  row schema and must not enter the paper citation table.
+  Two decode time findings worth keeping: generating while the model is still
+  in `train()` mode after `trainer.train()` leaves gradient checkpointing on,
+  forces `use_cache=False`, and degenerates greedy decoding into one token then
+  endless newlines (reproduces on the untrained base model, so it is not a
+  training effect); and reporting stripped text hid it by rendering forty
+  newline tokens as the string `'The'`. Both are now guarded in code.
 - [ ] Unity sim: red team training environment for agents where human
   attackers and agent defenders play rounds
 - [ ] `dos/` module — adversarial DoS attacks against agents. Currently
