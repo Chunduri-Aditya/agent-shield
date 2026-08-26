@@ -292,6 +292,14 @@ make lint    # ruff + mypy
 
 Always use `uv run` / `make` so the project venv is active.
 
+**Known gap (2026-08-25 audit, P0 fixed same day):** CI was red for 17 days
+on 9 `ruff` errors — fixed. `.github/workflows/ci.yml` now also runs `mypy`
+alongside `ruff` and `pytest`, matching `make lint`. That step currently
+fails (130 pre-existing errors, mostly missing type coverage on
+`agent_shield/` itself) — tracked as P1 in
+[docs/audit_2026-08-25.md](docs/audit_2026-08-25.md) /
+[BACKLOG.md](BACKLOG.md#engineering-health-2026-08-25-audit).
+
 ## Security
 
 Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md). Dual-use attacks stay gated by the risk check / `CONFIRM_HIGH_RISK=1` for CRITICAL evals. Runtime aggressive-testing research stays plan-only until ETHICS clearance for any HIGH dual-use fixture rows — see [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md).

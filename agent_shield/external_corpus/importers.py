@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from agent_shield.external_corpus import BLOCKED_STATUSES, PHASE1_SOURCES
 from agent_shield.external_corpus.schemas import (

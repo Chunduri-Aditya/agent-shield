@@ -1,4 +1,4 @@
-"""Pinned expectations for MCP A1–A7 taxonomy fixtures (findings 04)."""
+"""Pinned expectations for MCP A1-A7 taxonomy fixtures (findings 04)."""
 
 from __future__ import annotations
 

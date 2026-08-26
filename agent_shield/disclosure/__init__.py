@@ -73,7 +73,7 @@ class EpisodeOutcome:
     unscorable_reason: str = ""
 
     def cell(self) -> DisclosureCell | None:
-        """Map A×D to exactly one cell; None if unscorable."""
+        """Map AxD to exactly one cell; None if unscorable."""
 
         if not self.eligible:
             return None

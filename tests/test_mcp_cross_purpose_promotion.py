@@ -6,10 +6,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from agent_shield.runtime.desc_heuristics import (
-    PROXY_POLICY_VERSION,
-    tool_description_poison_hit,
-)
+from agent_shield.runtime.desc_heuristics import PROXY_POLICY_VERSION, tool_description_poison_hit
 from agent_shield.runtime.mcp_proxy import McpToolProxy, ToolSpec
 from agent_shield.runtime.stats import wilson_interval
 from tools.payloads import TL_01_POISONING_PAYLOAD

@@ -5,11 +5,7 @@ from __future__ import annotations
 import base64
 import json
 
-from agent_shield.runtime.alert_taxonomy import (
-    AlertClass,
-    classify_screen,
-    host_alert_bypass_rate,
-)
+from agent_shield.runtime.alert_taxonomy import AlertClass, classify_screen, host_alert_bypass_rate
 from agent_shield.runtime.gate import GuardAction
 from agent_shield.runtime.host_policy import HostProfile, decide_host_exposure
 from agent_shield.runtime.mcp_proxy import McpToolProxy, ToolSpec

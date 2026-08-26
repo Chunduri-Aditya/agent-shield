@@ -46,7 +46,7 @@ def test_validate_rejects_unknown_license() -> None:
 
 
 def test_blocked_source_rejected() -> None:
-    with pytest.raises(ValueError, match="blocked|Phase-1|non-Phase"):
+    with pytest.raises(ValueError, match=r"blocked|Phase-1|non-Phase"):
         reject_blocked_source("pixiebrix/agent-browser-shield")
 
 

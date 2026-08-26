@@ -36,6 +36,41 @@ under-delivers. Do not just add them without pulling something else.
   Bai et al. 2022 self-critique would give coverage of the "model defends
   itself" class of defenses that nothing else tests.
 
+## Engineering health (2026-08-25 audit)
+
+Not eval-module work, so it doesn't belong on `AGENT_SHIELD_TODO.md` — repo
+build/tooling hygiene found during an engineering audit. Full evidence in
+[`docs/audit_2026-08-25.md`](docs/audit_2026-08-25.md).
+
+- [x] **CI has been red since at least 2026-08-08** (5+ consecutive pushes,
+  confirmed via `gh run list` / `gh run view --log`). Same 9 `ruff` errors
+  unchanged the whole time, 5 auto-fixable. Fixed 2026-08-25: `ruff check .`
+  now exits 0, `pytest` unaffected (415 passed).
+- [x] **`make lint`'s mypy half is not in `.github/workflows/ci.yml`** — CI
+  only ran `ruff check .` + `pytest`. Fixed 2026-08-25: `mypy` step added to
+  `ci.yml`. Note this step itself still fails — 130 pre-existing errors
+  across 13 files, including real product code (`agent_shield/runtime/
+  proof_metrics.py`, `agent_shield/tr_holdout.py`,
+  `agent_shield/external_corpus/dedupe.py`). Fixing those is the next item.
+- [ ] **mypy `files` excludes `agent_shield/` itself** (the shipped runtime
+  perimeter package) and `psych/ exfil/ drift/ defenses/ scripts/
+  report_generator.py risk_registry.py`. Only `evals/inputs/tools/memory`
+  get strict typing today. Decide scope, extend, fix what surfaces.
+- [ ] **No dependency or secret scanning**: no `dependabot.yml`, no
+  pre-commit framework, no `pip-audit`/`bandit`/`gitleaks`. Add `pip-audit`
+  as a real (Python-aware) dependency-CVE check plus `dependabot.yml` for
+  `pip` + `github-actions`.
+- [ ] **Confirm `.env.example` is placeholder-only.** One plausible-looking
+  STRIDE finding from the Ruflo/Claude-Flow audit run flagged it CRITICAL;
+  likely a filename-pattern false positive against the standard tracked-
+  template convention, but unverified — audit session's sandbox blocked
+  reading the file to check.
+- [x] **Ruflo/Claude-Flow `security scan/cve/threats` subcommands are inert
+  on this repo** — verified via canary file (hardcoded AWS + Anthropic keys,
+  `os.system`, `subprocess(shell=True)`, `eval()` all scored zero issues).
+  Do not route security scanning through them again; use `pip-audit` /
+  real Python tooling instead.
+
 ## v1.1 deferred (was on the v1.0.0 checklist)
 
 1. `env/` module — Deferred because six modules are enough for v1.0.0 and environment payloads would add PDF, image, calendar, and email plumbing. Source: `AGENT_SHIELD_TODO.md` section 8.

@@ -1,4 +1,4 @@
-"""Load ethics-gated TS01–TS12 template catalog (findings 03)."""
+"""Load ethics-gated TS01-TS12 template catalog (findings 03)."""
 
 from __future__ import annotations
 
