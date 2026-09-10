@@ -229,7 +229,7 @@ def compute_proof_metrics(
             "(text cases do not contribute)"
         )
 
-    disable = {"n_sessions": 0, "n_sessions_disabled": 0, "disable_rate": 0.0}
+    disable: dict[str, Any] = {"n_sessions": 0, "n_sessions_disabled": 0, "disable_rate": 0.0}
     if session_events is not None:
         disable = measure_disable_rate(session_events)
         notes.append("session disable log included")

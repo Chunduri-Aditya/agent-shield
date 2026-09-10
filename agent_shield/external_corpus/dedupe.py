@@ -81,9 +81,9 @@ def dedupe_prompt_cases(cases: list[PromptCaseV1]) -> tuple[list[PromptCaseV1], 
             continue
         # Normalized collision against an already retained case
         hit = None
-        for retained in by_exact.values():
-            if normalized_hash(retained.untrusted_payload) == norm:
-                hit = retained
+        for candidate in by_exact.values():
+            if normalized_hash(candidate.untrusted_payload) == norm:
+                hit = candidate
                 break
         if hit is not None:
             exact_groups += 1

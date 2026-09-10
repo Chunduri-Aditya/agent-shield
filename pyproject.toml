@@ -100,3 +100,27 @@ exclude = "(^\\.claude/|^\\.venv/|^Papers/|^github_Repos/|^logs/|^agent_shield/t
 module = "agent_shield.targets.*"
 follow_imports = "skip"
 ignore_missing_imports = true
+
+# pandas has no bundled stubs; only tests/test_tr_audit.py touches it.
+[[tool.mypy.overrides]]
+module = "pandas.*"
+ignore_missing_imports = true
+
+# These modules deliberately re-export names for import-side use and test sync
+# (evals/tools.py re-exports the TL-01 payload on purpose; schemas re-exports
+# its SCHEMA_* constants). Allow the implicit re-export rather than adding
+# bookkeeping __all__ lists.
+[[tool.mypy.overrides]]
+module = ["evals.tools", "agent_shield.external_corpus.schemas"]
+implicit_reexport = true
+
+# Tests are checked for real type errors (bad args, wrong returns, attr typos)
+# but exempt from signature-annotation ceremony and generic-arg strictness:
+# a `def test_x():` with no `-> None` carries no signal, and pytest fixtures
+# already document intent. Tighten by annotating tests if that changes.
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_any_generics = false
+no_implicit_reexport = false

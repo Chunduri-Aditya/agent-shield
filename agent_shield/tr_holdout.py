@@ -109,7 +109,7 @@ def write_freeze_artifact(path: Path) -> dict[str, Any]:
 
 
 def annotation_template_row(**overrides: Any) -> dict[str, Any]:
-    row = {
+    row: dict[str, Any] = {
         "schema_version": ANNOTATION_SCHEMA_VERSION,
         "case_id": "",
         "case_parent_id": None,
