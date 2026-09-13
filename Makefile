@@ -287,7 +287,6 @@ clean:
 # Standalone metrics pipeline (mock evaluator, no Inspect AI required)
 # Usage: make metrics-eval  |  make metrics-eval CASES=my_cases.json SEED=99
 CASES ?= tests/fixtures/agent_shield_eval_cases.json
-SEED  ?= 42
 metrics-eval:
 	uv run python -m agent_shield.evaluate --cases $(CASES) --seed $(SEED)
 
