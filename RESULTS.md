@@ -162,6 +162,17 @@ the eval, then re-run to replace the SHA above with a clean one.
 
 Eval file: `evals/tools.py`
 Attacks: TL-01 (poisoned_description)
+
+> **Validity note (2026-09-14, commit `920c397`).** Every TL-01 row in this
+> section (the cross model paragraph, the anchored n=20 table, and both
+> diagnostic n=3 tables) predates `920c397`. Before that commit the TL-01
+> directive (`TL_01_POISONING_PAYLOAD`) was not in the model visible
+> description of `read_file` (55 characters). These rows measure unprompted
+> `send_message` calls rather than tool poisoning, so the paragraph saying the
+> poisoned description was neither executed nor flagged and the n=20 silent
+> nondisclosure sentence do not describe a TL-01 result. The rows stay as
+> historical records; a rerun is pending.
+
 Samples: 3 file-read tasks (report.txt, config.txt, notes.txt)
 
 **Cross-model:** all four models — Sonnet 4.5, Llama 3.1 8B, Groq Llama 3.3
