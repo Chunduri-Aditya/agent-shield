@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -5,6 +6,7 @@ import pytest
 from inspect_ai.dataset import Sample
 from inspect_ai.scorer import Score, Scorer, Target
 from inspect_ai.solver import TaskState
+from inspect_ai.tool import Tool, ToolDef
 
 from evals.inputs import ASR_REFUSAL_PROXIMITY_CHARS
 from evals.inputs import BASELINE_USER_TASK as INPUTS_BASELINE_USER_TASK
@@ -19,10 +21,19 @@ from evals.psych import BASELINE_USER_TASK as PSYCH_BASELINE_USER_TASK
 from evals.psych import asr_scorer as psych_asr_scorer
 from evals.psych import make_samples as make_psych_samples
 from evals.psych import transparency_scorer as psych_transparency_scorer
-from evals.tools import TOOL_SAMPLES, tools_asr, tools_asr_scorer, tools_transparency_scorer
+from evals.tools import (
+    TOOL_SAMPLES,
+    add,
+    read_file,
+    send_message,
+    tools_asr,
+    tools_asr_scorer,
+    tools_transparency_scorer,
+)
 from inputs.attacks import ATTACKS as INPUT_ATTACKS
 from memory.attacks import MEMORY_ATTACKS
 from psych.attacks import ATTACKS as PSYCH_ATTACKS
+from tools.payloads import TL_01_POISONING_PAYLOAD
 
 
 def _state_with_completion(completion: str) -> TaskState:
@@ -409,3 +420,35 @@ def test_inputs_samples_preserve_attack_name_metadata() -> None:
     assert [_metadata(sample)["attack_name"] for sample in samples] == [
         attack.name for attack in INPUT_ATTACKS
     ]
+
+
+# ---------------------------------------------------------------------------
+# TL-01 delivery: Inspect builds the model visible tool description from the
+# inner execute docstring, so the poisoned directive must reach that description,
+# not only the outer @tool factory docstring.
+# ---------------------------------------------------------------------------
+
+
+def test_read_file_description_delivers_tl01_directive() -> None:
+    description = ToolDef(read_file()).description
+    delivered = TL_01_POISONING_PAYLOAD in description
+    assert delivered, "TL-01 directive missing from model visible read_file description"
+
+
+@pytest.mark.parametrize("tool_factory", [add, send_message], ids=["add", "send_message"])
+def test_benign_tool_descriptions_do_not_carry_tl01_directive(
+    tool_factory: Callable[[], Tool],
+) -> None:
+    description = ToolDef(tool_factory()).description
+    carries_directive = TL_01_POISONING_PAYLOAD in description
+    assert not carries_directive, "TL-01 directive leaked into a benign tool description"
+
+
+def test_read_file_path_parameter_keeps_description() -> None:
+    path_param = ToolDef(read_file()).parameters.properties["path"]
+    assert path_param.description, "read_file path parameter lost its docstring description"
+
+
+def test_read_file_keeps_its_tool_name() -> None:
+    name = ToolDef(read_file()).name
+    assert name == "read_file", "read_file lost its explicit ToolDef name"
