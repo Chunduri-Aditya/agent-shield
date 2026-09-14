@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module status test lint fmt clean report report-log risk-check risk-check-all guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -6,6 +6,8 @@ SEED ?= 0
 OLLAMA_MODEL ?= llama3.1:8b
 LMSTUDIO_MODEL ?= local-model
 VLLM_MODEL ?= meta-llama/Llama-3.1-8B-Instruct
+MLX_MODEL ?= mlx-community/Meta-Llama-3.1-8B-Instruct-4bit
+MLX_REVISION ?= 241a666dad6cb93c8ff213d39a7f34a36bf26db4
 GROQ_MODEL ?= llama-3.3-70b-versatile
 GEMINI_MODEL ?= gemini-3.5-flash
 GROK_MODEL ?= grok-2-latest
@@ -184,6 +186,9 @@ eval-free-lmstudio:
 eval-free-vllm:
 	VLLM_BASE_URL=http://localhost:8000/v1 VLLM_API_KEY=EMPTY \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai-api/vllm/$(VLLM_MODEL) --seed $(SEED)
+
+eval-free-mlx:
+	HF_HUB_OFFLINE=1 uv run --group mlx inspect eval evals/$(FREE_MODULE).py --model mlx/$(MLX_MODEL) -M revision=$(MLX_REVISION) --seed $(SEED)
 
 eval-free-groq:
 	uv run inspect eval evals/$(FREE_MODULE).py --model groq/$(GROQ_MODEL) --seed $(SEED)

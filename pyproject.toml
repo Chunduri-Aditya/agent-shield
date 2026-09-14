@@ -18,6 +18,10 @@ agent-shield-proof = "agent_shield.runtime.proof_cli:main"
 agent-shield-tr-v2 = "agent_shield.tr_v2_cli:main"
 agent-shield-corpus = "agent_shield.external_corpus.cli:main"
 
+# Registers the in process MLX provider with Inspect, so `--model mlx/...` resolves.
+[project.entry-points.inspect_ai]
+agent_shield = "agent_shield_providers"
+
 # The agent_shield/ package (metrics, schema, targets, runtime) is pure-stdlib and is the
 # unit other projects import. The heavy harness deps above are only needed to run
 # the Inspect tasks under evals/. Downstream consumers that only want the metrics
@@ -33,6 +37,7 @@ packages = [
     "agent_shield.runtime",
     "agent_shield.disclosure",
     "agent_shield.external_corpus",
+    "agent_shield_providers",
 ]
 
 [dependency-groups]
@@ -45,6 +50,12 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "ruff>=0.15.11",
     "mypy>=1.20.1",
+]
+# Local MLX target (Apple silicon only; install with `uv sync --group mlx`). Pins are exact
+# because agent_shield_providers imports mlx_lm internals such as the prompt cache helpers.
+mlx = [
+    "mlx==0.32.2; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "mlx-lm==0.31.3; sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
 
 [tool.uv.sources]
@@ -104,6 +115,11 @@ ignore_missing_imports = true
 # pandas has no bundled stubs; only tests/test_tr_audit.py touches it.
 [[tool.mypy.overrides]]
 module = "pandas.*"
+ignore_missing_imports = true
+
+# mlx and mlx_lm ship only in the optional `mlx` group, which CI on ubuntu never installs.
+[[tool.mypy.overrides]]
+module = ["mlx.*", "mlx_lm.*"]
 ignore_missing_imports = true
 
 # These modules deliberately re-export names for import-side use and test sync
