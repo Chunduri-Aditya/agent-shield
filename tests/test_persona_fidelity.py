@@ -531,11 +531,11 @@ def test_rule_probe_flags_emoji_for_mari() -> None:
 # exactly one letter: A or B"; temperature 0 via GenerateConfig; the judge is resolved with
 # get_model inside score(). Both guide orders run per item; an attribution counts only when both
 # orders agree, and disagreement is recorded as order_flip, never as wrong. The parser drops any
-# <think>...</think> block, takes the first non empty line, and accepts it only on
-# re.fullmatch(r"\(?([AB])\)?\.?", line). The score value is a dict: correct (1 only when both
-# orders agree and match the gold persona), order_flip, malformed, judge_error (exception message
-# kept in metadata). Nothing is swallowed: every item returns a score carrying correct, so the
-# correct denominator stays n.
+# <think>...</think> block, takes the first non empty line, and accepts it only as a whole verdict
+# in the bare, parenthesised, dotted, **A** or \boxed{A} form (docs/EVAL_PORTFOLIO_PLAN.md:19-22,
+# A1). The score value is a dict: correct (1 only when both orders agree and match the gold
+# persona), order_flip, malformed, judge_error (exception message kept in metadata). Nothing is
+# swallowed: every item returns a score carrying correct, so the correct denominator stays n.
 #
 # Interface these tests pin (evals/persona/judge.py):
 #   parse_verdict(reply) -> "A" | "B" | None      None is malformed
@@ -731,6 +731,11 @@ def test_judge_parser_anchors_first_letter() -> None:
         "<think>\nA\n</think>\nB": "B",  # reasoning dropped before the first line is read
         "<think>\n\n</think>\n\nA": "A",  # an empty reasoning block
         "<think>guide A? the text is dry and lowercase.\nA\n</think>\n\nB": "B",
+        "**A**": "A",  # A1: paired bold wrapper
+        "**B**.": "B",  # A1: paired bold wrapper, trailing period
+        r"\boxed{A}": "A",  # A1: paired boxed wrapper
+        r"\boxed{B}.": "B",  # A1: paired boxed wrapper, trailing period
+        "<think>\nB\n</think>\n" + r"\boxed{A}": "A",  # A1: reasoning dropped, then boxed
     }
     for reply, expected in verdicts.items():
         assert parse_verdict(reply) == expected, repr(reply)
@@ -747,7 +752,16 @@ async def test_judge_parser_tags_malformed_not_swallowed() -> None:
         "Answer: B",
         "Guide A",
         "The answer is B.",
-        "**A**",
+        "**a**",  # lowercase inside a wrapper
+        r"\boxed{AB}",  # two letters inside a wrapper
+        r"\boxed{A} B",  # wrapped letter then a second letter
+        "**A** or B",  # wrapped letter then prose
+        "boxed{A}",  # unescaped wrapper
+        "**A",  # unpaired wrapper
+        "A**",  # unpaired wrapper, closing half only
+        r"\boxed{A",  # unpaired boxed wrapper
+        r"\boxed{a}",  # lowercase inside the boxed wrapper
+        "**A**B",  # wrapped letter then a second letter, no space
         "A or B",
         "AB",
         "a",  # the spec regex is case sensitive

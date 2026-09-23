@@ -1,4 +1,4 @@
-"""
+r"""
 Agent Shield — the S1 judge of the persona_attribution eval.
 
 judge_attribution(judge_model, personas_dir) is an Inspect scorer that asks a judge model
@@ -18,7 +18,11 @@ because a pairwise judge's verdict moves with position. The score value is a dic
 Every item returns all four keys, so the correct denominator stays n.
 
 parse_verdict(reply) drops any <think>...</think> block, takes the first non empty line and
-accepts it only as a whole verdict: A, B, (A), B. and the like. Anything else is None.
+accepts it only as a whole verdict: A, B, (A), B. and the like, or the letter in a paired
+wrapper, **A** or \boxed{A}, with or without a trailing period (the 2026-09-23 judge meta
+diagnostic showed lfm2.5:8b answering \boxed{A}; docs/EVAL_PORTFOLIO_PLAN.md:19-22). A
+lowercase letter, prose, an unpaired ** or unescaped boxed wrapper (**A, A**, boxed{A}) and
+two letters (\boxed{AB}, **A** or B) stay None.
 
 mask_completion(text, bibles) is what the judge reads: every sentence that shares at least
 MIN_SHARED_TOKENS content tokens with a Voice Sample or gold line of either bible at a
@@ -87,7 +91,7 @@ MIN_SHARED_TOKENS = 4
 # The subsection surface.style_stoplist() reads: the judge is shown the rules, S0 strips them.
 _STYLE_RULES_RE = re.compile(r"^## Style rules[ \t]*\n(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
-_VERDICT_RE = re.compile(r"\(?([AB])\)?\.?")
+_VERDICT_RE = re.compile(r"(?:\(?([AB])\)?|\*\*([AB])\*\*|\\boxed\{([AB])\})\.?")
 _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
 _FENCE = "```"
 # The same scalar mapping accuracy() uses, so the Wilson bounds count the successes it does.
@@ -95,17 +99,23 @@ _TO_FLOAT = value_to_float()
 
 
 def parse_verdict(reply: str) -> str | None:
-    """The judge's letter, or None when the reply is malformed.
+    r"""The judge's letter, or None when the reply is malformed.
 
     Any <think>...</think> block goes first (local reasoning models emit one), then the first
-    non empty line has to be the whole verdict, matched against _VERDICT_RE with fullmatch. A
-    letter inside prose, a lowercase letter or an unclosed think block all return None.
+    non empty line has to be the whole verdict, matched against _VERDICT_RE with fullmatch: A,
+    B, (A), B. and the like, or the letter in a paired wrapper, **A** or \boxed{A}, with or
+    without a trailing period (the 2026-09-23 judge meta diagnostic showed lfm2.5:8b answering
+    \boxed{A}; docs/EVAL_PORTFOLIO_PLAN.md:19-22). The letter is the first non None group. A
+    lowercase letter, prose, an unpaired ** or unescaped boxed wrapper (**A, A**, boxed{A}), two
+    letters (\boxed{AB}, **A** or B) and an unclosed think block all return None.
     """
     for line in _THINK_RE.sub("", reply).splitlines():
         stripped = line.strip()
         if stripped:
             match = _VERDICT_RE.fullmatch(stripped)
-            return match.group(1) if match else None
+            if match is None:
+                return None
+            return next(g for g in match.groups() if g is not None)
     return None
 
 
