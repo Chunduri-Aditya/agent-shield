@@ -99,16 +99,40 @@ reads Claude Code event fields and taint is keyed on `prompt_id`. Known gap: cre
   S1 judge sees the masked turn plus both Voice sections, answers A or B, Wilson via `stats.wilson_interval`.
   S2 verdict agreement across epochs (see amendment 1). S3 distinctive content words pooled over all briefs plus
   pairwise Jaccard, report only; the script checks the 50 token floor.
-- **Judge:** cross family, temperature 0. Meta eval first: the 30 bible samples with known labels, plus a swap
-  control with the Voice sections exchanged; report accuracy, Wilson, flip rate.
+- **Judge:** cross family, temperature 0. Meta eval first: the 30 bible samples with known labels, plus a blank
+  guides ablation (both Style rules fences empty); report accuracy, Wilson, and the normal minus blank gap.
 - **Sample size:** at 0.80, n=20 gives [0.584, 0.919] against chance [0.299, 0.701] (overlap); n=40 gives
   [0.652, 0.895] against [0.352, 0.648] (separated); n=80 gives [0.700, 0.873] against [0.393, 0.607].
 - **Ablations:** B bibles removed; C bibles swapped with intended labels kept (should fall to chance or below);
   D one writer for both parts. Floors set after the run between B and A, recorded in the assertion comment.
-- **Kill numbers:** judge meta eval lower bound at or below 0.50; S0 at or above S1 after stripping case, emoji
-  and punctuation; A lower bound at or below B upper bound at n=80; C at or above A.
+- **Kill numbers:** judge meta eval lower bound at or below 0.50; S0 at or above S1 after stripping case, emoji,
+  punctuation and every Style rules token (the S0 stoplist in the build spec below); A lower bound at or below B
+  upper bound at n=80; C at or above A.
 - **Compute estimate:** about 61 minutes for three arms, with the judge at an assumed 10 s per call (TBD). Two
   phase: `inspect eval` with the writer, then `inspect score --scorer` with the judge.
+
+### Build spec (what `tests/test_persona_fidelity.py` pins)
+
+- **Bible loader:** five required sections (Identity, Voice, Values, Decisions, Eval), 15 Voice Samples, 18
+  Decisions, 20 Eval questions per bible; `mask()` turns every persona name and sign off initial into `[NAME]`.
+- **Brief leakage:** content token containment against Decisions titles, Situation lines and Eval questions at or
+  above 0.5 flags a text; the 20 briefs are the same set in every arm and none is flagged.
+- **S0 stoplist:** normalise lowercases, strips emoji and punctuation, drops the bare YES or NO line and every token
+  of both Style rules sections, prose included. Leave one out on the 30 Samples (2026-09-23 review): no stoplist
+  17/30, quoted plus listed tells only 17/30, shipped 15/30. S0 sits at chance under every variant; the widest
+  stoplist is kept so no documented tell can score for S0, while an inflected form (walking, picks) still can.
+- **S1 judge:** two Style rules blocks in fenced delimiters plus the masked text, "Reply with exactly one letter:
+  A or B", temperature 0, both guide orders per item; agreement counts, disagreement is `order_flip`, never wrong.
+  The parser drops `<think>` blocks and fullmatches `\(?([AB])\)?\.?` on the first non empty line; the value dict
+  is `correct`, `order_flip`, `malformed`, `judge_error`, so the denominator stays n.
+- **Masking:** names to `[NAME]`; a sentence sharing at least 4 content tokens with a Voice Sample or gold line at
+  containment 0.5 or above is dropped (one shared word is not a copy). S0 reads the same masked text as S1. The
+  meta task skips the sentence drop, since its text is the Sample and would match itself.
+- **Meta task:** `persona_judge_meta(blank_guides, strip)`: the 30 Samples echoed into the completion, no writer.
+  Blank guides empties both fences, and normal minus blank accuracy is the judge's use of the guides.
+- **Wilson bounds:** through `agent_shield/runtime/stats.py:27`; no second copy in the persona eval.
+- **Result row:** `| Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |`, one
+  row per arm and S1 column, every value copied from the log.
 
 ## 6. Sequence
 

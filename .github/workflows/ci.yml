@@ -40,7 +40,8 @@ jobs:
         run: uv sync
 
       - name: Run tests
-        run: uv run pytest
+        # -rs prints every skip with its reason: the persona suite skips without the bibles.
+        run: uv run pytest -rs
 
       - name: Run Ruff
         run: uv run ruff check .

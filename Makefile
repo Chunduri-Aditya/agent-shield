@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -172,6 +172,31 @@ eval-memory-grok:
 # Run all implemented evals
 eval-all: eval eval-inputs eval-tools eval-psych eval-memory eval-exfil eval-drift
 
+# Module: persona/ — persona_attribution, two phase (18 GiB holds one local model at a time).
+# Bibles are data files read from PERSONAS_DIR; no Anthropic model anywhere in this block.
+PERSONAS_DIR ?= $(HOME)/Desktop/personal-digital-twin/twin/twin/data/personas
+WRITER_MODEL ?= ollama/qwen3-8b-8k
+JUDGE_MODEL ?= ollama/llama3.1:8b
+ARM ?= on
+STRIP ?= 0
+
+# Phase 1, writer only: make eval-persona-write ARM=on|off|swapped
+# The arm is quoted because Inspect reads -T values as YAML, where a bare on or off is a boolean.
+eval-persona-write:
+	uv run inspect eval evals/persona_fidelity.py@persona_attribution --model $(WRITER_MODEL) --seed $(SEED) \
+	  -T 'bibles="$(ARM)"' -T personas_dir=$(PERSONAS_DIR)
+
+# Phase 2, judge appended in place to a finished writer log: make eval-persona-judge LOG=logs/x.eval [STRIP=1]
+# The file spec is required: a bare scorer name is not in a fresh process's registry, and the task file only
+# imports judge_attribution, so Inspect's task file fallback cannot find it there either.
+eval-persona-judge:
+	uv run inspect score $(LOG) --scorer evals/persona/judge.py@judge_attribution --action append --overwrite \
+	  -S judge_model=$(JUDGE_MODEL) -S personas_dir=$(PERSONAS_DIR) -S strip=$(STRIP)
+
+# Judge meta eval on the 30 bible Samples (normal, blank guides, strip), S0 leave one out, judge seconds per call
+persona-meta:
+	uv run python scripts/persona_report.py meta --judge $(JUDGE_MODEL) --personas-dir $(PERSONAS_DIR)
+
 # Free model presets. Override FREE_MODULE to reuse for later modules.
 free-agents:
 	python3 scripts/free_agent_status.py
@@ -265,9 +290,9 @@ kaggle-inputs:
 mcp-server:
 	uv run python tools/server.py
 
-# Tests
+# Tests (PERSONAS_DIR reaches the persona tests through evals.persona_fidelity.DEFAULT_PERSONAS_DIR)
 test:
-	uv run pytest
+	PERSONAS_DIR=$(PERSONAS_DIR) uv run pytest
 
 # Lint + type check
 lint:

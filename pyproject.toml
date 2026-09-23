@@ -100,7 +100,16 @@ norecursedirs = [
 strict = true
 python_version = "3.11"
 explicit_package_bases = true
-files = ["evals", "inputs", "tools", "memory", "main.py", "tests", "agent_shield_providers"]
+files = [
+    "evals",
+    "inputs",
+    "tools",
+    "memory",
+    "main.py",
+    "tests",
+    "agent_shield_providers",
+    "scripts/persona_report.py",
+]
 # agent_shield/targets/ adapters intentionally import external sibling projects
 # (e.g. ai-health-journal) that are not dependencies, so mypy cannot resolve them.
 exclude = "(^\\.claude/|^\\.venv/|^Papers/|^github_Repos/|^logs/|^agent_shield/targets/)"
