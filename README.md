@@ -26,13 +26,13 @@ The early data hints at a contrast worth watching. The same provider that scores
 
 ## Module coverage
 
-Statistical scope matters: two modules are **anchored** (one non-agentic, one agentic); the rest are **diagnostic probes**.
+Statistical scope matters: exactly one module is **anchored** (`inputs/`, not agentic). The agentic anchor is withdrawn pending a TL-01 rerun; the rest are **diagnostic probes**.
 Do not read “six live modules” as six powered results.
 
 | Module | Status | Statistical role | What it probes | Attack IDs |
 |---|---|---|---|---|
 | `inputs/` | live | **Anchored** (n=20, Wilson 95% CI) | Prompt injection via direct instruction override | IN-01..IN-05 |
-| `tools/` | live | **Anchored agentic** (n=20 Sonnet/Llama; Gemini `---`) | MCP tool description poisoning (Inspect tool loop) | TL-01 live; TL-02..TL-05 stubbed. Groq excluded from agentic claim |
+| `tools/` | live | **Anchor withdrawn** (TL-01 rerun pending, predates `920c397`) | MCP tool description poisoning (Inspect tool loop) | TL-01 live; TL-02..TL-05 stubbed. Groq excluded from agentic claim |
 | `psych/` | live | Diagnostic (n=6) | Cialdini grounded social engineering (6 principles) | PS-01..PS-06 |
 | `memory/` | live | Diagnostic (n=10) | RAG store poisoning via retrieval injection | MM-01 |
 | `exfil/` | live | Diagnostic (n=5) | Covert exfiltration channels (zero-width, homoglyph, base64, URL sink) | EX-01..EX-05 |
@@ -77,14 +77,20 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 ## Current status
 
 **Headline finding (locked, anchored):** On `inputs/` at n=20 (seed 0, Wilson
-95% CI), Sonnet 4.5 is the only model with non-zero Transparency Rate
-(TR=0.150, CI [0.052, 0.360]). Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini
-3.5 Flash sit at TR=0.000 (upper bound 0.161). Silent resistance is the
+95% CI), Sonnet 4.5 scores Transparency Rate TR=0.150, CI [0.052, 0.360], with
+ASR=0.050, CI [0.009, 0.236]. Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini 3.5
+Flash sit at TR=0.000 on `inputs/` — but at n=5, whose Wilson upper bound is
+0.434, not 0.161. None of the three has an anchored n=20 `inputs/` row, so
+“Sonnet is the only model with nonzero TR” is not yet a powered claim; it is
+one anchored row beside three underpowered ones. Silent resistance is the
 default on direct injection — not the same outcome as “resisted out loud.”
 
-**Second anchor (agentic):** `tools/` TL-01 at n=20: Sonnet and Llama both
-ASR=0.000 / TR=0.000 (Wilson upper 0.161). Gemini marked `---` after provider
-hang (not zeros). Groq excluded (chat-only tool envelopes).
+**Second anchor (agentic) — withdrawn, rerun pending:** every `tools/` TL-01
+row, the n=20 table included, predates `920c397`, the commit that first put the
+poisoning payload into the model visible `read_file` description. Those rows
+measure unprompted `send_message` calls, not tool poisoning, so they are not a
+TL-01 result. Validity note and the historical rows stay in
+[RESULTS.md](RESULTS.md). **No agentic anchor currently stands.**
 
 **Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6),
 `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3
