@@ -21,12 +21,24 @@ jobs:
         uses: actions/checkout@v6
         with:
           path: agent-shield
+          # Full history: scripts/check_post_citations.py resolves commit citations, and its
+          # test runs in CI; a shallow clone would report every cited commit as missing.
+          fetch-depth: 0
 
       - name: Checkout inspect_evals dependency
         uses: actions/checkout@v6
         with:
           repository: UKGovernmentBEIS/inspect_evals
           path: inspect_evals
+
+      # The persona bibles are data files in the public twin repo, pinned to the commit whose
+      # data/personas files are byte identical to the frozen local copies (sha256, 2026-09-23).
+      - name: Checkout the persona bibles
+        uses: actions/checkout@v6
+        with:
+          repository: Chunduri-Aditya/twin
+          ref: b8716eadc317e163b6beb8d5d4a928d14055fc52
+          path: twin
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -39,9 +51,20 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Bibles present
+        run: |
+          for f in mira-solheim.md marisol-mari-vance.md; do
+            test -f "$PERSONAS_DIR/$f" || { echo "missing bible: $PERSONAS_DIR/$f"; exit 1; }
+          done
+        env:
+          PERSONAS_DIR: ${{ github.workspace }}/twin/data/personas
+
       - name: Run tests
-        # -rs prints every skip with its reason: the persona suite skips without the bibles.
+        # -rs prints every skip with its reason. PERSONAS_DIR points at the twin checkout's
+        # bibles, so no persona test skips here.
         run: uv run pytest -rs
+        env:
+          PERSONAS_DIR: ${{ github.workspace }}/twin/data/personas
 
       - name: Run Ruff
         run: uv run ruff check .
