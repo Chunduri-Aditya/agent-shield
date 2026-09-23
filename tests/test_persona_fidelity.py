@@ -584,6 +584,13 @@ _REPLY_PROBE = "run the restore drill friday"  # present in the prompt only if t
 class JudgeCall:
     prompt: str
     temperature: float | None
+    max_tokens: int | None
+    seed: int | None
+    reasoning_effort: str | None
+    attempt_timeout: float | None
+    max_retries: int | None
+    max_connections: int | None
+    extra_body: dict[str, object] | None
 
 
 _JUDGE_CALLS: list[JudgeCall] = []
@@ -642,7 +649,19 @@ def _register_fake_judge() -> None:
             config: GenerateConfig,
         ) -> ModelOutput:
             prompt = "\n".join(message.text for message in input)
-            _JUDGE_CALLS.append(JudgeCall(prompt, config.temperature))
+            _JUDGE_CALLS.append(
+                JudgeCall(
+                    prompt=prompt,
+                    temperature=config.temperature,
+                    max_tokens=config.max_tokens,
+                    seed=config.seed,
+                    reasoning_effort=config.reasoning_effort,
+                    attempt_timeout=config.attempt_timeout,
+                    max_retries=config.max_retries,
+                    max_connections=config.max_connections,
+                    extra_body=config.extra_body,
+                )
+            )
             reply = _fake_reply(self.model_name, prompt)
             return ModelOutput.from_content(model=self.model_name, content=reply)
 
@@ -650,9 +669,19 @@ def _register_fake_judge() -> None:
 
 
 async def _judge(
-    behaviour: str, gold: str, other: str, personas_dir: Path
+    behaviour: str,
+    gold: str,
+    other: str,
+    personas_dir: Path,
+    *,
+    judge_seed: int = 0,
+    judge_reasoning: str | None = None,
 ) -> tuple[Score, list[JudgeCall]]:
-    """Score _MIRA_VOICED_REPLY with judge_attribution; return the score and every judge call."""
+    """Score _MIRA_VOICED_REPLY with judge_attribution; return the score and every judge call.
+
+    With the defaults the scorer is built the way an ad hoc `inspect score` without -S judge_seed
+    builds it, so its own defaults are what the recorded config shows; any other value is passed.
+    """
     from inspect_ai.model import ModelName, ModelOutput
     from inspect_ai.scorer import Target
     from inspect_ai.solver import TaskState
@@ -662,9 +691,16 @@ async def _judge(
     assert behaviour in _FAKE_JUDGE_BEHAVIOURS, f"fixture error: {behaviour!r}"
     _register_fake_judge()
     _JUDGE_CALLS.clear()
-    scorer = judge_attribution(
-        judge_model=f"{_FAKE_JUDGE_API}/{behaviour}", personas_dir=str(personas_dir)
-    )
+    judge_model = f"{_FAKE_JUDGE_API}/{behaviour}"
+    if judge_seed == 0 and judge_reasoning is None:
+        scorer = judge_attribution(judge_model=judge_model, personas_dir=str(personas_dir))
+    else:
+        scorer = judge_attribution(
+            judge_model=judge_model,
+            personas_dir=str(personas_dir),
+            judge_seed=judge_seed,
+            judge_reasoning=judge_reasoning,
+        )
     state = TaskState(
         model=ModelName("mockllm/model"),
         sample_id=f"PB-01:{gold}",
@@ -852,6 +888,128 @@ async def test_order_disagreement_counts_as_flip_not_wrong() -> None:
     assert score.value == _AGREE_WRONG, score.value
     score, _ = await _judge("oracle", MIRA, MARI, personas_dir)
     assert score.value == _AGREE_RIGHT, score.value
+
+
+_A2 = "docs/EVAL_PORTFOLIO_PLAN.md:23-29"
+
+
+def _assert_judge_config(calls: list[JudgeCall], *, seed: int, reasoning: str | None) -> None:
+    """Every call carries the A2 config: the caps fixed, seed and reasoning_effort as given."""
+    assert len(calls) == 2, f"expected one judge call per guide order, got {len(calls)}"
+    want: dict[str, object] = {
+        "temperature": 0,
+        "seed": seed,
+        "max_tokens": 16,
+        "max_connections": 1,
+        "attempt_timeout": 120,
+        "max_retries": 2,
+        "reasoning_effort": reasoning,
+        "extra_body": None,
+    }
+    for call in calls:
+        for field, expected in want.items():
+            got = getattr(call, field)
+            if expected is None:
+                assert got is None, f"{field} {got!r}, want None ({_A2})"
+            else:
+                assert got == expected, f"{field} {got!r}, want {expected!r} ({_A2})"
+
+
+# A max_tokens back to None (the shipped judge until 2026-09-23) must go red here on that field.
+# Values come from docs/EVAL_PORTFOLIO_PLAN.md:23-29 (A2), never from judge.py.
+@pytest.mark.asyncio
+async def test_judge_config_caps_tokens_and_seeds_every_call() -> None:
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+
+    # The scorer's own defaults: seed 0, no reasoning_effort, no extra_body, the caps fixed.
+    _, calls = await _judge("oracle", MIRA, MARI, personas_dir)
+    _assert_judge_config(calls, seed=0, reasoning=None)
+
+    # Both scorer parameters reach every call; the caps do not move with them.
+    _, calls = await _judge(
+        "oracle", MIRA, MARI, personas_dir, judge_seed=3, judge_reasoning="none"
+    )
+    _assert_judge_config(calls, seed=3, reasoning="none")
+
+
+def test_judge_settings_recorded_only_with_a_judge() -> None:
+    """The write phase (judge_model None) records judge_seed and judge_reasoning as None: the
+    judge phase sets them later through -S, and the report reads them off EvalScore.params.
+    With a judge attached both reach the task metadata as given."""
+    from evals.persona_fidelity import persona_attribution
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    write = persona_attribution(
+        bibles="off", personas_dir=str(personas_dir), judge_seed=4, judge_reasoning="none"
+    )
+    meta = write.metadata or {}
+    assert meta["judge_seed"] is None and meta["judge_reasoning"] is None, meta
+    judged = persona_attribution(
+        bibles="off",
+        personas_dir=str(personas_dir),
+        judge_model=f"{_FAKE_JUDGE_API}/oracle",
+        judge_seed=4,
+        judge_reasoning="none",
+    )
+    meta = judged.metadata or {}
+    assert meta["judge_seed"] == 4 and meta["judge_reasoning"] == "none", meta
+
+
+def test_judge_rejects_a_missing_seed_or_unknown_reasoning() -> None:
+    """An empty -S judge_seed= parses to None and an unknown reasoning value would otherwise
+    reach the provider unchecked; both fail at scorer construction, before any call."""
+    from evals.persona.judge import judge_attribution
+
+    personas_dir = str(_bible_path(f"{MIRA}.md").parent)
+    with pytest.raises(ValueError, match="judge_seed"):
+        judge_attribution("mockllm/model", personas_dir, judge_seed=None)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="judge_reasoning"):
+        judge_attribution("mockllm/model", personas_dir, judge_reasoning="off")
+
+
+def test_judge_config_survives_eval_level_flags(tmp_path: Path) -> None:
+    """Inspect merges an eval's --max-connections and --max-retries into every model's calls
+    unless the call carries its own config; the judge passes its config on each generate, so
+    the caps in docs/EVAL_PORTFOLIO_PLAN.md:23-29 hold under eval level flags."""
+    from inspect_ai import eval as inspect_eval
+    from inspect_ai.event import ModelEvent
+    from inspect_ai.log import resolve_sample_attachments
+
+    from evals.persona_fidelity import persona_judge_meta
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    task = persona_judge_meta(
+        personas_dir=str(personas_dir), judge_model=f"{_FAKE_JUDGE_API}/oracle"
+    )
+    [log] = inspect_eval(
+        task,
+        model="none",
+        log_dir=str(tmp_path / "logs"),
+        display="none",
+        seed=7,
+        max_connections=8,
+        max_retries=5,
+        max_tokens=999,
+    )
+    assert log.status == "success", log.error
+    seen = 0
+    for sample in log.samples or []:
+        for event in resolve_sample_attachments(sample).events:
+            if isinstance(event, ModelEvent):
+                seen += 1
+                got = (
+                    event.config.seed,
+                    event.config.max_tokens,
+                    event.config.max_connections,
+                    event.config.max_retries,
+                )
+                assert got == (0, 16, 1, 2), (sample.id, event.config)
+    assert seen == 60, seen
 
 
 # Sentences of the three bibles in the same folder that are neither Mira's nor Mari's: benign
@@ -1427,6 +1585,8 @@ def test_persona_judge_meta_prompts_hold_the_sample(condition: str, tmp_path: Pa
     assert metadata.get("judge") == judge_model, metadata
     assert metadata.get("blank_guides") is (condition == "blank"), metadata
     assert metadata.get("strip") is (condition == "strip"), metadata
+    assert metadata.get("judge_seed") == 0, metadata
+    assert "judge_reasoning" in metadata and metadata["judge_reasoning"] is None, metadata
 
     samples = log.samples or []
     expected_ids = {f"{stem}:S-{n:02d}" for stem in (MIRA, MARI) for n in range(1, 16)}
@@ -1445,6 +1605,8 @@ def test_persona_judge_meta_prompts_hold_the_sample(condition: str, tmp_path: Pa
         calls = [e for e in resolve_sample_attachments(sample).events if isinstance(e, ModelEvent)]
         assert len(calls) == 2, (sample.id, len(calls))
         for call in calls:
+            assert call.config.seed == 0, (sample.id, call.config)
+            assert call.config.max_tokens == 16, (sample.id, call.config)
             prompt = "\n".join(m.text for m in call.input)
             fences = _FENCE_RE.findall(prompt)
             assert len(fences) == 3, (sample.id, prompt[:300])
@@ -1520,6 +1682,10 @@ def test_two_phase_inspect_score_then_arms_report(tmp_path: Path) -> None:
                 f"personas_dir={personas_dir}",
                 "-S",
                 f"strip={strip}",
+                "-S",
+                "judge_seed=0",
+                "-S",
+                "judge_reasoning=",
             ],
             cwd=_REPO,
             capture_output=True,
@@ -1541,6 +1707,8 @@ def test_two_phase_inspect_score_then_arms_report(tmp_path: Path) -> None:
     assert set(params) == {"judge_attribution", "judge_attribution1"}, sorted(params)
     assert not params["judge_attribution"]["strip"] and params["judge_attribution1"]["strip"]
     assert all(p["judge_model"] == "mockllm/model" for p in params.values()), params
+    assert all(p["judge_seed"] == 0 for p in params.values()), params
+    assert all(p["judge_reasoning"] is None for p in params.values()), params
     for sample in scored.samples or []:
         for column in params:
             score = (sample.scores or {})[column]

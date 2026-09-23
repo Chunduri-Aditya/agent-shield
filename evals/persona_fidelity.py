@@ -5,7 +5,7 @@ Do the persona bibles drive the text? Two tasks over two frozen bibles read as d
 Mira Solheim (CTO) and Marisol "Mari" Vance (COO), the closest registers of the set
 (docs/EVAL_PORTFOLIO_PLAN.md:113-114).
 
-  persona_attribution(bibles, personas_dir, judge_model, subset)
+  persona_attribution(bibles, personas_dir, judge_model, subset, judge_seed, judge_reasoning)
       Twenty yes or no briefs (evals/persona/briefs.py), each answered once with either
       persona as gold: 40 samples, id ``PB-NN:<stem>``, target the gold stem,
       metadata["other"] the other stem. The system prompt is the arm:
@@ -18,7 +18,7 @@ Mira Solheim (CTO) and Marisol "Mari" Vance (COO), the closest registers of the 
       code), rule_compliance (S4, code). subset keeps the first N briefs (the S2 subset runs
       10 briefs with --epochs 2).
 
-  persona_judge_meta(blank_guides, strip, personas_dir, judge_model)
+  persona_judge_meta(blank_guides, strip, personas_dir, judge_model, judge_seed, judge_reasoning)
       The judge's own exam: the 30 Voice Samples with known authors, copied into the
       completion by a solver that calls no writer, scored by the same S1 scorer with the
       copied sentence drop off (the text is a Sample, so the guard would match it against
@@ -35,8 +35,14 @@ appends judge_attribution with
 name is not in a fresh process's registry, and this file only imports the scorer). Task
 metadata carries the judge, the arm and personas_sha256 (the pair's file
 bytes, so a run names the bibles it read); the writer is the eval model, which Inspect
-records as log.eval.model. Nothing here imports the project that wrote the bibles, and no
-Anthropic model is called. PERSONAS_DIR in the environment overrides the default bible path
+records as log.eval.model. judge_seed and judge_reasoning are the judge seed and reasoning
+setting (Makefile JUDGE_SEED and JUDGE_REASONING), handed to judge_attribution and recorded
+in the metadata when a judge is attached; with judge_model None (the write phase) both are
+recorded as None, since the judge phase sets them later through -S and they then live in that
+column's EvalScore.params. The scorer's seed wins over the eval level --seed for judge calls:
+Inspect never merges the eval seed into a model that is not the active one. Nothing here
+imports the project that wrote the bibles, and no Anthropic model is called. PERSONAS_DIR in
+the environment overrides the default bible path
 for the tasks, the tests and the report alike.
 
 Run:
@@ -224,6 +230,8 @@ def persona_attribution(
     personas_dir: str = DEFAULT_PERSONAS_DIR,
     judge_model: str | None = None,
     subset: int | None = None,
+    judge_seed: int = 0,
+    judge_reasoning: str | None = None,
 ) -> Task:
     """Masked speaker attribution over 20 briefs x 2 gold personas; bibles is the arm.
 
@@ -238,7 +246,15 @@ def persona_attribution(
     pair = load_pair(personas_dir)
     scorers: list[Scorer] = [surface_baseline(personas_dir), verdict(), rule_compliance()]
     if judge_model:
-        scorers.insert(1, judge_attribution(judge_model, personas_dir))
+        scorers.insert(
+            1,
+            judge_attribution(
+                judge_model,
+                personas_dir,
+                judge_seed=judge_seed,
+                judge_reasoning=judge_reasoning,
+            ),
+        )
     return Task(
         dataset=make_samples(bibles, pair, briefs),
         solver=generate(),
@@ -247,6 +263,8 @@ def persona_attribution(
         metadata={
             "writer": WRITER_RECORDED_AT,
             "judge": judge_model,
+            "judge_seed": judge_seed if judge_model else None,
+            "judge_reasoning": judge_reasoning if judge_model else None,
             "personas_sha256": personas_sha256(personas_dir),
             "bibles": bibles,
             "subset": subset,
@@ -288,6 +306,8 @@ def persona_judge_meta(
     strip: bool = False,
     personas_dir: str = DEFAULT_PERSONAS_DIR,
     judge_model: str | None = None,
+    judge_seed: int = 0,
+    judge_reasoning: str | None = None,
 ) -> Task:
     """The judge on the 30 labelled Voice Samples with no writer (module docstring).
 
@@ -299,7 +319,13 @@ def persona_judge_meta(
     pair = load_pair(personas_dir)
     scorer = (
         judge_attribution(
-            judge_model, personas_dir, strip=strip, leak_guard=False, blank_guides=blank_guides
+            judge_model,
+            personas_dir,
+            strip=strip,
+            leak_guard=False,
+            blank_guides=blank_guides,
+            judge_seed=judge_seed,
+            judge_reasoning=judge_reasoning,
         )
         if judge_model
         else None
@@ -312,6 +338,8 @@ def persona_judge_meta(
         metadata={
             "writer": "none (input copied to the completion)",
             "judge": judge_model,
+            "judge_seed": judge_seed,
+            "judge_reasoning": judge_reasoning,
             "personas_sha256": personas_sha256(personas_dir),
             "blank_guides": blank_guides,
             "strip": strip,

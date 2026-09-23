@@ -179,6 +179,9 @@ WRITER_MODEL ?= ollama/qwen3-8b-8k
 JUDGE_MODEL ?= ollama/llama3.1:8b
 ARM ?= on
 STRIP ?= 0
+# Judge GenerateConfig (plan A2), never auto detected. JUDGE_REASONING empty sets no reasoning_effort; none turns thinking off
+JUDGE_SEED ?= 0
+JUDGE_REASONING ?=
 
 # Phase 1, writer only: make eval-persona-write ARM=on|off|swapped
 # The arm is quoted because Inspect reads -T values as YAML, where a bare on or off is a boolean.
@@ -191,11 +194,13 @@ eval-persona-write:
 # imports judge_attribution, so Inspect's task file fallback cannot find it there either.
 eval-persona-judge:
 	uv run inspect score $(LOG) --scorer evals/persona/judge.py@judge_attribution --action append --overwrite \
-	  -S judge_model=$(JUDGE_MODEL) -S personas_dir=$(PERSONAS_DIR) -S strip=$(STRIP)
+	  -S judge_model=$(JUDGE_MODEL) -S personas_dir=$(PERSONAS_DIR) -S strip=$(STRIP) \
+	  -S judge_seed=$(JUDGE_SEED) -S judge_reasoning=$(JUDGE_REASONING)
 
 # Judge meta eval on the 30 bible Samples (normal, blank guides, strip), S0 leave one out, judge seconds per call
 persona-meta:
-	uv run python scripts/persona_report.py meta --judge $(JUDGE_MODEL) --personas-dir $(PERSONAS_DIR)
+	uv run python scripts/persona_report.py meta --judge $(JUDGE_MODEL) --personas-dir $(PERSONAS_DIR) \
+	  --judge-seed $(JUDGE_SEED) $(if $(JUDGE_REASONING),--judge-reasoning $(JUDGE_REASONING),)
 
 # Judge probe: one prompt to each candidate judge under three GenerateConfig variants (plan A2); the log is gitignored
 PROBE_MODELS ?= ollama/llama3.2:3b,ollama/llama3.1:8b,ollama/nemotron-3-nano:4b,ollama/granite4.2:8b,ollama/lfm2.5:8b,ollama/gemma4:12b

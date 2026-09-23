@@ -3,7 +3,17 @@ Agent Shield — the S1 judge of the persona_attribution eval.
 
 judge_attribution(judge_model, personas_dir) is an Inspect scorer that asks a judge model
 which of two personas wrote the completion, reading only their ``## Style rules`` blocks and
-the masked text. The judge is resolved with get_model() inside score() at temperature 0, so a
+the masked text. The judge is resolved with get_model() inside score() under one GenerateConfig
+built at scorer construction (docs/EVAL_PORTFOLIO_PLAN.md:23-29): temperature 0, the seed from
+judge_seed, max_tokens 16, one connection, a 120 s attempt timeout with two attempts, and
+reasoning_effort from judge_reasoning, where "none" turns thinking off on Ollama's reasoning
+models (on 2026-09-23 it gave a bare letter with no reasoning part on nemotron-3-nano:4b,
+granite4.2:8b and gemma4:12b and errored on neither llama; without the token cap the reasoning
+models spent 800 to 4700 output tokens per one letter verdict and hit the 600 s client
+timeout). Neither setting is auto detected: both come from the Makefile. The config is passed
+on every generate call, so an eval level --max-connections or --max-retries cannot override it;
+one connection holds when the judge is the only model on its provider's connection key (model
+none, or the two phase run). The judge is resolved inside score(), so a
 two phase run (writer resident, then judge resident) attaches it to a finished writer log with
 ``inspect score LOG --scorer evals/persona/judge.py@judge_attribution``. The file spec is
 required: a bare name is not in the registry of a fresh process, and the task file only
@@ -48,6 +58,7 @@ import re
 import sys
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Literal, cast, get_args
 
 # `inspect score --scorer evals/persona/judge.py@judge_attribution` loads this file on its own,
 # with the repo root nowhere on sys.path.
@@ -92,6 +103,11 @@ MIN_SHARED_TOKENS = 4
 _STYLE_RULES_RE = re.compile(r"^## Style rules[ \t]*\n(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 _VERDICT_RE = re.compile(r"(?:\(?([AB])\)?|\*\*([AB])\*\*|\\boxed\{([AB])\})\.?")
+# Mirrors GenerateConfig.reasoning_effort, which Inspect exports no alias for; pydantic rejects
+# any value outside it when the config is built, so a drift here fails at scorer construction.
+ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+_REASONING_EFFORTS: frozenset[str] = frozenset(get_args(ReasoningEffort))
+JUDGE_MAX_TOKENS = 16  # a verdict is one letter; the cap is what stops a reasoning judge
 _SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
 _FENCE = "```"
 # The same scalar mapping accuracy() uses, so the Wilson bounds count the successes it does.
@@ -229,19 +245,45 @@ def judge_attribution(
     strip: bool = False,
     leak_guard: bool = True,
     blank_guides: bool = False,
+    judge_seed: int = 0,
+    judge_reasoning: str | None = None,
 ) -> Scorer:
     """S1: masked speaker attribution by a judge model, both guide orders per item.
 
-    judge_model is a model name for get_model(), resolved inside score() at temperature 0.
-    personas_dir holds ``<stem>.md`` bibles; target.text is the gold persona's stem and
-    state.metadata["other"] the other persona's stem. strip hands the judge the normalised
+    judge_model is a model name for get_model(), resolved inside score() under the config built
+    here for every call (docs/EVAL_PORTFOLIO_PLAN.md:23-29): temperature 0, seed=judge_seed,
+    max_tokens 16, one connection, a 120 s attempt timeout with two attempts, and
+    reasoning_effort=judge_reasoning ("none" turns thinking off on Ollama's reasoning models,
+    which on 2026-09-23 otherwise spent 800 to 4700 output tokens per one letter verdict; None
+    leaves the provider default). The config goes on every generate call, so eval level
+    connection and retry flags cannot override it; one connection holds when no other model
+    shares the judge's connection key. A judge_reasoning outside GenerateConfig's literal, or
+    a judge_seed that is not an int (an empty -S judge_seed= parses to None), raises
+    ValueError. personas_dir holds ``<stem>.md`` bibles; target.text is the gold persona's stem
+    and state.metadata["other"] the other persona's stem. strip hands the judge the normalised
     masked text, leak_guard=False skips the copied sentence drop and blank_guides empties both
     guide fences (module docstring). The value dict is described in the module docstring.
     """
+    if not isinstance(judge_seed, int) or isinstance(judge_seed, bool):
+        raise ValueError(f"judge_seed must be an int, got {judge_seed!r}")
+    if judge_reasoning is not None and judge_reasoning not in _REASONING_EFFORTS:
+        raise ValueError(
+            f"judge_reasoning must be one of {sorted(_REASONING_EFFORTS)} or None, "
+            f"got {judge_reasoning!r}"
+        )
+    config = GenerateConfig(
+        temperature=0,
+        seed=judge_seed,
+        max_tokens=JUDGE_MAX_TOKENS,
+        max_connections=1,
+        attempt_timeout=120,
+        max_retries=2,
+        reasoning_effort=cast(ReasoningEffort | None, judge_reasoning),
+    )
     root = Path(personas_dir)
 
     async def score(state: TaskState, target: Target) -> Score:
-        judge = get_model(judge_model, config=GenerateConfig(temperature=0))
+        judge = get_model(judge_model, config=config)
         gold, other = target.text, str(state.metadata["other"])
         bibles = {stem: load_bible(root / f"{stem}.md") for stem in (gold, other)}
         text = mask_completion(state.output.completion, bibles.values(), leak_guard=leak_guard)
@@ -259,7 +301,8 @@ def judge_attribution(
         for first, second in ((gold, other), (other, gold)):
             prompt = build_prompt(guides[first], guides[second], text)
             try:
-                reply = (await judge.generate([ChatMessageUser(content=prompt)])).completion
+                output = await judge.generate([ChatMessageUser(content=prompt)], config=config)
+                reply = output.completion
             except Exception as exc:  # tagged as judge_error and kept, so n never shrinks
                 errors.append(f"{type(exc).__name__}: {exc}")
                 continue

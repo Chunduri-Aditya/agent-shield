@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from inspect_ai.model import ChatMessage, ModelOutput
+from inspect_ai.model import ChatMessage, GenerateConfig, ModelOutput
 
 from evals.persona_fidelity import DEFAULT_PERSONAS_DIR
 
@@ -101,7 +101,10 @@ class _RecordingJudge:
     def __init__(self) -> None:
         self.prompts: list[str] = []
 
-    async def generate(self, messages: list[ChatMessage]) -> ModelOutput:
+    async def generate(
+        self, messages: list[ChatMessage], config: GenerateConfig | None = None
+    ) -> ModelOutput:
+        # The scorer passes its config on every call (plan A2); a double must accept it.
         self.prompts.append("\n".join(message.text for message in messages))
         return ModelOutput.from_content(model="rec", content="A")
 

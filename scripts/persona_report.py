@@ -1,6 +1,7 @@
 """Persona attribution reports: the judge meta eval, and the arms read off .eval logs.
 
-    uv run python scripts/persona_report.py meta --judge ollama/llama3.1:8b [--personas-dir DIR]
+    uv run python scripts/persona_report.py meta --judge ollama/llama3.1:8b [--judge-seed N] \\
+        [--judge-reasoning none] [--personas-dir DIR]
     uv run python scripts/persona_report.py arms LOG [LOG ...]
 
 meta runs persona_judge_meta three times (normal, blank guides, strip) with the judge on the
@@ -96,13 +97,24 @@ def _judge_seconds(logs: Iterable[EvalLog]) -> list[float]:
     return seconds
 
 
-def run_meta(judge: str, personas_dir: str, log_dir: str | None) -> int:
+def run_meta(
+    judge: str,
+    personas_dir: str,
+    log_dir: str | None,
+    judge_seed: int = 0,
+    judge_reasoning: str | None = None,
+) -> int:
     from inspect_ai import eval as inspect_eval
 
     logs: dict[str, EvalLog] = {}
     for name, (blank_guides, strip) in META_CONDITIONS.items():
         task = persona_judge_meta(
-            blank_guides=blank_guides, strip=strip, personas_dir=personas_dir, judge_model=judge
+            blank_guides=blank_guides,
+            strip=strip,
+            personas_dir=personas_dir,
+            judge_model=judge,
+            judge_seed=judge_seed,
+            judge_reasoning=judge_reasoning,
         )
         [log] = inspect_eval(task, model="none", log_dir=log_dir, display="plain")
         if log.status != "success":
@@ -267,6 +279,12 @@ def main(argv: list[str] | None = None) -> int:
         "meta", help="judge meta eval: normal, blank guides, strip on the 30 Samples"
     )
     meta.add_argument("--judge", required=True, help="judge model, e.g. ollama/llama3.1:8b")
+    meta.add_argument("--judge-seed", type=int, default=0, help="GenerateConfig seed for the judge")
+    meta.add_argument(
+        "--judge-reasoning",
+        default=None,
+        help="GenerateConfig reasoning_effort for the judge, e.g. none",
+    )
     meta.add_argument("--personas-dir", default=DEFAULT_PERSONAS_DIR)
     meta.add_argument("--log-dir", default=None, help="Inspect log directory (default: Inspect's)")
     arms = sub.add_parser("arms", help="report finished arm logs")
@@ -274,7 +292,13 @@ def main(argv: list[str] | None = None) -> int:
     arms.add_argument("--personas-dir", default=DEFAULT_PERSONAS_DIR)
     args = parser.parse_args(argv)
     if args.command == "meta":
-        return run_meta(args.judge, args.personas_dir, args.log_dir)
+        return run_meta(
+            args.judge,
+            args.personas_dir,
+            args.log_dir,
+            judge_seed=args.judge_seed,
+            judge_reasoning=args.judge_reasoning,
+        )
     return run_arms(args.logs, args.personas_dir)
 
 
