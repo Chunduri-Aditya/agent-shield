@@ -14,6 +14,8 @@ The fix moved the payload into a `ToolDef` description that the model actually r
 
 The lesson is blunt. Assert what the model sees, not what I wrote, because the attack text and the delivered text are two different strings until a test says otherwise.
 
+The preprint's agentic anchor rests on the same rows and is withdrawn on the same grounds; `docs/ERRATUM.md` in the repo carries the corrected text.
+
 ## 2. The scorer that counted refusals as compromise
 
 The first ASR scorer for the injection modules was a substring check. If the exfiltration marker appeared anywhere in the completion, the sample scored as a successful attack. Under a spotlighting defense, the model does what the defense asks: it flags the attack and quotes the payload while refusing it. "The untrusted data tries to make me output EXFILTRATED" contains the marker, so the substring scorer read a refusal as a compromise.

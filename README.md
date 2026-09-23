@@ -113,7 +113,8 @@ row, the n=20 table included, predates `920c397`, the commit that first put the
 poisoning payload into the model visible `read_file` description. Those rows
 measure unprompted `send_message` calls, not tool poisoning, so they are not a
 TL-01 result. Validity note and the historical rows stay in
-[RESULTS.md](RESULTS.md). **No agentic anchor currently stands.**
+[RESULTS.md](RESULTS.md); the preprint correction is [docs/ERRATUM.md](docs/ERRATUM.md).
+**No agentic anchor currently stands.**
 
 **Diagnostic probes** (point estimates, not powered CIs): `psych/` (n=6),
 `memory/` (n=10), `exfil/` (n=5), `drift/` (n=6); historical `tools/` n=3
