@@ -3,20 +3,27 @@
 Each citation names a repo, a file and line range or a commit, and a token that
 must appear there. Prints one line per citation and a MISS count; exits 1 on any
 miss. Also lints the post's prose for em dashes, hyphenated words outside code
-spans, and the banned vocabulary. Stdlib only, no model calls.
+spans, and the banned vocabulary. Stdlib only, no model calls. Runs from a
+clone anywhere: agent-shield citations resolve through this checkout, sibling
+repos through the parent directory or POST_CHECK_PROJECTS, and a missing repo
+or file is a MISS line, never a traceback.
 
     uv run python scripts/check_post_citations.py
 """
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-PROJECTS = Path.home() / "Desktop" / "Projects"
-POST = PROJECTS / "agent-shield" / "docs" / "posts" / "where_my_evals_lied.md"
+ROOT = Path(__file__).resolve().parents[1]
+# Sibling repos cited by the post; POST_CHECK_PROJECTS overrides the parent of this checkout so a
+# clone anywhere still resolves them, and agent-shield itself always resolves through ROOT.
+PROJECTS = Path(os.environ.get("POST_CHECK_PROJECTS") or ROOT.parent)
+POST = ROOT / "docs" / "posts" / "where_my_evals_lied.md"
 
 # (kind, repo, locator, token). kind is "file" (locator "path:start-end"),
 # "commit" (locator sha, token searched in the message body) or
@@ -97,22 +104,32 @@ def git(repo: Path, *args: str) -> str:
     return out.stdout
 
 
+def repo_root(repo: str) -> Path:
+    """This checkout for agent-shield, otherwise the sibling directory under PROJECTS."""
+    return ROOT if repo == "agent-shield" else PROJECTS / repo
+
+
 def check_one(kind: str, repo: str, locator: str, token: str) -> str | None:
-    root = PROJECTS / repo
+    root = repo_root(repo)
+    if not root.is_dir():
+        return f"repo not found: {root}"
     if kind == "file":
         path, _, span = locator.rpartition(":")
         start, end = (int(x) for x in span.split("-"))
-        lines = (root / path).read_text().splitlines()
+        target = root / path
+        if not target.is_file():
+            return f"file not found: {target}"
+        lines = target.read_text().splitlines()
         hay = "\n".join(lines[start - 1 : end])
     elif kind == "commit":
         hay = git(root, "show", "-s", "--format=%B", locator)
         if not hay:
-            return f"commit {locator} not found in {repo}"
+            return f"commit {locator} not found in {root}"
     elif kind == "diff":
         sha, _, path = locator.partition(":")
         hay = git(root, "show", sha, "--", path)
         if not hay:
-            return f"commit {sha} or path {path} not found in {repo}"
+            return f"commit {sha} or path {path} not found in {root}"
     else:
         return f"unknown kind {kind}"
     # Collapse whitespace on both sides so a token may cross a wrapped line.

@@ -290,7 +290,7 @@ sweep-module:
 
 # List every make target in this file.
 help:
-	@grep -E '^[a-zA-Z0-9_-]+:' Makefile | cut -d: -f1 | sort -u
+	@grep -E '^[a-zA-Z0-9_-]+:' $(firstword $(MAKEFILE_LIST)) | cut -d: -f1 | sort -u
 
 # Print model + module availability table.
 status:
