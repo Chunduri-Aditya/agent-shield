@@ -109,6 +109,7 @@ files = [
     "tests",
     "agent_shield_providers",
     "scripts/persona_report.py",
+    "scripts/persona_judge_probe.py",
 ]
 # agent_shield/targets/ adapters intentionally import external sibling projects
 # (e.g. ai-health-journal) that are not dependencies, so mypy cannot resolve them.
