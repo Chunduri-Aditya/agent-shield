@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 import pytest
 
@@ -1646,6 +1646,7 @@ def test_two_phase_inspect_score_then_arms_report(tmp_path: Path) -> None:
     from inspect_ai import eval as inspect_eval
     from inspect_ai.log import read_eval_log
 
+    from agent_shield.runtime.stats import wilson_interval
     from evals.persona_fidelity import persona_attribution
 
     personas_dir = _bible_path(f"{MIRA}.md").parent
@@ -1749,3 +1750,374 @@ def test_two_phase_inspect_score_then_arms_report(tmp_path: Path) -> None:
     # One sentence repeated forty times has four distinct normalised tokens: below the floor.
     assert out.count("floor50=below") == 2 and "floor50=ok" not in out, out
     assert "A_low=" not in out, out  # one arm only, no comparison line
+
+    # RESULTS rows (docs/EVAL_PORTFOLIO_PLAN.md:35-37, A4): the same command with --markdown
+    # prints only table rows in the shared header's schema, one per judge column plus S0, and
+    # none of the S1/S0 prose lines. Date, commit and log name are read off the log; the bounds
+    # come from stats.wilson_interval, never typed in.
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "scripts/persona_report.py",
+            "arms",
+            location,
+            "--personas-dir",
+            str(personas_dir),
+            "--markdown",
+        ],
+        cwd=_REPO,
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    # This log carries no revision: Inspect's git_context() returns None under
+    # PYTEST_CURRENT_TEST whatever the tree's state, and a row without a commit is refused the
+    # same way a dirty one is (exit 1, `dirty log: <name>` on stderr, rows still on stdout). The
+    # dirty and clean cases are pinned on written copies by test_arms_markdown_refuses_a_dirty_log.
+    assert scored.eval.revision is None, scored.eval.revision
+    assert proc.returncode == 1, f"arms --markdown exit {proc.returncode}\n{proc.stderr[-3000:]}"
+    assert f"dirty log: {Path(location).name}" in proc.stderr, proc.stderr[-500:]
+    date = scored.eval.created[:10]
+    commit = scored.eval.revision.commit if scored.eval.revision else None
+    name = Path(location).name
+    s1 = wilson_interval(0, 40)  # every S1 verdict is malformed: 0 of 40 correct
+    s0 = wilson_interval(20, 40)  # the surface baseline on the repeated sentence: 20 of 40
+    s1_ci = f"[{s1.low:.3f}, {s1.high:.3f}]"
+    s0_ci = f"[{s0.low:.3f}, {s0.high:.3f}]"
+    head = f"| {date} | mockllm/model | off |"
+    tail = f"| {commit} | {name} |"
+    expected_rows = [
+        f"{head} mockllm/model seed=0 | S1 | 0.000 | 40 | 7 | {s1_ci} {tail}",
+        f"{head} mockllm/model seed=0 | S1 strip | 0.000 | 40 | 7 | {s1_ci} {tail}",
+        f"{head} none | S0 | 0.500 | 40 | 7 | {s0_ci} {tail}",
+    ]
+    # stdout carries rows only: no log= or S1/S0 prose lines, and the A/B comparison line goes
+    # to stderr in markdown mode (never printed here: one arm only).
+    rows = proc.stdout.splitlines()
+    for expected in expected_rows:
+        assert expected in rows, f"{expected!r} not a line of:\n{proc.stdout}"
+    assert len(rows) == 3 and all(line.startswith("| ") for line in rows), proc.stdout
+    assert "A_low=" not in proc.stdout, proc.stdout
+
+
+# --- Commit C4: the judge sweep, its kill rows, and RESULTS rows read off the log ---------------
+#
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:30-34, A3): a judge survives the sweep only when every kill
+# row holds, survivors rank by normal_low descending then judge_mean_s ascending, and both the
+# per sample time_limit and the candidate wall budget derive from one per call budget. A4
+# (:35-37): every RESULTS row shares one header and Judge reads `none` on S0 rows. The script is
+# imported inside each test so a missing symbol reds only that test.
+
+_JUDGE_CONFIG_LINE = (
+    "judge_config seed=0 max_tokens=16 max_connections=1 attempt_timeout=120 max_retries=2 "
+    "reasoning_effort=None"
+)
+
+
+def test_pick_judge_applies_every_kill_row() -> None:
+    import scripts.persona_report as report
+
+    assert [name for name, _ in report.KILL_ROWS] == [
+        "normal_low",
+        "order_flip",
+        "malformed",
+        "guide_gap",
+        "judge_error",
+    ]
+
+    def result(
+        judge: str,
+        *,
+        normal_low: float = 0.60,
+        order_flip: float = 0.10,
+        malformed: float = 0.0,
+        guide_gap: float = 0.20,
+        judge_error: float = 0.0,
+        judge_mean_s: float = 4.0,
+    ) -> report.MetaResult:
+        """A survivor by default: each value inside its row (docs/EVAL_PORTFOLIO_PLAN.md:30-33).
+
+        Only the five kill inputs and the ranking key are given; every other field keeps the
+        dataclass default.
+        """
+        return report.MetaResult(
+            judge=judge,
+            normal_low=normal_low,
+            order_flip=order_flip,
+            malformed=malformed,
+            guide_gap=guide_gap,
+            judge_error=judge_error,
+            judge_mean_s=judge_mean_s,
+        )
+
+    survivor = result("survivor")
+    killed = {
+        # normal_low fires at <= 0.50 (docs/EVAL_PORTFOLIO_PLAN.md:30-33)
+        "normal_low": result("low", normal_low=0.50),
+        # order_flip fires at > 0.30 (docs/EVAL_PORTFOLIO_PLAN.md:30-33)
+        "order_flip": result("flip", order_flip=0.31),
+        # malformed fires at > 0.10 (docs/EVAL_PORTFOLIO_PLAN.md:30-33)
+        "malformed": result("malformed", malformed=0.11),
+        # guide_gap fires at <= 0 (docs/EVAL_PORTFOLIO_PLAN.md:30-33)
+        "guide_gap": result("gap", guide_gap=0.0),
+        # judge_error fires at > 0: one errored call of 30 (docs/EVAL_PORTFOLIO_PLAN.md:30-33)
+        "judge_error": result("error", judge_error=0.033),
+    }
+    pick, reasons = report.pick_judge([survivor, *killed.values()])
+    assert pick == survivor, (pick, reasons)
+    assert reasons["survivor"] == [], reasons
+    for row, candidate in killed.items():
+        assert reasons[candidate.judge] == [row], (candidate.judge, reasons)
+    assert set(reasons) == {"survivor", *(c.judge for c in killed.values())}, reasons
+
+    # Allow at the rows' own limits: order_flip <= 0.30 and malformed <= 0.10 hold at equality,
+    # where 9 of 30 flips and 3 of 30 malformed verdicts land (docs/EVAL_PORTFOLIO_PLAN.md:30-33).
+    # Both carry a higher low than survivor, so the pick proves they count as survivors.
+    edge_flip = result("edge_flip", order_flip=9 / 30, normal_low=0.65)
+    edge_malformed = result("edge_malformed", malformed=3 / 30, normal_low=0.62)
+    pick, reasons = report.pick_judge([survivor, edge_malformed, edge_flip, *killed.values()])
+    assert reasons["edge_flip"] == [] and reasons["edge_malformed"] == [], reasons
+    assert pick == edge_flip, (pick, reasons)
+
+    # Survivors rank by normal_low descending, then judge_mean_s ascending
+    # (docs/EVAL_PORTFOLIO_PLAN.md:32): the higher low wins even against a faster judge.
+    a = result("a", normal_low=0.60, judge_mean_s=2.0)
+    b = result("b", normal_low=0.70, judge_mean_s=8.0)
+    c = result("c", normal_low=0.70, judge_mean_s=3.0)
+    assert report.pick_judge([a, b, c])[0] == c
+    assert report.pick_judge([a, b])[0] == b
+    assert report.pick_judge([]) == (None, {})
+
+
+def test_sweep_time_limit_from_call_budget() -> None:
+    import scripts.persona_report as report
+
+    # docs/EVAL_PORTFOLIO_PLAN.md:33-34: time_limit = 2 x (2 x budget + 90) and the candidate
+    # wall budget = 180 x budget + 180, both whole seconds rounded up.
+    for budget, time_limit, wall in ((10.0, 220, 1980), (9, 216, 1800)):
+        got_limit = report.sweep_time_limit(budget)
+        got_wall = report.candidate_budget_s(budget)
+        assert (got_limit, got_wall) == (time_limit, wall), (budget, got_limit, got_wall)
+        assert isinstance(got_limit, int) and isinstance(got_wall, int), (got_limit, got_wall)
+
+
+def test_run_meta_prints_judge_config_from_the_log(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import scripts.persona_report as report
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    code = report.run_meta(f"{_FAKE_JUDGE_API}/oracle", str(personas_dir), str(tmp_path / "logs"))
+    out = capsys.readouterr().out
+    assert code == 0, out
+    lines = out.splitlines()
+    # The oracle names Mira in both orders: her 15 Samples right, Mari's 15 wrong. Blank guides
+    # leave it no rules, so it answers "?" on all 30 (malformed, none correct). S0 leave one out
+    # is 15 of 30, pinned by test_surface_classifier_loo_accuracy_reported.
+    for prefix in (
+        "normal correct=15 n=30 acc=0.500 ",
+        "blank correct=0 n=30 ",
+        "guide_gap=0.500",
+        "s0_loo_acc=0.500 correct=15 n=30",
+        "judge_mean_s=",
+    ):
+        assert any(line.startswith(prefix) for line in lines), f"{prefix!r} not in:\n{out}"
+    # The judge settings as Inspect recorded them on a ModelEvent.config of the normal log: the
+    # scorer's default seed and reasoning, and the caps of docs/EVAL_PORTFOLIO_PLAN.md:23-29.
+    assert _JUDGE_CONFIG_LINE in lines, out
+
+
+def test_run_sweep_kills_the_oracle_and_picks_none(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import scripts.persona_report as report
+    from agent_shield.runtime.stats import wilson_interval
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    judge = f"{_FAKE_JUDGE_API}/oracle"
+    stopped: list[str] = []
+
+    def fake_stop(model: str) -> str | None:
+        stopped.append(model)
+        return None
+
+    monkeypatch.setattr(report, "stop_model", fake_stop)
+    code = report.run_sweep([judge], str(personas_dir), str(tmp_path / "logs"), 0, None, 10.0)
+    out = capsys.readouterr().out
+    assert code == 0, out  # a kill is a result; only a run that did not finish is an error
+    assert stopped == [judge], stopped
+    lines = out.splitlines()
+    assert any(
+        line.startswith("sweep_config time_limit=220 candidate_budget_s=1980") for line in lines
+    ), out
+    # 15 of 30 right puts normal_low at wilson(15, 30).low, 0.332 at .3f, under the 0.50 row
+    # (docs/EVAL_PORTFOLIO_PLAN.md:30-33); no flip, no malformed verdict, gap 0.500, no error.
+    low = wilson_interval(15, 30).low
+    prefix = f"sweep {judge} low={low:.3f} flip=0.000 malformed=0.000 gap=0.500 mean_s="
+    verdicts = [line for line in lines if line.startswith(prefix)]
+    assert len(verdicts) == 1, f"{prefix!r} not once in:\n{out}"
+    assert verdicts[0].endswith(" verdict=kill:normal_low"), verdicts[0]
+    assert lines and lines[-1] == "sweep_pick=none", out
+
+
+def test_run_sweep_reports_error_and_budget_paths(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Three ways a candidate leaves the sweep without a pass (docs/EVAL_PORTFOLIO_PLAN.md:30-34):
+    a run that did not finish, a finished run over its wall budget, and an exception escaping
+    meta_result. Each still frees the judge, and a budget verdict keeps the rows that fired.
+    """
+    import scripts.persona_report as report
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    stopped: list[str] = []
+
+    def fake_stop(model: str) -> str | None:
+        stopped.append(model)
+        return None
+
+    monkeypatch.setattr(report, "stop_model", fake_stop)
+    logs = str(tmp_path / "logs")
+
+    # (a) An unknown provider: get_model raises inside the scorer, the eval does not finish, the
+    # judge is reported as an error and the sweep exits 1 with no pick.
+    missing = "nosuchprovider/x"
+    code = report.run_sweep([missing], str(personas_dir), logs, 0, None, 10.0)
+    out = capsys.readouterr().out
+    lines = out.splitlines()
+    assert code == 1, out
+    assert stopped == [missing], stopped
+    error_line = rf"sweep {re.escape(missing)} wall_s=\d+ verdict=error"
+    assert any(re.fullmatch(error_line, line) for line in lines), f"{error_line!r} not in:\n{out}"
+    assert lines and lines[-1] == "sweep_pick=none", out
+
+    # (b) A finished run over its wall budget: the budget verdict comes first and the fired rows
+    # follow it, so the log still shows why the judge would have lost anyway.
+    oracle = f"{_FAKE_JUDGE_API}/oracle"
+    monkeypatch.setattr(report, "candidate_budget_s", lambda budget: 0)
+    stopped.clear()
+    code = report.run_sweep([oracle], str(personas_dir), logs, 0, None, 10.0)
+    out = capsys.readouterr().out
+    lines = out.splitlines()
+    assert code == 0, out  # over budget is a result, not an error
+    assert stopped == [oracle], stopped
+    verdicts = [line for line in lines if line.startswith(f"sweep {oracle} ")]
+    assert len(verdicts) == 1, f"sweep line not once in:\n{out}"
+    assert verdicts[0].endswith(" verdict=budget,kill:normal_low"), verdicts[0]
+    assert lines and lines[-1] == "sweep_pick=none", out
+
+    # (c) An exception escaping meta_result is recorded on its own line with the cause, the judge
+    # is still freed, and the sweep reaches its error verdict instead of crashing.
+    def boom(*args: object, **kwargs: object) -> NoReturn:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(report, "meta_result", boom)
+    stopped.clear()
+    code = report.run_sweep([oracle], str(personas_dir), logs, 0, None, 10.0)
+    out = capsys.readouterr().out
+    lines = out.splitlines()
+    assert code == 1, out
+    assert stopped == [oracle], stopped
+    recorded = [line for line in lines if line.startswith(f"sweep_error judge={oracle} ")]
+    assert recorded and "RuntimeError: boom" in recorded[0], f"sweep_error line not in:\n{out}"
+    error_line = rf"sweep {re.escape(oracle)} wall_s=\d+ verdict=error"
+    assert any(re.fullmatch(error_line, line) for line in lines), f"{error_line!r} not in:\n{out}"
+    assert lines and lines[-1] == "sweep_pick=none", out
+
+
+def test_arms_markdown_refuses_a_dirty_log(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A RESULTS row comes from a clean tree (RESULTS.md, Reproducibility): --markdown prints the
+    rows to stdout, then exits 1 with `dirty log: <name>` on stderr when the log's revision.dirty
+    is True, and 0 when it is False. Both flags are set on written copies of one mockllm arm log,
+    since the tree this test runs in may itself be dirty.
+    """
+    from inspect_ai import eval as inspect_eval
+    from inspect_ai.log import EvalRevision, read_eval_log, write_eval_log
+
+    import scripts.persona_report as report
+    from agent_shield.runtime.stats import wilson_interval
+    from evals.persona_fidelity import persona_attribution
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    task = persona_attribution(bibles="off", personas_dir=str(personas_dir), judge_model=None)
+    [run] = inspect_eval(
+        task, model="mockllm/model", log_dir=str(tmp_path / "logs"), display="none", seed=7
+    )
+    assert run.status == "success", run.error
+    log = read_eval_log(run.location)
+    copies: dict[bool, str] = {}
+    for dirty in (True, False):
+        log.eval.revision = EvalRevision(type="git", origin="local", commit="abc1234", dirty=dirty)
+        copies[dirty] = str(tmp_path / ("dirty.eval" if dirty else "clean.eval"))
+        write_eval_log(log, copies[dirty])
+    s0 = wilson_interval(20, 40)  # the surface baseline on the repeated sentence: 20 of 40
+    s0_row = (
+        f"| {log.eval.created[:10]} | mockllm/model | off | none | S0 | 0.500 | 40 | 7 "
+        f"| [{s0.low:.3f}, {s0.high:.3f}] | abc1234 |"
+    )
+    capsys.readouterr()
+
+    code = report.run_arms([copies[True]], str(personas_dir), markdown=True)
+    captured = capsys.readouterr()
+    assert code == 1, captured
+    assert f"{s0_row} dirty.eval |" in captured.out.splitlines(), captured.out
+    assert re.search(r"^dirty log: .*dirty\.eval", captured.err, re.MULTILINE), captured.err
+
+    code = report.run_arms([copies[False]], str(personas_dir), markdown=True)
+    captured = capsys.readouterr()
+    assert code == 0, captured
+    assert captured.out.splitlines() == [f"{s0_row} clean.eval |"], captured.out
+    assert "dirty" not in captured.err, captured.err
+
+
+def test_meta_result_runs_samples_one_at_a_time(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """meta_result passes max_samples=1 and the sweep's time_limit to Inspect's eval.
+
+    Inspect runs the scorer under half the per sample time limit, and that limit is wall clock:
+    with ten samples queued on the judge's single connection (max_connections=1), a judge that
+    answers inside its per call budget would still carry its later samples over the limit while
+    they wait, so one sample at a time is the only schedule the budget of
+    docs/EVAL_PORTFOLIO_PLAN.md:33-34 describes.
+    """
+    import inspect_ai
+
+    import scripts.persona_report as report
+
+    personas_dir = _bible_path(f"{MIRA}.md").parent
+    _bible_path(f"{MARI}.md")
+    _register_fake_judge()
+    real_eval = inspect_ai.eval
+    calls: list[dict[str, Any]] = []
+
+    def recorder(*args: Any, **kwargs: Any) -> Any:
+        calls.append(dict(kwargs))
+        return real_eval(*args, **kwargs)
+
+    # The seam is wherever the script binds Inspect's eval: a module level name when the import
+    # is hoisted, else the inspect_ai attribute a function level `from inspect_ai import eval`
+    # reads on every call.
+    if hasattr(report, "inspect_eval"):
+        seam = "scripts.persona_report.inspect_eval"
+        monkeypatch.setattr(report, "inspect_eval", recorder)
+    else:
+        seam = "inspect_ai.eval"
+        monkeypatch.setattr(inspect_ai, "eval", recorder)
+    result = report.meta_result(
+        f"{_FAKE_JUDGE_API}/oracle", str(personas_dir), str(tmp_path / "logs"), time_limit=216
+    )
+    assert result is not None
+    assert len(calls) == len(report.META_CONDITIONS), (seam, calls)
+    for kwargs in calls:
+        assert kwargs.get("max_samples") == 1, (seam, kwargs)
+        assert kwargs.get("time_limit") == 216, (seam, kwargs)

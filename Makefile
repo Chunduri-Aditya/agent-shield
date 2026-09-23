@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -207,6 +207,16 @@ PROBE_MODELS ?= ollama/llama3.2:3b,ollama/llama3.1:8b,ollama/nemotron-3-nano:4b,
 persona-probe:
 	uv run python scripts/persona_judge_probe.py --models $(PROBE_MODELS) --personas-dir $(PERSONAS_DIR) \
 	  --log logs/persona_probe_$(shell date +%Y-%m-%dT%H-%M-%S).txt
+
+# Cross family judge candidates for the meta sweep; lfm2.5:8b is out: the 2026-09-23 probe found no variant returns a verdict under the 16 token cap
+SWEEP_JUDGES ?= ollama/llama3.1:8b,ollama/llama3.2:3b,ollama/nemotron-3-nano:4b,ollama/granite4.2:8b,ollama/gemma4:12b
+# Seconds per judge call the sweep budgets from: largest probe working_s x 1.5 rounded up (9 on 2026-09-23); 10 is a safe default
+CALL_BUDGET_S ?= 10
+# Judge meta sweep over SWEEP_JUDGES with the A3 kill rows; one model resident at a time; prints sweep_pick=<judge|none>
+persona-judge-sweep:
+	uv run python scripts/persona_report.py sweep --judges $(SWEEP_JUDGES) --judge-seed $(JUDGE_SEED) \
+	  $(if $(JUDGE_REASONING),--judge-reasoning $(JUDGE_REASONING),) --call-budget-s $(CALL_BUDGET_S) \
+	  --personas-dir $(PERSONAS_DIR)
 
 # Free model presets. Override FREE_MODULE to reuse for later modules.
 free-agents:
