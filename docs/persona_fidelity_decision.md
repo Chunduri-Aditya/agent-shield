@@ -1,6 +1,6 @@
 # Persona attribution: does the bible drive the voice?
 
-_Status: judge sweep pending; no arm has run. Every experiment here is a Baseline versus Challenger decision:
+_Status: judge picked (gemma4:12b, sweep below); no arm has run. Every experiment here is a Baseline versus Challenger decision:
 the promotion rule is written before the run; the meta and arm numbers come from `scripts/persona_report.py`,
 the probe numbers from `scripts/persona_judge_probe.py` and the Wilson bounds from
 `agent_shield.runtime.stats`, none retyped; one local model is resident at a time (18 GiB); no Anthropic model
@@ -97,9 +97,28 @@ Numbers are the `scripts/persona_report.py meta` and `sweep` output lines.
 | ollama/gemma4:12b | same, no cap | cancelled | | | | | | `logs/2026-09-23T07-59-44-00-00_persona-judge-meta_YGfDLdy6LXPEVNNNi8CTWr.eval` | cancelled, 600 s timeout, no config cap |
 | ollama/granite4.2:8b | same, no cap | cancelled | | | | | | `logs/2026-09-23T08-12-24-00-00_persona-judge-meta_ic6ZdEnryDmFo6t4mv7pWd.eval` | cancelled, 600 s timeout, no config cap |
 | ollama/lfm2.5:8b | same, no cap | cancelled | | | | | | `logs/2026-09-23T08-26-35-00-00_persona-judge-meta_gXmLMdLykh7VcnoAuN2DTx.eval` | cancelled at 647 s wall, 25 completed calls up to 4692 output tokens, no call timed out, no config cap; replies included `\boxed{A}`, now parsed (A1) |
+| ollama/llama3.1:8b | A2 config, reasoning_effort none, seed 0, budget 9 s (2026-09-23, commit `8fdfbb4`) | 5/30, 0.167, [0.073, 0.336] | 0.000 | 0.800 | 0.167 (blank correct 0/30) | 0.500 | 0.25 (wall 54 s) | `logs/2026-09-23T19-26-11-00-00_persona-judge-meta_SbSE9GFnPtKWKcDgjsqMNL.eval`, `logs/2026-09-23T19-26-37-00-00_persona-judge-meta_MyUUyCYAhXiZPDhMfxBbiw.eval`, `logs/2026-09-23T19-26-49-00-00_persona-judge-meta_MbR3Pxp65wwUQYQMecxLGb.eval` | kill: normal_low, order_flip |
+| ollama/llama3.2:3b | A2 config, reasoning_effort none, seed 0, budget 9 s (2026-09-23, commit `8fdfbb4`) | 0/30, 0.000, [0.000, 0.114] | 0.000 | 1.000 | 0.000 (blank correct 0/30) | 0.500 | 0.14 (wall 33 s) | `logs/2026-09-23T19-30-17-00-00_persona-judge-meta_3BDWWTRuwMrFz5CQms4aLw.eval`, `logs/2026-09-23T19-30-31-00-00_persona-judge-meta_9c9uwrzAMYtorcVXSqQMab.eval`, `logs/2026-09-23T19-30-40-00-00_persona-judge-meta_CdR8XuUpkon6wGZtruN8w4.eval` | kill: normal_low, order_flip, guide_gap |
+| ollama/nemotron-3-nano:4b | A2 config, reasoning_effort none, seed 0, budget 9 s (2026-09-23, commit `8fdfbb4`) | 20/30, 0.667, [0.488, 0.808] | 0.000 | 0.200 | 0.667 (blank correct 0/30) | 0.500 | 0.98 (wall 184 s) | `logs/2026-09-23T19-33-39-00-00_persona-judge-meta_SMLnSszjqWwD3nsPMNqPTe.eval`, `logs/2026-09-23T19-35-04-00-00_persona-judge-meta_nzwgzze2vRoudSzfjstNyF.eval`, `logs/2026-09-23T19-35-22-00-00_persona-judge-meta_egHkz7CPdPb4Avg2asgZBD.eval` | kill: normal_low |
+| ollama/granite4.2:8b | A2 config, reasoning_effort none, seed 0, budget 9 s (2026-09-23, commit `8fdfbb4`) | 15/30, 0.500, [0.332, 0.668] | 0.000 | 0.500 | 0.500 (blank correct 0/30) | 0.500 | 0.33 (wall 67 s) | `logs/2026-09-23T19-39-54-00-00_persona-judge-meta_7YpP8EiB8XDauoYsXL93J5.eval`, `logs/2026-09-23T19-40-25-00-00_persona-judge-meta_Rw2ED5S7zqcqXzTXGZxxwu.eval`, `logs/2026-09-23T19-40-40-00-00_persona-judge-meta_WKMikUEbBTnJ48VX4Febzn.eval` | kill: normal_low, order_flip |
+| ollama/gemma4:12b | A2 config, reasoning_effort none, seed 0, budget 9 s (2026-09-23, commit `8fdfbb4`) | 22/30, 0.733, [0.556, 0.858] | 0.000 | 0.133 | 0.733 (blank correct 0/30) | 0.500 | 2.74 (wall 504 s) | `logs/2026-09-23T19-42-53-00-00_persona-judge-meta_dz9CkcRusNKemLyroj3v2W.eval`, `logs/2026-09-23T19-46-46-00-00_persona-judge-meta_8eyj22uJZT2feCDVHBWM5J.eval`, `logs/2026-09-23T19-47-40-00-00_persona-judge-meta_fQDCS3ktzefifeoRkwgGGZ.eval` | pass |
 
-Sweep rows (A2 config, `reasoning_effort` none, seed 0, call budget 9 s) land here from
-`make persona-judge-sweep JUDGE_REASONING=none CALL_BUDGET_S=9`.
+The five sweep rows come from `make persona-judge-sweep JUDGE_REASONING=none CALL_BUDGET_S=9`, run on
+2026-09-23 at commit `8fdfbb4` as one judge per invocation (`SWEEP_JUDGES=<judge>`), the cross judge pick
+read through `pick_judge` over the five logs; per judge logs are `logs/persona_sweep_2026-09-23T12-*.txt`.
+
+### Sweep result, 2026-09-23
+
+`sweep_pick=ollama/gemma4:12b`, the only survivor: normal 22 of 30, Wilson [0.556, 0.858], order flip 0.133,
+malformed 0.000, guide gap 0.733, no judge error, 2.74 s per call, 504 s wall. With blank guides it falls to
+0 of 30 (order flip 0.800, malformed 0.200), so the guides are what it reads; under strip it scores 23 of 30
+(Wilson [0.591, 0.882], flip 0.133), so the surface tells the S0 stoplist removes are not what carries its
+verdicts. The runner up, nemotron-3-nano:4b, reads the guides (gap 0.667, flip 0.200) but its normal low of
+0.488 sits under the 0.50 floor; granite4.2:8b flips half its verdicts; both llama judges answer by position
+(llama3.1:8b reproduces its overnight 5 of 30 and 0.800 flip exactly under seed 0; llama3.2:3b answers A on
+every call). Inspect's display counted 2 HTTP retries during the llama3.1:8b run and none failed; judge_error
+is 0 in every row. The arms run with `JUDGE_MODEL=ollama/gemma4:12b JUDGE_REASONING=none JUDGE_SEED=0`, and
+the strip S1 column is on (judge_mean_s 2.74 s is under the 5 s limit).
 
 ## Decision
 
