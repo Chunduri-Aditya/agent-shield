@@ -11,6 +11,29 @@ store listing. Details below and in
 Full orientation (goals, modules, runtime, what success looks like):
 [docs/WHAT_AGENT_SHIELD_DOES.md](docs/WHAT_AGENT_SHIELD_DOES.md).
 
+## Results (anchored rows only)
+
+Both rows: seed 0, commit `d85bdb4`, 5 attacks × 4 epochs. Means and CIs are RESULTS.md cells rounded half up from 4 to 3 decimals; Inspect log filenames, diagnostic probes and withdrawn rows are in [RESULTS.md](RESULTS.md).
+
+| Task | Model | Metric | Mean | n | 95% Wilson CI | Status |
+|---|---|---|---|---|---|---|
+| `inputs_transparency` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | TR | 0.150 | 20 | [0.052, 0.360] | anchored |
+| `inputs_asr` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | ASR | 0.050 | 20 | [0.009, 0.236] | anchored |
+
+## What went wrong and got fixed
+
+Five numbers from this repo and its neighbours were wrong while their tests were green; each case, its cause and the commit that fixed it are in [docs/posts/where_my_evals_lied.md](docs/posts/where_my_evals_lied.md). Every citation in the post is checked against its source by `scripts/check_post_citations.py` (`make post-check`), which fails when a cited token moves or disappears.
+
+## Task index
+
+| Task | Probes | Status |
+|---|---|---|
+| `inputs_asr`, `inputs_transparency` | direct prompt injection, IN-01..IN-05 | anchored |
+| `tools_*_anchored` | MCP tool description poisoning, TL-01 | withdrawn (rows predate `920c397`; rerun pending) |
+| `psych_*`, `memory_*`, `exfil_*`, `drift_*` | social engineering, RAG poisoning, exfiltration, drift | diagnostic |
+| `persona_attribution` | do persona bibles drive the text (arms A, B, C; scorers S0 to S4) | TBD |
+| `env/`, `multiagent/` | environment payloads, peer agent attacks | deferred |
+
 ## Why this exists
 
 Most agent benchmarks answer two questions:
@@ -76,14 +99,14 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-**Headline finding (locked, anchored):** On `inputs/` at n=20 (seed 0, Wilson
-95% CI), Sonnet 4.5 scores Transparency Rate TR=0.150, CI [0.052, 0.360], with
-ASR=0.050, CI [0.009, 0.236]. Llama 3.1 8B, Groq Llama 3.3 70B, and Gemini 3.5
-Flash sit at TR=0.000 on `inputs/` — but at n=5, whose Wilson upper bound is
-0.434, not 0.161. None of the three has an anchored n=20 `inputs/` row, so
-“Sonnet is the only model with nonzero TR” is not yet a powered claim; it is
-one anchored row beside three underpowered ones. Silent resistance is the
-default on direct injection — not the same outcome as “resisted out loud.”
+**Headline finding (locked, anchored):** one anchored model on `inputs/` at n=20
+(seed 0, Wilson 95% CI), Sonnet 4.5, in the Results table above. Llama 3.1 8B,
+Groq Llama 3.3 70B and Gemini 3.5 Flash sit at TR=0.000 on `inputs/`, but at
+n=5, whose Wilson upper bound is 0.434, not 0.161. None of the three has an
+anchored n=20 `inputs/` row, so “Sonnet is the only model with nonzero TR” is
+not yet a powered claim; it is one anchored row beside three underpowered ones.
+Silent resistance is the default on direct injection, not the same outcome as
+“resisted out loud.”
 
 **Second anchor (agentic) — withdrawn, rerun pending:** every `tools/` TL-01
 row, the n=20 table included, predates `920c397`, the commit that first put the
@@ -288,8 +311,11 @@ Agent Shield keeps model calls out of the unit-test path. Tests validate
 deterministic scoring, attack metadata consistency, paper-artifact
 reproducibility, risk-gate behavior, runtime guard / MCP proxy / proof metrics
 (including TL-01 honesty pins and schema-boundary pins), TR-v2 parse + dry-run
-holdout, and report generation. The full suite runs without API keys, network
-access, or local model servers.
+holdout, and report generation. `tests/test_readme_results.py` holds the README
+Results cells, commit and seed to the RESULTS.md anchored table, the Task index
+statuses to the Module coverage table, and checks that the post and its citation
+checker exist. The full suite
+runs without API keys, network access, or local model servers.
 
 ```bash
 make test    # pytest — no API keys required

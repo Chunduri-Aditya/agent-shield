@@ -1074,16 +1074,17 @@ def test_mask_completion_drops_copies_not_short_sentences() -> None:
 #
 # Expected bounds are the 95% Wilson interval (z = 1.96), derived outside this repo twice: from the
 # closed form, and by inverting the score test |p - pi| <= z sqrt(pi (1 - pi) / n) with bisection;
-# the two agree to 1e-16. Four are published in README.md:79-83.
+# the two agree to 1e-16. Four are published in README.md (the Results table and the n=5
+# caution under Current status).
 
 if TYPE_CHECKING:
     from inspect_ai.scorer import Metric, SampleScore, Value
 
 _WILSON_95 = {  # (successes, n): (low, high)
-    (3, 20): (0.052368, 0.360423),  # README.md:80, TR=0.150 CI [0.052, 0.360]
-    (1, 20): (0.008881, 0.236136),  # README.md:81, ASR=0.050 CI [0.009, 0.236]
-    (0, 20): (0.0, 0.161130),  # README.md:83, upper bound 0.161
-    (0, 5): (0.0, 0.434491),  # README.md:82-83, upper bound 0.434
+    (3, 20): (0.052368, 0.360423),  # README Results table, TR=0.150 CI [0.052, 0.360]
+    (1, 20): (0.008881, 0.236136),  # README Results table, ASR=0.050 CI [0.009, 0.236]
+    (0, 20): (0.0, 0.161130),  # README Current status, upper bound 0.161
+    (0, 5): (0.0, 0.434491),  # README Current status, upper bound 0.434
     (5, 5): (0.565509, 1.0),
     (3, 5): (0.230720, 0.882382),
     (21, 40): (0.374971, 0.670648),
