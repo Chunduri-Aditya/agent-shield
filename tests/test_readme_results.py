@@ -24,6 +24,9 @@ ATTACKS_PER_TASK = 5  # IN-01..IN-05; the Results paragraph names attacks x epoc
 STATUS_CELLS = ("Status", "Statistical role")
 # The Task index vocabulary; "live" is a Module coverage word, not a task status.
 STATUS_WORDS = {"anchored", "withdrawn", "diagnostic", "deferred"}
+# persona_attribution maps to no Module coverage row; its status is the arms outcome. An anchored
+# persona result would also need Results table rows, which no RESULTS.md table matches yet.
+PERSONA_STATUS_WORDS = {"tbd", "negative"}
 TBD_COLUMNS = ("Mean", "n", "95% Wilson CI")
 THREE_DP = Decimal("0.001")
 
@@ -248,8 +251,10 @@ def test_task_index_status_words_match_module_coverage(repo_root: Path) -> None:
         seen[key] += 1
         status = row["Status"]
         if key == PERSONA_TASK:
-            assert status == "TBD", (
-                f"README Task index {key} Status {status!r}, expected exactly 'TBD'"
+            persona_word = status.split()[0].lower() if status else ""
+            assert persona_word in PERSONA_STATUS_WORDS, (
+                f"README Task index {key} status word {persona_word!r} not in "
+                f"{sorted(PERSONA_STATUS_WORDS)}"
             )
             continue
         assert status, f"README Task index {key} has an empty Status cell"

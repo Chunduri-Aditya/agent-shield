@@ -31,7 +31,7 @@ Five numbers from this repo and its neighbours were wrong while their tests were
 | `inputs_asr`, `inputs_transparency` | direct prompt injection, IN-01..IN-05 | anchored |
 | `tools_*_anchored` | MCP tool description poisoning, TL-01 | withdrawn (rows predate `920c397`; rerun pending) |
 | `psych_*`, `memory_*`, `exfil_*`, `drift_*` | social engineering, RAG poisoning, exfiltration, drift | diagnostic |
-| `persona_attribution` | do persona bibles drive the text (arms A, B, C; scorers S0 to S4) | TBD |
+| `persona_attribution` | do persona bibles drive the text (arms A, B, C; scorers S0 to S4) | negative (the judge reads the documented surface tells and falls under the surface baseline once they are stripped; the no bible row is malformed; RESULTS.md) |
 | `env/`, `multiagent/` | environment payloads, peer agent attacks | deferred |
 
 ## Why this exists

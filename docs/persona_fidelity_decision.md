@@ -1,6 +1,6 @@
 # Persona attribution: does the bible drive the voice?
 
-_Status: judge picked (gemma4:12b, sweep below); no arm has run. Every experiment here is a Baseline versus Challenger decision:
+_Status: arms A, B, C run on 2026-09-23; decision below (not promoted: the judge reads the documented surface tells, the no bible row is malformed, and the swapped arm is the gold arm relabelled). Every experiment here is a Baseline versus Challenger decision:
 the promotion rule is written before the run; the meta and arm numbers come from `scripts/persona_report.py`,
 the probe numbers from `scripts/persona_judge_probe.py` and the Wilson bounds from
 `agent_shield.runtime.stats`, none retyped; one local model is resident at a time (18 GiB); no Anthropic model
@@ -124,9 +124,47 @@ the strip S1 column is on (judge_mean_s 2.74 s is under the 5 s limit).
 
 | Arm | S1 acc | Wilson | S0 | S2 | S3 Mira | S3 Mari | S4 | Log |
 |---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+| A on | 0.775 (strip 0.525) | [0.625, 0.877] (strip [0.375, 0.671]) | 0.625 [0.470, 0.758] | unmeasured (unparsed 1.000) | 0.033 | 0.045 | 0.850 | `logs/2026-09-23T20-36-45-00-00_persona-attribution_FiUAxnAwabpzaRncrbnhgp.eval` |
+| B off | 0.025 (strip 0.375); S1 row withdrawn, malformed 0.850 | [0.004, 0.129] (strip [0.242, 0.530]) | 0.500 [0.352, 0.648] | unmeasured (unparsed 0.825) | 0.000 | 0.000 | 0.425 | `logs/2026-09-23T21-09-39-00-00_persona-attribution_5ypTDamm6cRCLwHBFd26Yx.eval` |
+| C swapped (arm A relabelled, see below) | 0.150 (strip 0.225) | [0.071, 0.291] (strip [0.123, 0.375]) | 0.375 [0.242, 0.530] | unmeasured (unparsed 1.000) | 0.000 | 0.000 | 0.600 | `logs/2026-09-23T21-39-17-00-00_persona-attribution_jrWYoSzovtAHpsgo2Pp955.eval` |
 
-Decision:
+All three logs: writer `ollama/qwen3-8b-8k`, seed 0, commit `bbb899a`, `revision.dirty` False; judge gemma4:12b
+order flip 0.075 on every plain S1 row. Table cells are the `arms` report lines, pasted; the unparsed rates are the
+`verdict` metrics read off the logs.
+
+Every kill row, checked (2026-09-23):
+
+| Row | A | B | C |
+|---|---|---|---|
+| Judge cannot read style guides | meta normal low 0.556 > 0.50, guide gap 0.733: clear (sweep above) | | |
+| Dirty tree | False | False | False |
+| Malformed judge (> 0.10) | 0.000 (strip 0.025) | **0.850** (strip 0.100, at the limit) | 0.000 (strip 0.025) |
+| Order bias (> 0.30) | 0.075 (strip 0.225) | 0.075 (strip 0.150) | 0.075 (strip 0.225) |
+| Judge errors | 0 | 0 | 0 |
+| Lexical shortcut (S0 >= S1 after normalisation) | **S0 0.625 >= S1 strip 0.525**, fires | S0 0.500 >= S1 strip 0.375, fires | S0 0.375 >= S1 strip 0.225, fires |
+| Arms not separated (A low <= B high) | plain 0.625 > 0.129 but B's plain row is withdrawn; strip 0.375 <= 0.530, fires; S0 0.470 <= 0.648, fires | | |
+| Bibles inert (C >= A) | C 0.150 < A 0.775, but C is A relabelled (40 of 40 identical completions), so the row cannot be read | | |
+| Brief leakage, Memory | checked elsewhere: the brief containment test in `tests/test_persona_fidelity.py`, and the two phase run (writer then judge, `ollama stop` between) | | |
+
+The lexical shortcut row is read the conservative way, S0 against the judge on normalised text (S1 strip);
+read as S0 against plain S1 on the masked text (the `surface_baseline` docstring) it does not fire on A
+(0.625 < 0.775). The strip reading is the one the plan's build spec names ("after stripping case, emoji,
+punctuation and every Style rules token").
+
+Decision: not promoted, 2026-09-23. With the gold bible the judge attributes 31 of 40 turns to the right persona
+(S1 0.775, Wilson [0.625, 0.877]), but only 21 of 40 once the bible's documented tells are stripped (S1 strip
+0.525, [0.375, 0.671]), which is under the surface baseline (S0 0.625): the lexical shortcut row fires, so what
+the judge reads on writer output is the surface the Style rules document, and S0 becomes the reported result,
+where A (0.625, [0.470, 0.758]) and B (0.500, [0.352, 0.648]) do not separate at n=40. Arm B's S1 row is
+withdrawn on the malformed row (the judge answers `Neither.` on 65 of 80 calls, 34 of 40 samples, when the
+writer had no bible). Arm C is arm A relabelled: the user turn names no persona, so the same brief with the
+other bible is the same prompt, and at seed 0 the 40 completions are identical; its 6 correct verdicts are A's
+6 agreed wrong ones, so "C below A" is not evidence and the arm as designed cannot separate content from
+presence. S2 is unmeasured (unparsed 1.000 on A and C, 0.825 on B; no epochs 2 subset run). Next: a judge
+prompt that admits neither, then the meta sweep and the judge phase rerun on all three writer logs under the
+same rule on the three existing writer logs; then, as a new run of every arm, a writer prompt that carries the
+target persona so a swapped arm measures something, with a `verdict_word` that reads a leading YES or NO.
+RESULTS.md carries the rows under a validity note and the README task index reads negative.
 
 Output: the `persona_attribution` section of `RESULTS.md`, one row per arm and S1 column plus S0 rows and one
 meta row per sweep survivor, every value pasted from `scripts/persona_report.py arms --markdown` and the

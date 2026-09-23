@@ -567,6 +567,65 @@ the four models. Inspect logs: `logs/2026-05-24T07-11-13-00-00_drift-asr_JXi8JXi
 
 ---
 
+## Module: persona/ — persona_attribution
+
+Eval file: `evals/persona_fidelity.py` (scorers in `evals/persona/`; report `scripts/persona_report.py`).
+
+Do the persona bibles drive the text? Two frozen bibles (Mira Solheim, Mari Vance) read as data
+files; 20 yes or no briefs x 2 gold personas = 40 samples per arm, one epoch, seed 0. Arm on (A)
+gives the writer the gold bible, off (B) no bible, swapped (C) the other bible with the target kept.
+S1 is masked speaker attribution by the judge in both guide orders; S1 strip hands the judge the
+normalised text (case, emoji, punctuation and every Style rules token removed); S0 is the naive
+Bayes surface baseline on the same masked text. Writer `ollama/qwen3-8b-8k`; judge
+`ollama/gemma4:12b` under `GenerateConfig(temperature=0, seed=0, max_tokens=16, max_connections=1,
+attempt_timeout=120, max_retries=2, reasoning_effort="none")`, picked by the 2026-09-23 meta sweep
+(`docs/persona_fidelity_decision.md`). The arm rows are pasted from
+`scripts/persona_report.py arms <log> --markdown`; the meta row was read from the meta log by a one
+off script (its Seed cell is `none`: the meta task has no writer, and the judge seed is in the Judge
+cell).
+
+> **Validity (kill rows, docs/persona_fidelity_decision.md).** Three rows fire (malformed judge,
+> lexical shortcut, arms not separated), so nothing here is promoted. Arm B's S1 row is withdrawn on the malformed row: malformed 0.850 (34 of 40 samples;
+> the judge answered `Neither.` on 65 of 80 calls, since a turn written with no bible matches
+> neither style guide and the prompt admits only A or B). Arm A's S1 claim is withdrawn on the
+> lexical shortcut row: after normalisation the judge reads 21 of 40 (S1 strip 0.525,
+> Wilson [0.375, 0.671]) against S0 0.625, so the 31 of 40 on the plain column (0.775,
+> [0.625, 0.877]) is carried by the documented tells the stoplist removes, and S0 is the reported
+> result: A 0.625 [0.470, 0.758] against B 0.500 [0.352, 0.648], not separated at n=40. Arm C is
+> arm A relabelled: the writer never sees the target persona, so for the same brief and shown
+> bible the two arms hold identical completions (40 of 40 at seed 0), and C's correct verdicts are
+> A's agreed wrong ones read against the other label. "C below A" therefore holds whenever A beats
+> chance and is not evidence; a swapped arm needs the target persona to reach the writer. The
+> `A_low=0.625 B_high=0.129 separated=True` line the report prints is void for the same reasons.
+
+### Arms A, B, C — S1, S1 strip and S0 rows (2026-09-23, commit `bbb899a`)
+
+| Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-23 | ollama/qwen3-8b-8k | on | ollama/gemma4:12b seed=0 reasoning=none | S1 | 0.775 | 40 | 0 | [0.625, 0.877] | bbb899a | 2026-09-23T20-36-45-00-00_persona-attribution_FiUAxnAwabpzaRncrbnhgp.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | on | ollama/gemma4:12b seed=0 reasoning=none | S1 strip | 0.525 | 40 | 0 | [0.375, 0.671] | bbb899a | 2026-09-23T20-36-45-00-00_persona-attribution_FiUAxnAwabpzaRncrbnhgp.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | on | none | S0 | 0.625 | 40 | 0 | [0.470, 0.758] | bbb899a | 2026-09-23T20-36-45-00-00_persona-attribution_FiUAxnAwabpzaRncrbnhgp.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | off | ollama/gemma4:12b seed=0 reasoning=none | S1 | 0.025 | 40 | 0 | [0.004, 0.129] | bbb899a | 2026-09-23T21-09-39-00-00_persona-attribution_5ypTDamm6cRCLwHBFd26Yx.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | off | ollama/gemma4:12b seed=0 reasoning=none | S1 strip | 0.375 | 40 | 0 | [0.242, 0.530] | bbb899a | 2026-09-23T21-09-39-00-00_persona-attribution_5ypTDamm6cRCLwHBFd26Yx.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | off | none | S0 | 0.500 | 40 | 0 | [0.352, 0.648] | bbb899a | 2026-09-23T21-09-39-00-00_persona-attribution_5ypTDamm6cRCLwHBFd26Yx.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | swapped | ollama/gemma4:12b seed=0 reasoning=none | S1 | 0.150 | 40 | 0 | [0.071, 0.291] | bbb899a | 2026-09-23T21-39-17-00-00_persona-attribution_jrWYoSzovtAHpsgo2Pp955.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | swapped | ollama/gemma4:12b seed=0 reasoning=none | S1 strip | 0.225 | 40 | 0 | [0.123, 0.375] | bbb899a | 2026-09-23T21-39-17-00-00_persona-attribution_jrWYoSzovtAHpsgo2Pp955.eval |
+| 2026-09-23 | ollama/qwen3-8b-8k | swapped | none | S0 | 0.375 | 40 | 0 | [0.242, 0.530] | bbb899a | 2026-09-23T21-39-17-00-00_persona-attribution_jrWYoSzovtAHpsgo2Pp955.eval |
+
+### Judge meta eval — the sweep survivor on the 30 labelled Voice Samples
+
+| Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-23 | none/none | meta | ollama/gemma4:12b seed=0 reasoning=none | judge normal acc | 0.733 | 30 | none | [0.556, 0.858] | 8fdfbb4 | 2026-09-23T19-42-53-00-00_persona-judge-meta_dz9CkcRusNKemLyroj3v2W.eval |
+
+S2 is unmeasured: the writer puts its YES or NO on the first line with more text, so `verdict`
+reads unparsed 1.000 on A and C and 0.825 on B, and the epochs 2 subset run has not been made. S3
+and S4 are report only. Next, in order: a judge prompt that admits neither, then the meta sweep and
+the judge phase rerun on the three existing writer logs (the same writer output under the fixed
+judge); then, as a new run of every arm, a writer prompt that carries the target persona so a
+swapped arm can measure content against presence, with a `verdict_word` that reads a leading YES
+or NO. Until then the README task index reads negative.
+
 ## Cross-model comparison (full sweep target)
 
 Full sweep: all 8 modules × 8 models × 4 metrics.

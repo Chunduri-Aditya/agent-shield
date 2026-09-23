@@ -10,19 +10,19 @@ from pathlib import Path
 
 import pytest
 
-EXPECTED_MODULES = ["inputs", "tools", "psych", "memory", "exfil", "drift"]
+EXPECTED_MODULES = ["inputs", "tools", "psych", "memory", "exfil", "drift", "persona_attribution"]
 
 # Per CLAUDE.md reproducibility spec: every result row carries seed + commit SHA.
 REQUIRED_FIELDS = ["seed", "commit"]
 
-# evals/persona_fidelity.py rows carry the persona result row (docs/EVAL_PORTFOLIO_PLAN.md:155-156):
-# | Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |.
-# Every column past Model is checked, since "seed" and "commit" in REQUIRED_FIELDS are found
-# in other sections whatever the persona table holds. "persona" alone would match the inputs/
-# persona_hijack row, so the task name is the key. Once the first live row lands, add
-# PERSONA_MODULE to EXPECTED_MODULES so absence fails instead of skipping.
+# evals/persona_fidelity.py rows carry the persona result row (docs/EVAL_PORTFOLIO_PLAN.md:155-156
+# and amendment A4): every table in the section shares PERSONA_HEADER exactly. "persona" alone
+# would match the inputs/ persona_hijack row, so the task name is the key; it is in EXPECTED_MODULES
+# since the first live rows landed on 2026-09-23, so absence fails instead of skipping.
 PERSONA_MODULE = "persona_attribution"
-PERSONA_COLUMNS = ["Arm", "Judge", "Metric", "Mean", "n", "Seed", "95% Wilson CI", "Commit", "Log"]
+PERSONA_HEADER = (
+    "| Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |"
+)
 
 
 def test_results_md_exists_and_is_nonempty(repo_root: Path) -> None:
@@ -44,10 +44,10 @@ def test_results_md_contains_reproducibility_fields(repo_root: Path) -> None:
 
 
 def test_results_md_persona_tables_carry_arm_and_judge(repo_root: Path) -> None:
-    """Every result table under the persona_attribution heading carries the full persona row.
+    """Every result table under the persona_attribution heading uses the one A4 header.
 
-    The section lands with the first live arm; until then this skips with a reason rather
-    than passing on absence, so the run output says the check is not yet armed.
+    The section is required (PERSONA_MODULE is in EXPECTED_MODULES), so the skip below is
+    unreachable on a current checkout; it names the missing section rather than failing twice.
     """
     lines = (repo_root / "RESULTS.md").read_text(encoding="utf-8").splitlines()
     start = next(
@@ -64,5 +64,4 @@ def test_results_md_persona_tables_carry_arm_and_judge(repo_root: Path) -> None:
     headers = [line for line in section if line.startswith("| Date")]
     assert headers, f"{PERSONA_MODULE} section has no result table starting with a Date column"
     for header in headers:
-        for column in PERSONA_COLUMNS:
-            assert f"| {column} |" in header, f"{PERSONA_MODULE} table lacks {column!r}: {header}"
+        assert header.strip() == PERSONA_HEADER, f"{PERSONA_MODULE} table header differs: {header}"
