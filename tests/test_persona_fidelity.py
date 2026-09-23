@@ -4,7 +4,7 @@ Bibles are data files read from a config path, never imported from twin. The pat
 evals.persona_fidelity.DEFAULT_PERSONAS_DIR, one name for the Makefile, the tasks, the
 report and these tests, and PERSONAS_DIR in the environment overrides it. A missing bible
 skips the test with the path in the reason; CI runs pytest with -rs so the skips print.
-Expected values come from docs/EVAL_PORTFOLIO_PLAN.md (the build spec at :114-135: 5
+Expected values come from docs/EVAL_PORTFOLIO_PLAN.md (the build spec at :135-156: 5
 required sections, 15 samples, 18 decisions, 20 eval questions per bible) and from literal
 lines copied out of the bible files, never from the code under test.
 """
@@ -150,7 +150,7 @@ def test_load_bible_finds_required_sections(anchors: BibleAnchors, tmp_path: Pat
 
 # Step 2: brief leakage guard.
 #
-# Spec (docs/EVAL_PORTFOLIO_PLAN.md:118-119 and :94-95): the guard in evals/persona/bible.py
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:139-140 and :115-116): the guard in evals/persona/bible.py
 # flags a text whose content token containment against a gold line is at or above 0.5. The
 # gold lines of a bible are its Decisions titles, its Situation lines and its Eval questions.
 # evals/persona/briefs.py holds 20 Brief(id, text), PB-01 to PB-20, the same set in every arm,
@@ -228,10 +228,10 @@ def test_leakage_guard_rejects_copied_decision_title() -> None:
 
 # Step 3: surface normalisation, the S0 naive Bayes baseline, the S4 rule probe.
 #
-# Spec (docs/EVAL_PORTFOLIO_PLAN.md:120-123 and :98): normalise() lowercases, strips emoji
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:141-144 and :119): normalise() lowercases, strips emoji
 # ranges and punctuation, drops every token of a stoplist built from both Style rules sections
 # (quoted phrases, listed tokens and the rule prose), and drops the writer's YES/NO line (the
-# solver asks for "line 1: YES or NO; then your message", docs/EVAL_PORTFOLIO_PLAN.md:97). S0 is
+# solver asks for "line 1: YES or NO; then your message", docs/EVAL_PORTFOLIO_PLAN.md:118). S0 is
 # multinomial naive Bayes on unigrams with add one smoothing, fit on the 30 Samples, reported as
 # leave one out accuracy. S4 is a regex rule probe with no LLM: Mari never uses emoji and writes
 # at most three lines, Mira lowercases in chat.
@@ -405,7 +405,7 @@ def test_surface_classifier_loo_accuracy_reported() -> None:
     assert loo.accuracy == pytest.approx(0.5)
 
     # The reported S0 number: 30 Samples, 15 per persona, labelled by bible file stem. Pinned at
-    # the shipped stoplist's value (docs/EVAL_PORTFOLIO_PLAN.md:120-123: no stoplist 17/30,
+    # the shipped stoplist's value (docs/EVAL_PORTFOLIO_PLAN.md:141-144: no stoplist 17/30,
     # quoted plus listed tells only 17/30, every Style rules token 15/30), so a stoplist change
     # shows here instead of moving the kill number "S0 at or above S1" silently.
     bibles = _persona_bibles()
@@ -526,7 +526,7 @@ def test_rule_probe_flags_emoji_for_mari() -> None:
 
 # Step 4: the S1 judge. Parser, prompt, both guide orders, dict score.
 #
-# Spec (docs/EVAL_PORTFOLIO_PLAN.md:124-130): the judge prompt holds the two personas' Style rules
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:145-151): the judge prompt holds the two personas' Style rules
 # blocks in fenced delimiters plus the masked, name stripped completion, and says "Reply with
 # exactly one letter: A or B"; temperature 0 via GenerateConfig; the judge is resolved with
 # get_model inside score(). Both guide orders run per item; an attribution counts only when both
@@ -895,7 +895,7 @@ def test_mask_completion_drops_copies_not_short_sentences() -> None:
 
 # --- Step 5: Wilson metrics on the correct key ---------------------------------------------------
 #
-# Spec (plan design points; docs/EVAL_PORTFOLIO_PLAN.md:35-37): judge_attribution reports
+# Spec (plan design points; docs/EVAL_PORTFOLIO_PLAN.md:56-58): judge_attribution reports
 #   {"correct": [accuracy(), wilson_low(), wilson_high(), wilson_n()], "order_flip": [mean()], ...}
 # where the Wilson metrics wrap agent_shield.runtime.stats.wilson_interval (stats.py:27) and the
 # copy at agent_shield/transparency_judge.py:200 does not become a third.
@@ -1082,7 +1082,7 @@ def test_no_third_wilson_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
 # --- Step 6: persona_attribution end to end on mockllm/model --------------------------------------
 #
-# Spec (docs/EVAL_PORTFOLIO_PLAN.md:40-44 and :92-104): @task persona_attribution(bibles=
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:61-65 and :113-125): @task persona_attribution(bibles=
 # "on|off|swapped", personas_dir, judge_model, subset) pairs Mira Solheim with Mari Vance over the
 # same 20 briefs in
 # every arm, one sample per brief and gold persona: 40 samples, the correct denominator. The writer
@@ -1107,9 +1107,9 @@ def test_no_third_wilson_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 # arm. mockllm/model as judge answers "Default output from mockllm/model", malformed in both orders,
 # so 0 of 40 correct, malformed on every sample, and the denominator still 40. Bounds are the 95%
 # Wilson interval derived outside the repo as in step 5; (20, 40) is the chance interval
-# docs/EVAL_PORTFOLIO_PLAN.md:103 publishes as [0.352, 0.648].
+# docs/EVAL_PORTFOLIO_PLAN.md:126 publishes as [0.352, 0.648].
 
-_WRITER_INSTRUCTION = "line 1: YES or NO; then your message"  # docs/EVAL_PORTFOLIO_PLAN.md:97
+_WRITER_INSTRUCTION = "line 1: YES or NO; then your message"  # docs/EVAL_PORTFOLIO_PLAN.md:118
 _SCORERS = frozenset({"surface_baseline", "judge_attribution", "verdict", "rule_compliance"})
 _WILSON_95_N40 = {20: (0.351993, 0.648007), 0: (0.0, 0.087625)}  # successes: (low, high)
 _MALFORMED_BOTH = {"correct": 0, "order_flip": 0, "malformed": 1, "judge_error": 0}
@@ -1368,7 +1368,7 @@ def test_persona_attribution_end_to_end_mockllm(
 
 # --- Step 7: the judge meta eval, and the two phase run through the CLI ---------------------------
 #
-# Spec (docs/EVAL_PORTFOLIO_PLAN.md:102-103 and :131-132): persona_judge_meta echoes the 30
+# Spec (docs/EVAL_PORTFOLIO_PLAN.md:123-124 and :152-153): persona_judge_meta echoes the 30
 # labelled Voice Samples into the completion with no writer and scores them with
 # judge_attribution. The 2026-09-23 review found the judge read a blank Text fence on 56 of 60
 # calls, because the copied sentence drop matched each Sample against its own source; the meta
@@ -1376,7 +1376,7 @@ def test_persona_attribution_end_to_end_mockllm(
 # off the log. blank_guides empties both guide fences: the fake oracle then finds no rules and
 # answers "?", malformed in both orders.
 #
-# The two phase run (docs/EVAL_PORTFOLIO_PLAN.md:111-112; Makefile eval-persona-write and
+# The two phase run (docs/EVAL_PORTFOLIO_PLAN.md:132-133; Makefile eval-persona-write and
 # eval-persona-judge) attaches the judge to a finished writer log with `inspect score` in a fresh
 # process. Only the file spec evals/persona/judge.py@judge_attribution resolves there: a bare name
 # is not in the registry, and Inspect's task file fallback catches ValueError while the registry

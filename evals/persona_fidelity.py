@@ -3,7 +3,7 @@ Agent Shield — persona_attribution Inspect AI eval tasks.
 
 Do the persona bibles drive the text? Two tasks over two frozen bibles read as data files:
 Mira Solheim (CTO) and Marisol "Mari" Vance (COO), the closest registers of the set
-(docs/EVAL_PORTFOLIO_PLAN.md:92-93).
+(docs/EVAL_PORTFOLIO_PLAN.md:113-114).
 
   persona_attribution(bibles, personas_dir, judge_model, subset)
       Twenty yes or no briefs (evals/persona/briefs.py), each answered once with either
@@ -85,9 +85,9 @@ DEFAULT_PERSONAS_DIR = os.environ.get(
 # Bible file stems of the pair; personas_dir may hold other bibles, which are never read.
 PERSONA_PAIR: tuple[str, str] = ("mira-solheim", "marisol-mari-vance")
 ARMS: tuple[str, ...] = ("on", "off", "swapped")
-# The sections the writer gets in arms on and swapped (docs/EVAL_PORTFOLIO_PLAN.md:96).
+# The sections the writer gets in arms on and swapped (docs/EVAL_PORTFOLIO_PLAN.md:117).
 WRITER_SECTIONS: tuple[str, ...] = ("Identity", "Voice", "Values", "Decisions")
-WRITER_INSTRUCTION = "line 1: YES or NO; then your message"  # docs/EVAL_PORTFOLIO_PLAN.md:97
+WRITER_INSTRUCTION = "line 1: YES or NO; then your message"  # docs/EVAL_PORTFOLIO_PLAN.md:118
 # The writer is the eval model, unknown when the task is built; Inspect records it there.
 WRITER_RECORDED_AT = "log.eval.model"
 # A whole first line holding nothing but the verdict, whatever wraps it ("NO.", "**YES**").

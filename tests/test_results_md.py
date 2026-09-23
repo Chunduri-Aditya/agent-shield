@@ -15,7 +15,7 @@ EXPECTED_MODULES = ["inputs", "tools", "psych", "memory", "exfil", "drift"]
 # Per CLAUDE.md reproducibility spec: every result row carries seed + commit SHA.
 REQUIRED_FIELDS = ["seed", "commit"]
 
-# evals/persona_fidelity.py rows carry the persona result row (docs/EVAL_PORTFOLIO_PLAN.md:134-135):
+# evals/persona_fidelity.py rows carry the persona result row (docs/EVAL_PORTFOLIO_PLAN.md:155-156):
 # | Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |.
 # Every column past Model is checked, since "seed" and "commit" in REQUIRED_FIELDS are found
 # in other sections whatever the persona table holds. "persona" alone would match the inputs/

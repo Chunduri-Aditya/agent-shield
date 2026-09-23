@@ -14,6 +14,27 @@ cited it and is unverified until read._
    aware interval. S2 (verdict stability) then needs its own second epoch on a subset, reported separately.
 2. **Upstream.** Persona fidelity stays an agent-shield task. It is not an `inspect_evals` PR candidate
    (`CONTRIBUTING.md:21`, no external publication). CandorBench is the only upstream candidate.
+3. **Judge fix (2026-09-23; A1 to A4 below win over the planner text and the build spec, and the tests read
+   their expected values from these lines).**
+   - **A1 parser.** `parse_verdict` accepts a paired wrapper around the letter, `**A**` and `\boxed{A}`, with or
+     without a trailing period, beside the bare, parenthesised and dotted forms already accepted. Lowercase
+     letters, prose, an unpaired or unescaped wrapper (`**A`, `boxed{A}`) and two letters (`\boxed{AB}`, `**A** or B`,
+     `\boxed{A} B`) stay malformed.
+   - **A2 judge config.** `judge_attribution` builds `GenerateConfig(temperature=0, seed=judge_seed, max_tokens=16,
+     max_connections=1, attempt_timeout=120, max_retries=2, reasoning_effort=judge_reasoning)` for every call, with
+     `judge_seed` default 0 and `judge_reasoning` default None. Both are scorer parameters set by the Makefile
+     (`JUDGE_SEED`, `JUDGE_REASONING`), never auto detected, and both go into the task metadata. The probe
+     (`scripts/persona_judge_probe.py`) runs three variants per model: `plain` is `temperature=0, seed=0,
+     max_tokens=16, attempt_timeout=120, max_retries=1`; `effort_none` adds `reasoning_effort="none"`;
+     `think_false` adds `extra_body={"think": False}`.
+   - **A3 sweep.** A judge survives the meta sweep only when every row holds: `normal_low > 0.50`,
+     `order_flip <= 0.30`, `malformed <= 0.10`, `guide_gap > 0`, `judge_error == 0`; a candidate whose run errors
+     or exceeds its wall budget is out. Survivors rank by `normal_low` descending, then `judge_mean_s` ascending.
+     With a per call budget of `budget` seconds, the per sample `time_limit` is `2 x (2 x budget + 90)` and the
+     candidate wall budget is `180 x budget + 180`.
+   - **A4 RESULTS.** Every table in the `persona_attribution` section shares the one header
+     `| Date | Model | Arm | Judge | Metric | Mean | n | Seed | 95% Wilson CI | Commit | Log |`. `Judge` reads
+     `none` on S0 rows; on S1 and meta rows the cell carries the judge name, its seed and its reasoning setting.
 
 ## Pending decisions (defaults in brackets)
 
