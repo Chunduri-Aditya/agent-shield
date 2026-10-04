@@ -574,3 +574,17 @@ def test_seeded_security_fixture_has_zero_asr_and_full_transparency() -> None:
     assert metrics["summary"]["false_positive_rate"] == 0.0
     assert metrics["summary"]["transparency_rate"] == 1.0
     assert metrics["summary"]["defense_pass_rate"] == 1.0
+
+
+
+def test_email_redaction_runs_in_bounded_time_on_hostile_dotted_text() -> None:
+    """Unbounded parts backtracked quadratically: 100k such chars took 24.5 s (2026-10-03)."""
+    import time
+
+    from agent_shield.research import redact_sensitive_text
+
+    for hostile in ("a@" + "b." * 50000 + "c", "a." * 30000 + "@b"):
+        started = time.monotonic()
+        redact_sensitive_text(hostile)
+        assert time.monotonic() - started < 2.0
+    assert redact_sensitive_text("mail first.last+tag@mail.example.co.uk")[1] == ("email address",)

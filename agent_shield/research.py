@@ -27,7 +27,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 RULESET_VERSION = "research-cia-v1.1"
-CONTENT_RULESET_VERSION = "research-content-v1.1.3"
+CONTENT_RULESET_VERSION = "research-content-v1.1.4"
 
 MAX_QUERY_CHARS = 500
 MAX_QUERIES_PER_QUESTION = 4
@@ -269,9 +269,7 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "API credential",
-        re.compile(
-            r"\b(?:sk-|gsk_|xai-|ghp_|github_pat_)[A-Za-z0-9_-]{12,}", re.I
-        ),
+        re.compile(r"\b(?:sk-|gsk_|xai-|ghp_|github_pat_)[A-Za-z0-9_-]{12,}", re.I),
         "[REDACTED_API_CREDENTIAL]",
     ),
     (
@@ -281,7 +279,13 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ),
     (
         "email address",
-        re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),
+        # Bounded parts (RFC limits: 64 local, 63 a label): unbounded runs backtracked
+        # quadratically on hostile dotted text (100k chars took 24.5 s, 2026-10-03).
+        re.compile(
+            r"\b[A-Z0-9._%+-]{1,64}@[A-Z0-9-]{1,63}"
+            r"(?:\.[A-Z0-9-]{1,63}){0,8}\.[A-Z]{2,24}\b",
+            re.I,
+        ),
         "[REDACTED_EMAIL]",
     ),
     (
@@ -350,9 +354,7 @@ _MEDIUM_CONTENT_SIGNALS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
 )
 
-_ZERO_WIDTH = re.compile(
-    "[\u200b\u200c\u200d\u2060\u202a-\u202e\u2066-\u2069\ufeff]"
-)
+_ZERO_WIDTH = re.compile("[\u200b\u200c\u200d\u2060\u202a-\u202e\u2066-\u2069\ufeff]")
 
 _PRIMARY_HOSTS: frozenset[str] = frozenset(
     {
@@ -494,8 +496,7 @@ def screen_source_candidate(source: SourceCandidate) -> ResearchGateResult:
             risk = _max_risk(risk, RiskLevel.HIGH)
             hard_block = True
             reasons.append(
-                "Internationalized hostname is blocked pending brokered identity "
-                "verification"
+                "Internationalized hostname is blocked pending brokered identity verification"
             )
         if source.allowed_domains and not _host_allowed(host, source.allowed_domains):
             integrity = "AFFECTED"
@@ -519,9 +520,7 @@ def screen_source_candidate(source: SourceCandidate) -> ResearchGateResult:
             hard_block = True
             reasons.append(f"Unsafe redirect: {exc}")
 
-    snippet_signals, snippet_severity = _detect_content_signals(
-        f"{source.title}\n{source.snippet}"
-    )
+    snippet_signals, snippet_severity = _detect_content_signals(f"{source.title}\n{source.snippet}")
     if snippet_signals:
         integrity = "AFFECTED"
         risk = _max_risk(risk, snippet_severity)
@@ -590,13 +589,10 @@ def screen_retrieved_content(content: RetrievedContent) -> ContentScreenResult:
     _, sensitive_matches, hard_secret = redact_sensitive_text(content.text)
     if sensitive_matches:
         confidentiality = "AFFECTED"
-        risk = _max_risk(
-            risk, RiskLevel.CRITICAL if hard_secret else RiskLevel.MEDIUM
-        )
+        risk = _max_risk(risk, RiskLevel.CRITICAL if hard_secret else RiskLevel.MEDIUM)
         hard_block = hard_block or hard_secret
         reasons.append(
-            "Retrieved content contains sensitive material: "
-            + ", ".join(sensitive_matches)
+            "Retrieved content contains sensitive material: " + ", ".join(sensitive_matches)
         )
 
     signals, signal_severity = _detect_content_signals(content.text)
@@ -605,9 +601,7 @@ def screen_retrieved_content(content: RetrievedContent) -> ContentScreenResult:
         risk = _max_risk(risk, signal_severity)
         reasons.extend(f"Untrusted content signal: {item}" for item in signals)
 
-    flagged_attack = bool(signals) and _RISK_ORDER[signal_severity] >= _RISK_ORDER[
-        RiskLevel.HIGH
-    ]
+    flagged_attack = bool(signals) and _RISK_ORDER[signal_severity] >= _RISK_ORDER[RiskLevel.HIGH]
     policy_allowed = _policy_allows(
         risk,
         confirmed_high_risk=content.confirmed_high_risk,
@@ -691,12 +685,9 @@ def validate_approval_manifest(manifest: ApprovalManifest) -> None:
 
     if manifest.ruleset_version != RULESET_VERSION:
         raise ValueError(
-            f"manifest ruleset {manifest.ruleset_version!r} is stale; expected "
-            f"{RULESET_VERSION!r}"
+            f"manifest ruleset {manifest.ruleset_version!r} is stale; expected {RULESET_VERSION!r}"
         )
-    expected_digest = _manifest_digest(
-        manifest.ruleset_version, list(manifest.sources)
-    )
+    expected_digest = _manifest_digest(manifest.ruleset_version, list(manifest.sources))
     if not hmac.compare_digest(expected_digest, manifest.manifest_sha256):
         raise ValueError("manifest source data does not match manifest_sha256")
     expected_batch_id = f"BATCH_{expected_digest[:12].upper()}"
@@ -746,9 +737,7 @@ def write_manifest(manifest: ApprovalManifest, audit_dir: Path) -> Path:
             "sources": list(manifest.sources),
         }
         if comparable_existing != comparable_new:
-            raise FileExistsError(
-                f"manifest path already contains different source data: {target}"
-            )
+            raise FileExistsError(f"manifest path already contains different source data: {target}")
         os.chmod(target, 0o600)
         return target
     payload = manifest.to_dict()
@@ -825,12 +814,7 @@ def _record_manifest_approval_event(
         "ethics_cleared": ethics_cleared,
         "ruleset_version": RULESET_VERSION,
     }
-    target = (
-        Path(audit_dir)
-        / "manifests"
-        / "approvals"
-        / f"{manifest.manifest_sha256}.json"
-    )
+    target = Path(audit_dir) / "manifests" / "approvals" / f"{manifest.manifest_sha256}.json"
     if target.exists():
         existing = json.loads(target.read_text(encoding="utf-8"))
         if existing.get("manifest_sha256") != manifest.manifest_sha256:
@@ -847,8 +831,7 @@ def _record_manifest_approval_event(
         )
         if any(existing.get(field) != approval.get(field) for field in stable_fields):
             raise FileExistsError(
-                "manifest already has an immutable approval from a different actor or "
-                "policy state"
+                "manifest already has an immutable approval from a different actor or policy state"
             )
         os.chmod(target, 0o600)
         approval = existing
@@ -896,23 +879,16 @@ def check_manifest_approval_policy(
 
     validate_approval_manifest(manifest)
     local_actor = getpass.getuser()
-    if approved_by is not None and not hmac.compare_digest(
-        approved_by.strip(), local_actor
-    ):
+    if approved_by is not None and not hmac.compare_digest(approved_by.strip(), local_actor):
         raise PermissionError("approved_by must match the local OS account")
-    levels = {
-        RiskLevel(row["screening"]["risk_level"])
-        for row in manifest.sources
-    }
+    levels = {RiskLevel(row["screening"]["risk_level"]) for row in manifest.sources}
     highest = max(levels, key=lambda level: _RISK_ORDER[level])
     if highest in {RiskLevel.HIGH, RiskLevel.CRITICAL} and not confirm_high_risk:
         raise PermissionError("high risk manifest approval requires explicit confirmation")
     if highest is RiskLevel.CRITICAL and not ethics_cleared:
         raise PermissionError("critical manifest approval requires ethics clearance")
     if any(
-        not row["screening"].get(
-            "override_permitted", row["screening"]["allowed"]
-        )
+        not row["screening"].get("override_permitted", row["screening"]["allowed"])
         for row in manifest.sources
     ):
         raise PermissionError("manifest contains a non overridable blocked source")
@@ -965,12 +941,7 @@ def manifest_is_approved(
 
     _require_sha256("manifest_sha256", manifest_sha256)
     _require_sha256("manifest_file_sha256", manifest_file_sha256)
-    target = (
-        Path(audit_dir)
-        / "manifests"
-        / "approvals"
-        / f"{manifest_sha256}.json"
-    )
+    target = Path(audit_dir) / "manifests" / "approvals" / f"{manifest_sha256}.json"
     if not target.exists():
         return False
     os.chmod(target, 0o600)
@@ -1004,8 +975,7 @@ def manifest_is_approved(
             and details.get("batch_id") == data.get("batch_id")
             and details.get("manifest_file_sha256") == manifest_file_sha256
             and details.get("ruleset_version") == ruleset_version
-            and details.get("approved_by_os_account")
-            == data.get("local_actor_username")
+            and details.get("approved_by_os_account") == data.get("local_actor_username")
             and details.get("local_actor_uid") == data.get("local_actor_uid")
             and details.get("approval_timestamp") == data.get("approved_at")
             and details.get("confirmation_method") == data.get("confirmation_method")
@@ -1085,11 +1055,7 @@ def record_independent_review(
         "recorded_at": _now(),
         "ruleset_version": RULESET_VERSION,
     }
-    target = (
-        Path(audit_dir)
-        / "reviews"
-        / f"{metadata['review_run_id']}.json"
-    )
+    target = Path(audit_dir) / "reviews" / f"{metadata['review_run_id']}.json"
     _write_private_json_once(target, record)
     append_audit_event(
         ResearchAuditEvent(
