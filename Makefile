@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain eval-twin eval-twin-lead
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -16,6 +16,8 @@ CEREBRAS_MODEL ?= openai/gpt-oss-20b
 GITHUB_MODELS_MODEL ?= openai/gpt-4.1-mini
 CLOUDFLARE_MODEL ?= meta/llama-3.1-8b-instruct-fp8-fast
 HF_MODEL ?= openai/gpt-oss-20b
+TWIN_DIR ?= $(HOME)/Desktop/twin
+TWIN_MODULE ?= inputs
 
 # Smoke test — verify harness end-to-end
 eval:
@@ -289,6 +291,15 @@ sweep-module:
 	uv run python scripts/sweep.py --module $(MODULE)
 
 # List every make target in this file.
+# twin as the target: each sample is one `twin shield turn` on twin's clean profile, against a
+# scratch ledger (provider: agent_shield_providers/twin_api.py). Text tasks only: inputs, psych,
+# drift, exfil, memory. Paid through twin's own claude CLI; -M max_usd caps it (default $3).
+eval-twin:
+	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --seed $(SEED)
+
+eval-twin-lead:
+	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean -M lead=true --seed $(SEED)
+
 help:
 	@grep -E '^[a-zA-Z0-9_-]+:' $(firstword $(MAKEFILE_LIST)) | cut -d: -f1 | sort -u
 

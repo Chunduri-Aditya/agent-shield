@@ -9,3 +9,11 @@ def mlx() -> type[ModelAPI]:
     from .mlx_lm_api import MLXLMAPI
 
     return MLXLMAPI
+
+
+@modelapi(name="twin")
+def twin() -> type[ModelAPI]:
+    # twin itself runs in its own checkout (TWIN_DIR) through its CLI; nothing extra imports here.
+    from .twin_api import TwinAPI
+
+    return TwinAPI
