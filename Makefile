@@ -295,10 +295,10 @@ sweep-module:
 # scratch ledger (provider: agent_shield_providers/twin_api.py). Text tasks only: inputs, psych,
 # drift, exfil, memory. Paid through twin's own claude CLI; -M max_usd caps it (default $3).
 eval-twin:
-	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --seed $(SEED)
+	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 --seed $(SEED)
 
 eval-twin-lead:
-	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean -M lead=true --seed $(SEED)
+	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 -M lead=true --seed $(SEED)
 
 help:
 	@grep -E '^[a-zA-Z0-9_-]+:' $(firstword $(MAKEFILE_LIST)) | cut -d: -f1 | sort -u
