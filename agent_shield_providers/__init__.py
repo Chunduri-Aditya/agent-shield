@@ -17,3 +17,11 @@ def twin() -> type[ModelAPI]:
     from .twin_api import TwinAPI
 
     return TwinAPI
+
+
+@modelapi(name="cli")
+def cli() -> type[ModelAPI]:
+    # The subscription CLIs (claude, codex, gemini) run as subprocesses; nothing extra imports here.
+    from .cli_api import CLIAPI
+
+    return CLIAPI

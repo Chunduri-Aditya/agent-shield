@@ -1,0 +1,58 @@
+{
+  "session_id": "17062405-178c-49ea-8f97-ac450db9440b",
+  "response": "PONG ZEBRA77",
+  "stats": {
+    "models": {
+      "gemini-3-flash-preview": {
+        "api": {
+          "totalRequests": 1,
+          "totalErrors": 0,
+          "totalLatencyMs": 11925,
+          "errorsByType": {}
+        },
+        "tokens": {
+          "input": 2864,
+          "prompt": 2864,
+          "candidates": 7,
+          "total": 2918,
+          "cached": 0,
+          "thoughts": 47,
+          "tool": 0
+        },
+        "roles": {
+          "main": {
+            "totalRequests": 1,
+            "totalErrors": 0,
+            "totalLatencyMs": 11925,
+            "tokens": {
+              "input": 2864,
+              "prompt": 2864,
+              "candidates": 7,
+              "total": 2918,
+              "cached": 0,
+              "thoughts": 47,
+              "tool": 0
+            }
+          }
+        }
+      }
+    },
+    "tools": {
+      "totalCalls": 0,
+      "totalSuccess": 0,
+      "totalFail": 0,
+      "totalDurationMs": 0,
+      "totalDecisions": {
+        "accept": 0,
+        "reject": 0,
+        "modify": 0,
+        "auto_accept": 0
+      },
+      "byName": {}
+    },
+    "files": {
+      "totalLinesAdded": 0,
+      "totalLinesRemoved": 0
+    }
+  }
+}

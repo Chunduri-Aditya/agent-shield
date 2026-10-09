@@ -17,14 +17,17 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 # ---------------------------------------------------------------------------
 # .env loader
 # ---------------------------------------------------------------------------
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -42,13 +45,14 @@ def load_env() -> None:
         name, _, value = line.partition("=")
         name = name.strip()
         value = value.strip().strip("'\"")
-        if name and not os.environ.get(name):   # override missing or empty
+        if name and not os.environ.get(name):  # override missing or empty
             os.environ[name] = value
 
 
 # ---------------------------------------------------------------------------
 # Model spec
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -64,7 +68,13 @@ class ModelSpec:
     """Environment variables that must be non-empty for this model to run."""
 
     tier: str = "paid"
-    """'paid' | 'free' | 'local'"""
+    """'paid' | 'free' | 'local' | 'subscription'"""
+
+    required_cmd: str | None = None
+    """Executable that must be on PATH (the subscription CLIs: claude, codex, gemini)."""
+
+    text_only: bool = False
+    """The provider takes no Inspect tools, so the sweep skips the tools module for it."""
 
     local_health_url: str | None = None
     """For local servers: URL to ping to confirm the server is up."""
@@ -83,14 +93,15 @@ class ModelSpec:
     """True = v1.0.0 paper table; False = extended sweep only (outside SHIP_LINE.md)."""
 
 
-def _ping(url: str, timeout: float = 1.0) -> dict | None:
-    """Return parsed JSON from url, or None on any error."""
+def _ping(url: str, timeout: float = 1.0) -> dict[str, Any] | None:
+    """Return parsed JSON from url, or None on any error or a non object body."""
     try:
         req = Request(url, headers={"Accept": "application/json"})
         with urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode())
+            data = json.loads(resp.read().decode())
     except (OSError, URLError, TimeoutError, json.JSONDecodeError):
         return None
+    return data if isinstance(data, dict) else None
 
 
 def _ollama_ready(spec: ModelSpec) -> tuple[bool, str]:
@@ -100,7 +111,10 @@ def _ollama_ready(spec: ModelSpec) -> tuple[bool, str]:
         return False, "server unreachable"
     models = data.get("models", [])
     pulled = [m.get("name", "") for m in models if isinstance(m, dict)]
-    target = os.getenv(spec.local_model_key or "", "llama3.1:8b")
+    if spec.local_model_key:
+        target = os.getenv(spec.local_model_key, "llama3.1:8b")
+    else:
+        target = spec.inspect_id.partition("/")[2]
     if any(target in name for name in pulled):
         return True, f"ready ({target})"
     available = ", ".join(pulled[:3]) or "none"
@@ -150,6 +164,56 @@ MODELS: tuple[ModelSpec, ...] = (
         ),
         paper_set=False,
     ),
+    # --- Subscription CLIs (agent_shield_providers/cli_api.py): the vendor's agent product with
+    # its tools off, reached through the owner's subscription; text modules only ---
+    *(
+        ModelSpec(
+            inspect_id=f"cli/{backend}/{model}",
+            short=f"{backend}-cli-{model}",
+            required_cmd=backend,
+            tier="subscription",
+            text_only=True,
+            paper_set=False,
+        )
+        for backend, model in (
+            ("claude", "fable"),
+            ("claude", "opus"),
+            ("claude", "sonnet"),
+            ("claude", "haiku"),
+            ("codex", "gpt-6-sol"),  # the ChatGPT account rejects the config default
+            ("gemini", "gemini-3-flash-preview"),  # the pro preview has no quota here
+        )
+    ),
+    # --- Every pulled Ollama chat model (ollama list, 2026-10-09; embedding model left out) ---
+    *(
+        ModelSpec(
+            inspect_id=f"ollama/{tag}",
+            short=tag,
+            tier="local",
+            local_health_url="http://localhost:11434/api/tags",
+            paper_set=False,
+        )
+        for tag in (
+            "llama3.1:8b-instruct-q8_0",
+            "llama3.1:8b-instruct-q4_K_M",
+            "llama3.1:8b-instruct-q3_K_M",
+            "hermes3:8b",
+            "nemotron-3-nano:4b",
+            "qwen3:1.7b",
+            "qwen3.5:0.8b",
+            "qwen3.5:2b",
+            "qwen3.5:4b",
+            "qwen3.5:9b",
+            "qwen2.5:7b",
+            "qwen3-8b-8k:latest",
+            "granite4.2:3b",
+            "granite4.2:8b",
+            "lfm2.5:8b",
+            "gemma4:12b",
+            "llama3.2:1b",
+            "local:latest",
+        )
+    ),
 )
 
 
@@ -163,6 +227,10 @@ def model_status(spec: ModelSpec) -> tuple[bool, str]:
     # Local server check (Ollama etc.)
     if spec.local_health_url:
         return _ollama_ready(spec)
+
+    # Subscription CLI check
+    if spec.required_cmd and not shutil.which(spec.required_cmd):
+        return False, f"{spec.required_cmd} is not on PATH"
 
     # API key check
     missing = [k for k in spec.required_env if not os.getenv(k)]
@@ -188,6 +256,7 @@ def unavailable_models() -> list[ModelSpec]:
 # Module spec
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ModuleSpec:
     """One eval module in the v1.0.0 ship line."""
@@ -206,6 +275,9 @@ class ModuleSpec:
 
     seed: int = 0
     """Canonical seed for this module."""
+
+    epochs: int = 1
+    """Epochs per sample so the run reaches n (`--epochs N --no-epochs-reducer` when above 1)."""
 
     metrics: tuple[str, ...] = ("ASR", "TR")
     """Metrics reported in RESULTS.md."""
@@ -226,8 +298,9 @@ MODULES: tuple[ModuleSpec, ...] = (
         name="inputs",
         eval_file="evals/inputs.py",
         tasks=("inputs_asr", "inputs_transparency"),
-        n=20,           # anchored CI run requires n=20
+        n=20,  # anchored CI run requires n=20
         seed=0,
+        epochs=4,  # 5 attacks x 4 epochs, the way RESULTS.md's anchored rows were run
         notes="5 attacks (IN-01..IN-05); n=20 for 95% CI anchor",
     ),
     ModuleSpec(
@@ -280,6 +353,7 @@ MODULE_BY_NAME: dict[str, ModuleSpec] = {m.name: m for m in MODULES}
 # Status report (used by make status and sweep.py preamble)
 # ---------------------------------------------------------------------------
 
+
 def print_status() -> None:
     """Print a markdown table of model availability and module list."""
     load_env()
@@ -308,7 +382,9 @@ def print_status() -> None:
     print("|--------|-----------|---|------|-------|-------|")
     for mod in MODULES:
         tasks_str = ", ".join(mod.tasks)
-        print(f"| {mod.name} | {mod.eval_file} | {mod.n} | {mod.seed} | {tasks_str} | {mod.notes} |")  # noqa: E501
+        print(
+            f"| {mod.name} | {mod.eval_file} | {mod.n} | {mod.seed} | {tasks_str} | {mod.notes} |"
+        )
 
     print(f"\n{len(MODULES)}/6 modules registered.\n")
 

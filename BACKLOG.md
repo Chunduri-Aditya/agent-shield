@@ -31,6 +31,11 @@ under-delivers. Do not just add them without pulling something else.
   level needed (L0.5: influences user behavior upstream of agent).
 - [ ] **Cross-lingual injection.** Chinese, Hindi, Russian payloads. Tests
   whether English-trained safety filters generalize. One suite per module.
+- [ ] **MCP bridge for the subscription CLIs.** The `cli` provider runs `claude`, `codex`
+  and `gemini` text only. Serving Inspect's tools to them over `--mcp-config` /
+  `mcp_servers` would let `tools/` (TL-01) run against the CLI agents too, with their own
+  tool loop as the agentic surface. Needs a per call MCP server and a way to read the tool
+  calls back out of the CLI transcript.
 - [ ] **Constitutional AI as fifth defense baseline.** Current 3 defenses are
   spotlighting, LLM judge, tool arg constraints. Adding
   Bai et al. 2022 self-critique would give coverage of the "model defends

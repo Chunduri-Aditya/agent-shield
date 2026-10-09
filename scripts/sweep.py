@@ -53,6 +53,8 @@ PLACEHOLDER = "—"
 def _placeholder_note(model: ModelSpec) -> str:
     if model.local_health_url:
         return "PLACEHOLDER — run when local server is up"
+    if model.required_cmd:
+        return f"PLACEHOLDER — run when {model.required_cmd} is installed"
     provider = model.required_env[0] if model.required_env else "provider"
     return f"PLACEHOLDER — run when {provider} is set"
 
@@ -74,16 +76,8 @@ def _resolve_env_overrides(overrides: tuple[tuple[str, str], ...]) -> dict[str, 
     return resolved
 
 
-def run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
-    """
-    Run all tasks in a module for one model via `uv run inspect eval`.
-
-    Returns True on success (or dry_run), False on non-zero exit.
-    Applies model.env_overrides (e.g. OPENAI_BASE_URL for xAI Grok) to the
-    subprocess environment without mutating the parent process.
-    """
-    import os as _os
-
+def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
+    """The `uv run inspect eval` argv for one module on one model."""
     task_args: list[str] = []
     for task in module.tasks:
         task_args.append(f"{module.eval_file}@{task}")
@@ -94,6 +88,22 @@ def run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
         "--model", model.inspect_id,
         "--seed", str(module.seed),
     ]
+    if module.epochs > 1:
+        cmd += ["--epochs", str(module.epochs), "--no-epochs-reducer"]
+    return cmd
+
+
+def run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
+    """
+    Run all tasks in a module for one model via `uv run inspect eval`.
+
+    Returns True on success (or dry_run), False on non-zero exit.
+    Applies model.env_overrides (e.g. OPENAI_BASE_URL for xAI Grok) to the
+    subprocess environment without mutating the parent process.
+    """
+    import os as _os
+
+    cmd = build_command(module, model)
 
     # Show env overrides in the printed command for auditability.
     env_prefix = ""
@@ -189,11 +199,19 @@ def _append_staging(text: str) -> None:
 # Main sweep logic
 # ---------------------------------------------------------------------------
 
+def skip_reason(module: ModuleSpec, model: ModelSpec) -> str | None:
+    """Why this (module, model) pair cannot run, or None when it can."""
+    if model.text_only and module.name == "tools":
+        return "text only provider, the tools module needs Inspect tool calling"
+    return None
+
+
 def run_sweep(
     *,
     modules: list[ModuleSpec],
     dry_run: bool,
     filter_model: str | None,
+    filter_tier: str | None = None,
 ) -> None:
     load_env()
 
@@ -214,6 +232,13 @@ def run_sweep(
 
         for model in MODELS:
             if filter_model and filter_model not in model.inspect_id:
+                continue
+            if filter_tier and model.tier != filter_tier:
+                continue
+
+            blocked_reason = skip_reason(module, model)
+            if blocked_reason:
+                print(f"  [{model.short}] SKIPPED — {blocked_reason}")
                 continue
 
             ok, reason = model_status(model)
@@ -290,6 +315,12 @@ def _parse_args() -> argparse.Namespace:
         help="Run only models whose inspect_id contains this string.",
     )
     parser.add_argument(
+        "--tier",
+        metavar="TIER",
+        choices=("paid", "free", "local", "subscription"),
+        help="Run only models of this tier (paid | free | local | subscription).",
+    )
+    parser.add_argument(
         "--status",
         action="store_true",
         help="Print model and module availability table and exit.",
@@ -324,7 +355,12 @@ def main() -> None:
     if args.dry_run:
         print("  [DRY RUN] — no evals will execute\n")
 
-    run_sweep(modules=modules, dry_run=args.dry_run, filter_model=args.model)
+    run_sweep(
+        modules=modules,
+        dry_run=args.dry_run,
+        filter_model=args.model,
+        filter_tier=args.tier,
+    )
 
 
 if __name__ == "__main__":

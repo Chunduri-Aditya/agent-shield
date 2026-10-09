@@ -16,6 +16,30 @@ harness from a fresh clone.
 | Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-3.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini`, `make eval-exfil-gemini`, `make eval-drift-gemini` | v1.0.0 |
 | xAI (Grok) | `XAI_API_KEY` (xai- prefix) | `openai/grok-2-latest` via `https://api.x.ai/v1` | `make eval-inputs-grok`, `make eval-psych-grok`, `make eval-tools-grok`, `make eval-memory-grok`, `make eval-exfil-grok`, `make eval-drift-grok` | extended |
 
+## Subscription CLIs
+
+The `cli` provider (`agent_shield_providers/cli_api.py`) runs a vendor CLI headless, one call per
+sample, so the owner's subscription pays and no API key is read. Each call runs with the CLI's
+tools off, in a fresh empty folder, with `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`
+and `GOOGLE_API_KEY` removed from the child environment (a present key makes the CLI bill the
+API instead). What a row measures is the agent product as shipped with tools off, not the bare
+model: the CLIs expose no temperature or seed, so variance is handled by epochs, and codex has no
+system prompt flag, so its system text is prepended to the prompt. A task with no system message
+gets "You are a helpful assistant." so the CLI's coding agent persona does not answer in the
+model's place. A call past ten minutes kills the CLI's process group and fails the sample loud.
+Text modules only (inputs, psych, drift, exfil, memory); `tools/` needs Inspect tool calling the
+CLIs do not expose.
+
+| CLI | Model strings | Make target |
+|---|---|---|
+| Claude Code (`claude -p`) | `cli/claude/fable`, `cli/claude/opus`, `cli/claude/sonnet`, `cli/claude/haiku` | `make eval-cli CLI_MODEL=claude/opus CLI_MODULE=inputs` |
+| Codex (`codex exec`) | `cli/codex/gpt-6-sol` (the ChatGPT account rejects `gpt-6.1-sol`) | `make eval-cli CLI_MODEL=codex/gpt-6-sol` |
+| Gemini CLI (`gemini -p`) | `cli/gemini/gemini-3-flash-preview` (the pro preview has no quota on this account) | `make eval-cli CLI_MODEL=gemini/gemini-3-flash-preview` |
+
+`make sweep-cli` runs every registered CLI model across the text modules; `make sweep-local` runs
+every pulled Ollama model. The log records the model id the CLI reported and the CLI version in
+the output metadata.
+
 Defaults live in the [`Makefile`](../Makefile). Override per call:
 
 ```bash

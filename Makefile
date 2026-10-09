@@ -18,6 +18,8 @@ CLOUDFLARE_MODEL ?= meta/llama-3.1-8b-instruct-fp8-fast
 HF_MODEL ?= openai/gpt-oss-20b
 TWIN_DIR ?= $(HOME)/Desktop/twin
 TWIN_MODULE ?= inputs
+CLI_MODULE ?= inputs
+CLI_MODEL ?= claude/sonnet
 
 # Smoke test — verify harness end-to-end
 eval:
@@ -299,6 +301,21 @@ eval-twin:
 
 eval-twin-lead:
 	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 -M lead=true --seed $(SEED)
+
+# A subscription CLI as the target (provider: agent_shield_providers/cli_api.py): one headless
+# `claude -p` / `codex exec` / `gemini -p` per sample, tools off, in an empty scratch folder, API
+# keys scrubbed so the owner's subscription pays. Text tasks only. CLI_MODEL is <backend>/<model>,
+# e.g. claude/opus, codex/gpt-6-sol, gemini/gemini-3-flash-preview.
+eval-cli:
+	uv run inspect eval evals/$(CLI_MODULE).py --model cli/$(CLI_MODEL) --max-connections 2 --seed $(SEED)
+
+# Every registered subscription CLI model across the text modules (n=20 on inputs via epochs).
+sweep-cli:
+	uv run python scripts/sweep.py --tier subscription
+
+# Every pulled Ollama model (scripts/model_registry.py) across all modules.
+sweep-local:
+	uv run python scripts/sweep.py --tier local
 
 help:
 	@grep -E '^[a-zA-Z0-9_-]+:' $(firstword $(MAKEFILE_LIST)) | cut -d: -f1 | sort -u
