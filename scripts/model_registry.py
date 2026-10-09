@@ -113,9 +113,13 @@ def _ollama_ready(spec: ModelSpec) -> tuple[bool, str]:
     pulled = [m.get("name", "") for m in models if isinstance(m, dict)]
     if spec.local_model_key:
         target = os.getenv(spec.local_model_key, "llama3.1:8b")
+        hit = any(target in name for name in pulled)
     else:
+        # A row for a pulled tag matches that tag exactly: "llama3.1:8b" must not pass on
+        # "llama3.1:8b-instruct-q8_0".
         target = spec.inspect_id.partition("/")[2]
-    if any(target in name for name in pulled):
+        hit = target in pulled
+    if hit:
         return True, f"ready ({target})"
     available = ", ".join(pulled[:3]) or "none"
     return False, f"server up but '{target}' not pulled — available: {available}"
@@ -164,24 +168,25 @@ MODELS: tuple[ModelSpec, ...] = (
         ),
         paper_set=False,
     ),
-    # --- Subscription CLIs (agent_shield_providers/cli_api.py): the vendor's agent product with
-    # its tools off, reached through the owner's subscription; text modules only ---
+    # --- Claude Code CLI (agent_shield_providers/cli_api.py): Claude with every tool off, reached
+    # through the owner's subscription; text modules only. Codex and gemini are not isolable
+    # this way (BACKLOG.md, 2026-10-09) ---
     *(
         ModelSpec(
-            inspect_id=f"cli/{backend}/{model}",
-            short=f"{backend}-cli-{model}",
-            required_cmd=backend,
+            inspect_id=f"cli/claude/{model}",
+            short=f"claude-cli-{model}",
+            required_cmd="claude",
             tier="subscription",
             text_only=True,
             paper_set=False,
         )
-        for backend, model in (
-            ("claude", "fable"),
-            ("claude", "opus"),
-            ("claude", "sonnet"),
-            ("claude", "haiku"),
-            ("codex", "gpt-6-sol"),  # the ChatGPT account rejects the config default
-            ("gemini", "gemini-3-flash-preview"),  # the pro preview has no quota here
+        # Full ids, not aliases: `--model haiku` resolved to two different models inside one
+        # smoke run (claude-haiku-4-5-20251001 on two samples, claude-haiku-5-5 on the rest).
+        for model in (
+            "claude-fable-5-1",
+            "claude-opus-5-5",
+            "claude-sonnet-5-5",
+            "claude-haiku-5-5",
         )
     ),
     # --- Every pulled Ollama chat model (ollama list, 2026-10-09; embedding model left out) ---

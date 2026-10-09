@@ -31,11 +31,24 @@ under-delivers. Do not just add them without pulling something else.
   level needed (L0.5: influences user behavior upstream of agent).
 - [ ] **Cross-lingual injection.** Chinese, Hindi, Russian payloads. Tests
   whether English-trained safety filters generalize. One suite per module.
-- [ ] **MCP bridge for the subscription CLIs.** The `cli` provider runs `claude`, `codex`
-  and `gemini` text only. Serving Inspect's tools to them over `--mcp-config` /
-  `mcp_servers` would let `tools/` (TL-01) run against the CLI agents too, with their own
-  tool loop as the agentic surface. Needs a per call MCP server and a way to read the tool
-  calls back out of the CLI transcript.
+- [ ] **MCP bridge for the Claude CLI.** The `cli` provider runs `claude` text only. Serving
+  Inspect's tools to it over `--mcp-config` would let `tools/` (TL-01) run against the CLI
+  agent too, with its own tool loop as the agentic surface. Needs a per call MCP server and a
+  way to read the tool calls back out of the CLI transcript.
+- [ ] **Codex CLI as a target.** Probed 2026-10-09 (codex-cli 0.157.1): under `--sandbox
+  read-only` the model still lists `functions.exec`, `tools.web__run`, `apply_patch` and
+  `image_gen`, and `codex sandbox -c 'sandbox_mode="read-only"'` from an empty cwd read the
+  repo Makefile and `~/.gemini/.env` (network blocked). `--disable shell_tool` and friends
+  did not remove exec. `--ignore-user-config` / `--ignore-rules` exist. Unblock: run it inside
+  a container or a throwaway macOS account holding only a copied `auth.json`, then prove with
+  the "list your tools, read ../" probe before adding the row.
+- [ ] **Gemini CLI as a target.** Probed 2026-10-09 (0.61.0): the CLI reloads `GEMINI_API_KEY`
+  from `~/.gemini/.env` when the child env lacks it and `settings.json` selects
+  `gemini-api-key` auth, so every row bills the API key (the existing `google/` provider does
+  the same, cheaper); `--approval-mode plan` keeps `read_file`, `glob`, `list_directory` and
+  `google_web_search`, and the user hooks run on every call; a prompt passed to `-p` that
+  starts with `--` is parsed as a flag. Unblock: Google login instead of the key, a settings
+  override with `tools.core: []` and hooks off, the prompt on stdin, then the probe.
 - [ ] **Constitutional AI as fifth defense baseline.** Current 3 defenses are
   spotlighting, LLM judge, tool arg constraints. Adding
   Bai et al. 2022 self-critique would give coverage of the "model defends

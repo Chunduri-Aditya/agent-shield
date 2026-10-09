@@ -16,29 +16,32 @@ harness from a fresh clone.
 | Google AI Studio | `GOOGLE_API_KEY` | `google/gemini-3.5-flash` | `make eval-inputs-gemini`, `make eval-psych-gemini`, `make eval-exfil-gemini`, `make eval-drift-gemini` | v1.0.0 |
 | xAI (Grok) | `XAI_API_KEY` (xai- prefix) | `openai/grok-2-latest` via `https://api.x.ai/v1` | `make eval-inputs-grok`, `make eval-psych-grok`, `make eval-tools-grok`, `make eval-memory-grok`, `make eval-exfil-grok`, `make eval-drift-grok` | extended |
 
-## Subscription CLIs
+## Subscription CLI (Claude Code)
 
-The `cli` provider (`agent_shield_providers/cli_api.py`) runs a vendor CLI headless, one call per
-sample, so the owner's subscription pays and no API key is read. Each call runs with the CLI's
-tools off, in a fresh empty folder, with `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`
-and `GOOGLE_API_KEY` removed from the child environment (a present key makes the CLI bill the
-API instead). What a row measures is the agent product as shipped with tools off, not the bare
-model: the CLIs expose no temperature or seed, so variance is handled by epochs, and codex has no
-system prompt flag, so its system text is prepended to the prompt. A task with no system message
-gets "You are a helpful assistant." so the CLI's coding agent persona does not answer in the
-model's place. A call past ten minutes kills the CLI's process group and fails the sample loud.
-Text modules only (inputs, psych, drift, exfil, memory); `tools/` needs Inspect tool calling the
-CLIs do not expose.
+The `cli` provider (`agent_shield_providers/cli_api.py`) runs `claude -p` headless, one call per
+sample, so the owner's Max subscription pays and no API key is read. Each call runs with every
+tool off (`--tools ""`), no settings or MCP servers (`--setting-sources "" --strict-mcp-config`),
+no session file, a fresh empty folder as cwd, and an allowlisted child environment (PATH, HOME
+and locale only; a present `ANTHROPIC_API_KEY` would make the CLI bill the API instead). A live
+probe under these flags (2026-10-09) reported no tools, no file or env access and no CLAUDE.md in
+context, so a row measures Claude's chat behaviour through the subscription, not a coding agent.
+The CLI exposes no temperature or seed, so variance is handled by epochs and the seed column of a
+row is nominal. A task with no system message gets "You are a helpful assistant.". A call past
+ten minutes, or a cancelled one, kills the CLI's process group and fails the sample loud. Text
+modules only (inputs, psych, drift, exfil, memory); `tools/` needs Inspect tool calling the CLI
+does not expose.
 
 | CLI | Model strings | Make target |
 |---|---|---|
-| Claude Code (`claude -p`) | `cli/claude/fable`, `cli/claude/opus`, `cli/claude/sonnet`, `cli/claude/haiku` | `make eval-cli CLI_MODEL=claude/opus CLI_MODULE=inputs` |
-| Codex (`codex exec`) | `cli/codex/gpt-6-sol` (the ChatGPT account rejects `gpt-6.1-sol`) | `make eval-cli CLI_MODEL=codex/gpt-6-sol` |
-| Gemini CLI (`gemini -p`) | `cli/gemini/gemini-3-flash-preview` (the pro preview has no quota on this account) | `make eval-cli CLI_MODEL=gemini/gemini-3-flash-preview` |
+| Claude Code (`claude -p`) | `cli/claude/claude-fable-5-1`, `cli/claude/claude-opus-5-5`, `cli/claude/claude-sonnet-5-5`, `cli/claude/claude-haiku-5-5` (full ids: the `haiku` alias resolved to two models inside one run) | `make eval-cli CLI_MODEL=claude/claude-opus-5-5 CLI_MODULE=inputs` |
 
-`make sweep-cli` runs every registered CLI model across the text modules; `make sweep-local` runs
-every pulled Ollama model. The log records the model id the CLI reported and the CLI version in
-the output metadata.
+Codex and Gemini CLI were probed and left out: codex keeps its exec tool and reads the whole
+disk under `--sandbox read-only`, and gemini reloads `GEMINI_API_KEY` from `~/.gemini/.env` and
+keeps its read tools in plan mode (details and the unblock in `BACKLOG.md`).
+
+`make sweep-cli` runs every registered Claude CLI model across the text modules; `make sweep-local`
+runs every pulled Ollama model. The log records the model id the CLI reported and the CLI version
+in the output metadata.
 
 Defaults live in the [`Makefile`](../Makefile). Override per call:
 

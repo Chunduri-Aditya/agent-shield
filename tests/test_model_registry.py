@@ -12,12 +12,10 @@ CLI_ROWS = [m for m in MODELS if m.inspect_id.startswith("cli/")]
 
 def test_every_cli_row_is_a_text_only_subscription_row_requiring_its_command() -> None:
     assert {m.inspect_id for m in CLI_ROWS} == {
-        "cli/claude/fable",
-        "cli/claude/opus",
-        "cli/claude/sonnet",
-        "cli/claude/haiku",
-        "cli/codex/gpt-6-sol",
-        "cli/gemini/gemini-3-flash-preview",
+        "cli/claude/claude-fable-5-1",
+        "cli/claude/claude-opus-5-5",
+        "cli/claude/claude-sonnet-5-5",
+        "cli/claude/claude-haiku-5-5",
     }
     for row in CLI_ROWS:
         assert row.tier == "subscription" and row.text_only and not row.paper_set
@@ -73,9 +71,11 @@ def test_ollama_rows_cover_every_pulled_chat_model_and_check_their_own_tag(
 
     monkeypatch.setattr(
         "scripts.model_registry._ping",
-        lambda url: {"models": [{"name": "gemma4:12b"}]},
+        lambda url: {"models": [{"name": "gemma4:12b"}, {"name": "llama3.1:8b-instruct-q8_0"}]},
     )
     gemma = next(m for m in MODELS if m.inspect_id == "ollama/gemma4:12b")
     qwen = next(m for m in MODELS if m.inspect_id == "ollama/qwen3.5:9b")
+    q8 = next(m for m in MODELS if m.inspect_id == "ollama/llama3.1:8b-instruct-q8_0")
     assert _ollama_ready(gemma) == (True, "ready (gemma4:12b)")
     assert _ollama_ready(qwen)[0] is False
+    assert _ollama_ready(q8)[0] is True

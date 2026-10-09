@@ -1,26 +1,33 @@
 """
-Inspect AI model provider for the subscription CLIs (`--model cli/<backend>/<model>`).
+Inspect AI model provider for the Claude Code CLI (`--model cli/claude/<model>`).
 
-Each generate call is one headless run of the vendor's CLI with its tools off, in a fresh empty
-scratch folder, so the text tasks (inputs, psych, drift, exfil, memory) score the agent product as
-shipped, reached through the owner's subscription rather than an API key. Backends:
+Each generate call is one headless `claude -p` run with every tool off, no settings, no MCP
+servers, no session file and a fresh empty scratch folder as cwd, so the text tasks (inputs,
+psych, drift, exfil, memory) score Claude as reached through the owner's Max subscription
+rather than an API key. A live probe (2026-10-09) under these flags answered NONE for tools,
+could not read its parent folder or HOME, and had no CLAUDE.md or memory in context.
 
-  claude   `claude -p --setting-sources "" --strict-mcp-config --tools "" ...`; the system
-           message goes to --system-prompt, the user text to stdin. (`--bare` logs the CLI out.)
-  codex    `codex exec --ephemeral --skip-git-repo-check --sandbox read-only -C <cwd> --json`;
-           codex has no system prompt flag, so the system text is prepended to the prompt.
-  gemini   `gemini -p <prompt> -m <model> --approval-mode plan --output-format json`; the system
-           message goes to a GEMINI_SYSTEM_MD file beside (not inside) the scratch cwd.
+  claude -p --setting-sources "" --strict-mcp-config --tools "" --no-session-persistence
+         --output-format json --model <model> --system-prompt <system>
+  (`--bare` is not used: it also drops the stored login.)
 
-A task with no system message gets DEFAULT_SYSTEM. The child environment drops every API key
-in SCRUBBED_ENV: with a key present the CLIs bill the API instead of the subscription. A call
-past CALL_TIMEOUT_S kills the CLI's whole process group and raises RuntimeError (never the bare
-TimeoutError, which Inspect would swallow into an empty, falsely safe sample). The model id the
-CLI reports lands in ModelOutput.model; the CLI's own version lands in ModelOutput.metadata.
+The system message goes to --system-prompt (DEFAULT_SYSTEM when the task has none, so Claude
+Code's coding agent persona does not stand in for the model's chat behaviour); the user text
+goes to stdin. The child environment is an allowlist (PASSED_ENV): no API key reaches the CLI,
+since a present ANTHROPIC_API_KEY makes it bill the API instead of the subscription. The model
+id the CLI reports lands in ModelOutput.model; the CLI's own version in ModelOutput.metadata.
+
+A call past CALL_TIMEOUT_S, or a cancelled one, kills the CLI's whole process group and raises
+RuntimeError (never the bare TimeoutError, which Inspect would swallow into an empty, falsely
+safe sample). A non zero exit raises even when stdout parsed.
+
+Codex and Gemini are not backends here: codex keeps its exec tool and reads the whole disk under
+`--sandbox read-only`, and gemini reloads the API key from ~/.gemini/.env and keeps its read
+tools in plan mode (BACKLOG.md, 2026-10-09).
 
 Configuration, all from the environment:
-  CLI_CMD_<BACKEND>  a replacement command, for tests (a fake script)
-  CLI_SCRATCH        the folder that holds one empty cwd per call (default: a fresh temp folder)
+  CLI_CMD_CLAUDE  a replacement command, for tests (a fake script)
+  CLI_SCRATCH     the folder that holds one empty cwd per call (default: a fresh temp folder)
 Model args (-M): max_calls caps subprocess launches per provider instance.
 """
 
@@ -30,12 +37,11 @@ import shlex
 import shutil
 import signal
 import tempfile
-from collections.abc import Callable
-from dataclasses import dataclass
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from anyio import create_task_group, fail_after, open_process, run_process
+from anyio import CancelScope, create_task_group, fail_after, open_process
 from anyio.abc import ByteReceiveStream
 from anyio.streams.buffered import BufferedByteReceiveStream
 from inspect_ai.model import ChatMessage, ChatMessageSystem, GenerateConfig, ModelAPI, ModelOutput
@@ -43,174 +49,51 @@ from inspect_ai.tool import ToolChoice, ToolInfo
 
 CALL_TIMEOUT_S = 600
 DEFAULT_SYSTEM = "You are a helpful assistant."
-"""Sent when the task carries no system message, so the CLI's own coding agent persona (an empty
-workspace, "I am Gemini CLI") does not stand in for the model's chat behaviour."""
-SCRUBBED_ENV: tuple[str, ...] = (
-    "ANTHROPIC_API_KEY",
-    "OPENAI_API_KEY",
-    "GEMINI_API_KEY",
-    "GOOGLE_API_KEY",
+BACKENDS: tuple[str, ...] = ("claude",)
+PASSED_ENV: tuple[str, ...] = (
+    "PATH",
+    "HOME",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+    "TMPDIR",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "TERM",
+    "CLAUDE_CONFIG_DIR",
 )
+"""The only parent variables a CLI call inherits; every key, token and base URL stays behind."""
 
 
-@dataclass(frozen=True)
-class Turn:
-    """One call's inputs: the system text (may be empty), the flattened user text, the model."""
-
-    system: str
-    prompt: str
-    model: str
-    cwd: Path
-    aside: Path  # a sibling folder for files the CLI must read but the cwd must not hold
-
-
-@dataclass(frozen=True)
-class Backend:
-    """How one CLI is launched and read."""
-
-    name: str
-    argv: Callable[[Turn], list[str]]
-    stdin: Callable[[Turn], str]
-    env: Callable[[Turn], dict[str, str]]
-    parse: Callable[[str], tuple[str, str]]
-
-
-# --- claude ----------------------------------------------------------------------------------
-
-
-def _claude_argv(turn: Turn) -> list[str]:
-    argv = [
+def claude_argv(model: str, system: str) -> list[str]:
+    """The isolation flags for one headless claude call; the user text goes to stdin."""
+    return [
         "-p",
-        "--setting-sources",
-        "",
+        "--setting-sources", "",
         "--strict-mcp-config",
-        "--tools",
-        "",
+        "--tools", "",
         "--no-session-persistence",
-        "--output-format",
-        "json",
-        "--model",
-        turn.model,
-    ]
-    if turn.system:
-        argv += ["--system-prompt", turn.system]
-    return argv
+        "--output-format", "json",
+        "--model", model,
+        "--system-prompt", system,
+    ]  # fmt: skip
 
 
 def parse_claude(stdout: str) -> tuple[str, str]:
-    """(reply, model id) from `claude -p --output-format json`; raises ValueError on is_error."""
+    """(reply, model id) from `claude -p --output-format json`; raises ValueError on is_error.
+
+    The model id is the modelUsage entry that produced the most output tokens, so a side call
+    the CLI makes with a smaller model cannot relabel the row.
+    """
     out = json.loads(stdout)
     if out.get("is_error") or out.get("type") != "result":
         raise ValueError(f"claude returned an error result: {out.get('result')}")
     usage = out.get("modelUsage") or {}
     if not usage:
         raise ValueError("claude reported no modelUsage, so no model id")
-    return str(out.get("result") or ""), str(next(iter(usage)))
-
-
-# --- codex -----------------------------------------------------------------------------------
-
-
-def _codex_argv(turn: Turn) -> list[str]:
-    return [
-        "exec",
-        "--ephemeral",
-        "--skip-git-repo-check",
-        "--sandbox",
-        "read-only",
-        "-C",
-        str(turn.cwd),
-        "--json",
-        "-m",
-        turn.model,
-        "-",
-    ]
-
-
-def parse_codex(stdout: str) -> tuple[str, str]:
-    """(reply, "") from `codex exec --json` JSONL; codex names no model id in its events."""
-    reply: str | None = None
-    for line in stdout.splitlines():
-        if not line.strip():
-            continue
-        event = json.loads(line)
-        kind = event.get("type")
-        if kind == "error" or kind == "turn.failed":
-            detail = event.get("message") or (event.get("error") or {}).get("message")
-            raise ValueError(f"codex turn failed: {detail}")
-        if kind == "item.completed" and (event.get("item") or {}).get("type") == "agent_message":
-            reply = str(event["item"].get("text") or "")
-    if reply is None:
-        raise ValueError("codex emitted no agent_message")
-    return reply, ""
-
-
-# --- gemini ----------------------------------------------------------------------------------
-
-
-def _gemini_argv(turn: Turn) -> list[str]:
-    return [
-        "-p",
-        turn.prompt,
-        "-m",
-        turn.model,
-        "--approval-mode",
-        "plan",
-        "--output-format",
-        "json",
-    ]
-
-
-def _gemini_env(turn: Turn) -> dict[str, str]:
-    env = {"GEMINI_CLI_TRUST_WORKSPACE": "true"}
-    if turn.system:
-        system_md = turn.aside / "system.md"
-        system_md.write_text(turn.system, encoding="utf-8")
-        env["GEMINI_SYSTEM_MD"] = str(system_md)
-    return env
-
-
-def parse_gemini(stdout: str) -> tuple[str, str]:
-    """(reply, model id) from `gemini --output-format json`: the model that produced candidates.
-
-    The CLI may fall back from its default model to another one; only the entry that answered
-    names the row. Raises ValueError when no entry produced candidates.
-    """
-    out = json.loads(stdout)
-    models = (out.get("stats") or {}).get("models") or {}
-    answered = [
-        name
-        for name, stat in models.items()
-        if int((stat.get("tokens") or {}).get("candidates") or 0) > 0
-    ]
-    if not answered:
-        raise ValueError("gemini reported no model answered (no candidates in stats.models)")
-    return str(out.get("response") or ""), "+".join(answered)
-
-
-BACKENDS: dict[str, Backend] = {
-    "claude": Backend(
-        name="claude",
-        argv=_claude_argv,
-        stdin=lambda turn: turn.prompt,
-        env=lambda turn: {},
-        parse=parse_claude,
-    ),
-    "codex": Backend(
-        name="codex",
-        argv=_codex_argv,
-        stdin=lambda turn: f"{turn.system}\n\n{turn.prompt}" if turn.system else turn.prompt,
-        env=lambda turn: {},
-        parse=parse_codex,
-    ),
-    "gemini": Backend(
-        name="gemini",
-        argv=_gemini_argv,
-        stdin=lambda turn: "",
-        env=_gemini_env,
-        parse=parse_gemini,
-    ),
-}
+    model_id = max(usage, key=lambda name: int((usage[name] or {}).get("outputTokens") or 0))
+    return str(out.get("result") or ""), str(model_id)
 
 
 class CLIAPI(ModelAPI):
@@ -234,21 +117,21 @@ class CLIAPI(ModelAPI):
         )
         if model_args:
             raise ValueError(f"Unknown cli model args: {', '.join(sorted(model_args))}")
-        backend_name, _, model = model_name.partition("/")
+        backend, _, model = model_name.partition("/")
         if not model:
             raise ValueError("spell the model as cli/<backend>/<model>, e.g. cli/claude/opus")
-        if backend_name not in BACKENDS:
-            raise ValueError(f"unknown cli backend {backend_name!r}; one of {sorted(BACKENDS)}")
-        self._backend = BACKENDS[backend_name]
+        if backend not in BACKENDS:
+            raise ValueError(f"unknown cli backend {backend!r}; one of {sorted(BACKENDS)}")
+        self._backend = backend
         self._model = model
-        override = os.environ.get(f"CLI_CMD_{backend_name.upper()}")
+        override = os.environ.get(f"CLI_CMD_{backend.upper()}")
         if override:
             self._command = shlex.split(override)
-        elif shutil.which(backend_name):
-            self._command = [backend_name]
+        elif shutil.which(backend):
+            self._command = [backend]
         else:
             raise ValueError(
-                f"{backend_name} is not on PATH; install it or set CLI_CMD_{backend_name.upper()}"
+                f"{backend} is not on PATH; install it or set CLI_CMD_{backend.upper()}"
             )
         self._scratch = Path(
             os.environ.get("CLI_SCRATCH") or tempfile.mkdtemp(prefix="cli-shield-")
@@ -262,7 +145,7 @@ class CLIAPI(ModelAPI):
         return 2
 
     def connection_key(self) -> str:
-        return f"cli-{self._backend.name}"
+        return f"cli-{self._backend}"
 
     async def generate(
         self,
@@ -285,36 +168,36 @@ class CLIAPI(ModelAPI):
         prompt = "\n\n".join(
             m.text for m in input if not isinstance(m, ChatMessageSystem) and m.text.strip()
         )
+        argv = [*self._command, *claude_argv(self._model, system)]
+        stdout = await self._call(argv, prompt.encode("utf-8"))
+        try:
+            reply, model_id = parse_claude(stdout)
+        except ValueError as exc:  # JSONDecodeError is a ValueError
+            raise RuntimeError(f"{self._backend}: {exc}") from exc
+        output = ModelOutput.from_content(model=model_id, content=reply)
+        output.metadata = {"cli": self._backend, "cli_version": await self._cli_version()}
+        return output
+
+    async def _call(self, argv: list[str], stdin: bytes) -> str:
+        """Run argv in a fresh empty cwd with the allowlisted env; stdout on exit 0, else raise."""
         call_dir = Path(tempfile.mkdtemp(prefix="call-", dir=self._scratch))
         cwd = call_dir / "cwd"
         cwd.mkdir()
-        turn = Turn(system=system, prompt=prompt, model=self._model, cwd=cwd, aside=call_dir)
-        env = {k: v for k, v in os.environ.items() if k not in SCRUBBED_ENV}
-        env.update(self._backend.env(turn))
-        argv = [*self._command, *self._backend.argv(turn)]
-        returncode, out, err = await _run(
-            self._backend.name, argv, self._backend.stdin(turn).encode("utf-8"), cwd, env
-        )
-        stdout = out.decode("utf-8", "replace")
-        stderr_tail = err.decode("utf-8", "replace")[-500:]
+        env = {k: v for k, v in os.environ.items() if k in PASSED_ENV}
         try:
-            reply, model_id = self._backend.parse(stdout)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(
-                f"{self._backend.name} gave no JSON (exit {returncode}): {stderr_tail}"
-            ) from exc
-        except ValueError as exc:
-            raise RuntimeError(f"{exc} (exit {returncode}): {stderr_tail}") from exc
-        output = ModelOutput.from_content(model=model_id or self._model, content=reply)
-        output.metadata = {"cli": self._backend.name, "cli_version": await self._cli_version()}
-        return output
+            returncode, out, err = await _run(self._backend, argv, stdin, cwd, env)
+        finally:
+            shutil.rmtree(call_dir, ignore_errors=True)
+        stdout = out.decode("utf-8", "replace")
+        if returncode != 0:
+            tail = stdout[-300:] if stdout.strip() else err.decode("utf-8", "replace")[-500:]
+            raise RuntimeError(f"{self._backend} exited {returncode}: {tail}")
+        return stdout
 
     async def _cli_version(self) -> str:
-        """The CLI's `--version` line, read once per provider instance."""
+        """The CLI's `--version` line, read once per provider instance through the same path."""
         if self._version is None:
-            with fail_after(60):
-                done = await run_process([*self._command, "--version"], check=False)
-            self._version = done.stdout.decode("utf-8", "replace").strip()
+            self._version = (await self._call([*self._command, "--version"], b"")).strip()
         return self._version
 
 
@@ -328,10 +211,11 @@ async def _drain(stream: ByteReceiveStream | None, into: bytearray) -> None:
 async def _run(
     name: str, argv: list[str], stdin: bytes, cwd: Path, env: dict[str, str]
 ) -> tuple[int, bytes, bytes]:
-    """Run one CLI call in its own process group; past CALL_TIMEOUT_S kill the group and raise.
+    """Run one CLI call in its own process group; on timeout or cancel, kill the group and raise.
 
-    The CLIs spawn helper children that inherit the stdout pipe (gemini wraps a second node),
-    so killing the parent alone leaves the pipe open and the read blocked forever.
+    The CLIs spawn helper children that inherit the stdout pipe, so killing the parent alone
+    leaves the pipe open and the read blocked until the helper exits on its own. The group is
+    killed on every exit path (success included) so no helper outlives the call.
     """
     out = bytearray()
     err = bytearray()
@@ -345,12 +229,22 @@ async def _run(
                     await process.stdin.send(stdin)
                     await process.stdin.aclose()
             returncode = await process.wait()
-    except TimeoutError as exc:
-        os.killpg(process.pid, signal.SIGKILL)
-        await process.wait()
-        raise RuntimeError(
-            f"{name} call exceeded {CALL_TIMEOUT_S}s and its process group was killed"
-        ) from exc
-    finally:
+    except BaseException as exc:
+        with CancelScope(shield=True):
+            _kill_group(process.pid)
+            with suppress(Exception):
+                await process.aclose()
+        if isinstance(exc, TimeoutError):
+            raise RuntimeError(
+                f"{name} call exceeded {CALL_TIMEOUT_S}s and its process group was killed"
+            ) from exc
+        raise
+    _kill_group(process.pid)
+    with suppress(Exception):
         await process.aclose()
     return returncode, bytes(out), bytes(err)
+
+
+def _kill_group(pid: int) -> None:
+    with suppress(ProcessLookupError, PermissionError):
+        os.killpg(pid, signal.SIGKILL)

@@ -19,7 +19,7 @@ HF_MODEL ?= openai/gpt-oss-20b
 TWIN_DIR ?= $(HOME)/Desktop/twin
 TWIN_MODULE ?= inputs
 CLI_MODULE ?= inputs
-CLI_MODEL ?= claude/sonnet
+CLI_MODEL ?= claude/claude-sonnet-5-5
 
 # Smoke test — verify harness end-to-end
 eval:
@@ -302,14 +302,14 @@ eval-twin:
 eval-twin-lead:
 	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 -M lead=true --seed $(SEED)
 
-# A subscription CLI as the target (provider: agent_shield_providers/cli_api.py): one headless
-# `claude -p` / `codex exec` / `gemini -p` per sample, tools off, in an empty scratch folder, API
-# keys scrubbed so the owner's subscription pays. Text tasks only. CLI_MODEL is <backend>/<model>,
-# e.g. claude/opus, codex/gpt-6-sol, gemini/gemini-3-flash-preview.
+# The Claude Code CLI as the target (provider: agent_shield_providers/cli_api.py): one headless
+# `claude -p` per sample, every tool off, in an empty scratch folder, with an allowlisted env so
+# the owner's subscription pays. Text tasks only. CLI_MODEL is claude/<full model id>.
+# (codex and gemini are not isolable this way; see BACKLOG.md.)
 eval-cli:
 	uv run inspect eval evals/$(CLI_MODULE).py --model cli/$(CLI_MODEL) --max-connections 2 --seed $(SEED)
 
-# Every registered subscription CLI model across the text modules (n=20 on inputs via epochs).
+# Every registered Claude CLI model across the text modules (n=20 on inputs via epochs).
 sweep-cli:
 	uv run python scripts/sweep.py --tier subscription
 
