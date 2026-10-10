@@ -4,7 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from scripts.model_registry import MODELS, MODULE_BY_NAME, ModelSpec, _ollama_ready, model_status
+from scripts.model_registry import (
+    MODELS,
+    MODULE_BY_NAME,
+    ModelSpec,
+    ModuleSpec,
+    _ollama_ready,
+    model_status,
+)
 from scripts.sweep import build_command, skip_reason
 
 CLI_ROWS = [m for m in MODELS if m.inspect_id.startswith("cli/")]
@@ -108,6 +115,11 @@ def test_memory_verdict_keeps_the_reserve_for_the_terminal_and_a_browser() -> No
     # The 8 GiB q8_0 row beside the apps that were open after the 2026-10-09 reboot (7.4 GiB free).
     assert memory_verdict(7 * GIB, 8 * GIB) is not None
     assert memory_verdict(need + RESERVE_BYTES - 1, weights, reserve=0) is None
+    # llama3.1 Q4 (4.6 GiB) at the 8.3 GiB free a Brave only run leaves: admitted at the
+    # 1.5 GiB reserve used when the browser is already open, refused at the 3 GiB default.
+    q4 = int(4.6 * GIB)
+    assert memory_verdict(int(8.3 * GIB), q4, reserve=int(1.5 * GIB)) is None
+    assert memory_verdict(int(8.3 * GIB), q4) is not None
 
 
 def test_already_done_needs_every_task_success_at_the_pinned_temperature() -> None:
@@ -123,3 +135,34 @@ def test_already_done_needs_every_task_success_at_the_pinned_temperature() -> No
     assert not already_done(ok, "ollama/y", tasks, 0.0)
     cli: list[Header] = [("cli/c", t, "success", None) for t in tasks]
     assert already_done(cli, "cli/c", tasks, None)
+
+
+def test_run_sweep_threads_the_reserve_into_the_guard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import scripts.sweep as sweep
+
+    calls: list[str] = []
+    monkeypatch.setattr(sweep, "load_env", lambda: None)
+    monkeypatch.setattr(sweep, "_STAGING_PATH", tmp_path / "staging.md")
+    monkeypatch.setattr(sweep, "model_status", lambda m: (True, "ready"))
+    monkeypatch.setattr(sweep, "available_memory_bytes", lambda: int(8.3 * sweep.GIB))
+    monkeypatch.setattr(sweep, "ollama_model_bytes", lambda m: int(4.6 * sweep.GIB))
+    monkeypatch.setattr(sweep, "ollama_unload", lambda m: None)
+
+    def fake_run_eval(module: ModuleSpec, model: ModelSpec, dry_run: bool) -> bool:
+        calls.append(model.short)
+        return True
+
+    monkeypatch.setattr(sweep, "run_eval", fake_run_eval)
+    kwargs = dict(
+        modules=[MODULE_BY_NAME["tools"]],
+        dry_run=False,
+        filter_model="llama3.1:8b-instruct-q4_K_M",
+        filter_tier="local",
+    )
+    sweep.run_sweep(**kwargs, reserve_bytes=int(1.5 * sweep.GIB))  # type: ignore[arg-type]
+    assert calls == ["llama3.1:8b-instruct-q4_K_M"]
+    assert "memory reserve 1.5 GiB" in (tmp_path / "staging.md").read_text()
+    sweep.run_sweep(**kwargs)  # type: ignore[arg-type]
+    assert calls == ["llama3.1:8b-instruct-q4_K_M"]  # the 3 GiB default skips the same row

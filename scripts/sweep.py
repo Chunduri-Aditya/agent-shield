@@ -343,7 +343,9 @@ def _placeholder_row(module: ModuleSpec, model: ModelSpec) -> str:
 _STAGING_PATH = _REPO_ROOT / "logs" / "sweep_staging.md"
 
 
-def _write_staging_header(modules: list[ModuleSpec], models: list[ModelSpec]) -> None:
+def _write_staging_header(
+    modules: list[ModuleSpec], models: list[ModelSpec], reserve_bytes: int = RESERVE_BYTES
+) -> None:
     _STAGING_PATH.parent.mkdir(exist_ok=True)
     ts = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     lines: list[str] = [
@@ -354,7 +356,7 @@ def _write_staging_header(modules: list[ModuleSpec], models: list[ModelSpec]) ->
         f"Models:  {', '.join(m.short for m in models)}",
         f"Ollama context length: {os.getenv('OLLAMA_CONTEXT_LENGTH', 'unset (app default)')}",
         f"Local rows: --temperature 0, --max-tokens {LOCAL_MAX_TOKENS}, "
-        f"memory reserve {_gib(RESERVE_BYTES)}, "
+        f"memory reserve {_gib(reserve_bytes)}, "
         f"overhead allowance {_gib(MODEL_OVERHEAD_BYTES)}\n",
         "---\n",
     ]
@@ -384,10 +386,11 @@ def run_sweep(
     filter_model: str | None,
     filter_tier: str | None = None,
     resume: bool = False,
+    reserve_bytes: int = RESERVE_BYTES,
 ) -> None:
     load_env()
 
-    _write_staging_header(modules, list(MODELS))
+    _write_staging_header(modules, list(MODELS), reserve_bytes)
 
     run_count = 0
     skip_count = 0
@@ -440,7 +443,7 @@ def run_sweep(
                 verdict = (
                     f"memory: {ollama_tag(model)} has no size in /api/tags"
                     if size is None
-                    else memory_verdict(available_memory_bytes(), size)
+                    else memory_verdict(available_memory_bytes(), size, reserve=reserve_bytes)
                 )
                 if verdict and not dry_run:
                     print(f"  [{model.short}] SKIPPED — {verdict}")
@@ -534,6 +537,14 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Skip (module, model) pairs whose tasks already have success logs in logs/.",
     )
+    parser.add_argument(
+        "--reserve-gib",
+        type=float,
+        default=RESERVE_BYTES / GIB,
+        metavar="GIB",
+        help="Free memory the local tier keeps for a terminal and a browser (default 3; "
+        "1.5 when the browser is already open, since its memory is then already counted).",
+    )
     return parser.parse_args()
 
 
@@ -570,6 +581,7 @@ def main() -> None:
         filter_model=args.model,
         filter_tier=args.tier,
         resume=args.resume,
+        reserve_bytes=int(args.reserve_gib * GIB),
     )
 
 
