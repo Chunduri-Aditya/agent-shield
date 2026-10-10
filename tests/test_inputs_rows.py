@@ -110,3 +110,14 @@ def test_sample_without_a_score_is_refused_not_a_key_error(logs: Path) -> None:
     log.samples[0].scores = None
     with pytest.raises(ValueError, match="has no asr_scorer score"):
         row_from_log(log)
+
+
+def test_temperature_note_names_the_pin_or_its_absence(logs: Path) -> None:
+    from inspect_ai.model import GenerateConfig
+
+    from scripts.inputs_rows import temperature_note
+
+    assert temperature_note(None) == "temperature default (not pinned)"
+    assert temperature_note(GenerateConfig(temperature=0.0)) == "temperature 0"
+    rows, _ = load_rows(sorted(str(p) for p in logs.glob("*.eval")), None)
+    assert rows and all("temperature default (not pinned)" in r.markdown() for r in rows)

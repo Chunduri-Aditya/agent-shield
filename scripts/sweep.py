@@ -13,6 +13,13 @@ Usage:
   python scripts/sweep.py --module inputs     # single module only
   python scripts/sweep.py --model groq/llama-3.3-70b-versatile  # single model
   python scripts/sweep.py --status            # print availability table and exit
+  python scripts/sweep.py --tier local --resume  # skip pairs whose logs already succeeded
+
+Local (Ollama) rows run at --temperature 0 and behind a memory guard: a model whose
+weights plus KV allowance would eat into RESERVE_BYTES of free memory is skipped with
+a printed reason instead of started. The machine reset itself on 2026-10-09 when a
+sweep filled swap; the guard exists so a sweep can share the machine with a terminal
+and a browser.
 
 make sweep          → python scripts/sweep.py
 make sweep-dry      → python scripts/sweep.py --dry-run
@@ -23,9 +30,14 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
+import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 # Ensure repo root is importable regardless of invocation path.
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +50,7 @@ from scripts.model_registry import (  # noqa: E402
     MODULES,
     ModelSpec,
     ModuleSpec,
+    _ping,
     available_models,
     load_env,
     model_status,
@@ -48,6 +61,126 @@ from scripts.model_registry import (  # noqa: E402
 # Placeholder sentinel — written to staging output when model is unavailable.
 # ---------------------------------------------------------------------------
 PLACEHOLDER = "—"
+
+# ---------------------------------------------------------------------------
+# Memory guard for local (Ollama) rows.
+# ---------------------------------------------------------------------------
+GIB = 2**30
+
+RESERVE_BYTES = 3 * GIB
+"""Free memory the sweep leaves alone: a terminal plus one browser window (owner's pick)."""
+
+MODEL_OVERHEAD_BYTES = 2 * GIB
+"""KV cache plus compute buffers above the weights, at Ollama context length 8192 for
+models up to 12B. Double it at 16384: qwen3.5:4b (3.16 GiB of weights) sat at 5.4 GiB
+resident at 16K on 2026-10-09."""
+
+
+def _gib(n: int) -> str:
+    return f"{n / GIB:.1f} GiB"
+
+
+def memory_verdict(
+    available: int,
+    model_bytes: int,
+    *,
+    reserve: int = RESERVE_BYTES,
+    overhead: int = MODEL_OVERHEAD_BYTES,
+) -> str | None:
+    """Why a local model must not start now, or None when it fits above the reserve."""
+    need = model_bytes + overhead
+    headroom = available - reserve
+    if headroom >= need:
+        return None
+    return (
+        f"memory: needs {_gib(need)} (weights {_gib(model_bytes)} + overhead {_gib(overhead)}), "
+        f"only {_gib(max(headroom, 0))} free above the {_gib(reserve)} reserve"
+    )
+
+
+def available_memory_bytes() -> int:
+    """Free, inactive and speculative pages from `vm_stat`; macOS only, fails loud elsewhere."""
+    if platform.system() != "Darwin":
+        raise RuntimeError("available_memory_bytes reads vm_stat; only macOS is supported")
+    out = subprocess.run(["vm_stat"], capture_output=True, text=True, check=True).stdout
+    page = int(out.split("page size of", 1)[1].split()[0])
+    pages = 0
+    for line in out.splitlines():
+        key, _, value = line.partition(":")
+        if key.strip() in ("Pages free", "Pages inactive", "Pages speculative"):
+            pages += int(value.strip().rstrip("."))
+    return pages * page
+
+
+def ollama_tag(model: ModelSpec) -> str:
+    """The pulled tag a local row runs, mirroring `_ollama_ready`'s target."""
+    if model.local_model_key:
+        return os.getenv(model.local_model_key, "llama3.1:8b")
+    return model.inspect_id.partition("/")[2]
+
+
+def ollama_model_bytes(model: ModelSpec) -> int | None:
+    """Weights size from the Ollama `/api/tags` listing, or None when the tag is absent."""
+    data = _ping(model.local_health_url or "")
+    if data is None:
+        return None
+    tag = ollama_tag(model)
+    for entry in data.get("models", []):
+        if isinstance(entry, dict) and entry.get("name") == tag:
+            size = entry.get("size")
+            return int(size) if isinstance(size, int) else None
+    return None
+
+
+def ollama_unload(model: ModelSpec) -> None:
+    """Ask Ollama to drop the model now (OLLAMA_KEEP_ALIVE would hold it for minutes)."""
+    url = (model.local_health_url or "").replace("/api/tags", "/api/generate")
+    body = json.dumps({"model": ollama_tag(model), "keep_alive": 0}).encode()
+    req = Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urlopen(req, timeout=30):
+            pass
+    except (OSError, URLError) as exc:
+        print(f"  [WARN] could not unload {ollama_tag(model)}: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Resume: skip pairs whose logs already succeeded.
+# ---------------------------------------------------------------------------
+Header = tuple[str, str, str, float | None]
+"""(model, task, status, temperature) read from one Inspect log header."""
+
+
+def scan_log_headers(log_dir: Path) -> list[Header]:
+    """One header read per log; the task name is the function name, never the file name."""
+    from inspect_ai.log import read_eval_log
+
+    headers: list[Header] = []
+    for path in sorted(log_dir.glob("*.eval")):
+        try:
+            log = read_eval_log(str(path), header_only=True)
+        except Exception as exc:  # a truncated log from a crashed run is not a result
+            print(f"  [WARN] unreadable log skipped: {path.name} ({exc})")
+            continue
+        gen = log.eval.model_generate_config
+        temperature = gen.temperature if gen is not None else None
+        headers.append((log.eval.model, log.eval.task, log.status, temperature))
+    return headers
+
+
+def already_done(
+    headers: list[Header],
+    model_id: str,
+    tasks: tuple[str, ...],
+    temperature: float | None,
+) -> bool:
+    """True when every task has a success log for this model at this temperature."""
+    done = {
+        task
+        for model, task, status, temp in headers
+        if model == model_id and status == "success" and temp == temperature
+    }
+    return all(task in done for task in tasks)
 
 
 def _placeholder_note(model: ModelSpec) -> str:
@@ -76,6 +209,11 @@ def _resolve_env_overrides(overrides: tuple[tuple[str, str], ...]) -> dict[str, 
     return resolved
 
 
+def pinned_temperature(model: ModelSpec) -> float | None:
+    """Local rows run at 0 (the Modelfile would decide otherwise); API and CLI rows keep theirs."""
+    return 0.0 if model.tier == "local" else None
+
+
 def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     """The `uv run inspect eval` argv for one module on one model."""
     task_args: list[str] = []
@@ -88,6 +226,9 @@ def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
         "--model", model.inspect_id,
         "--seed", str(module.seed),
     ]
+    temperature = pinned_temperature(model)
+    if temperature is not None:
+        cmd += ["--temperature", str(int(temperature))]
     if module.epochs > 1:
         cmd += ["--epochs", str(module.epochs), "--no-epochs-reducer"]
     return cmd
@@ -184,7 +325,10 @@ def _write_staging_header(modules: list[ModuleSpec], models: list[ModelSpec]) ->
         "Generated by `scripts/sweep.py`. Merge placeholder rows into RESULTS.md",
         "once real runs replace them.\n",
         f"Modules: {', '.join(m.name for m in modules)}",
-        f"Models:  {', '.join(m.short for m in models)}\n",
+        f"Models:  {', '.join(m.short for m in models)}",
+        f"Ollama context length: {os.getenv('OLLAMA_CONTEXT_LENGTH', 'unset (app default)')}",
+        f"Local rows: --temperature 0, memory reserve {_gib(RESERVE_BYTES)}, "
+        f"overhead allowance {_gib(MODEL_OVERHEAD_BYTES)}\n",
         "---\n",
     ]
     _STAGING_PATH.write_text("\n".join(lines), encoding="utf-8")
@@ -212,6 +356,7 @@ def run_sweep(
     dry_run: bool,
     filter_model: str | None,
     filter_tier: str | None = None,
+    resume: bool = False,
 ) -> None:
     load_env()
 
@@ -220,6 +365,9 @@ def run_sweep(
     run_count = 0
     skip_count = 0
     fail_count = 0
+    mem_skip_count = 0
+    resume_count = 0
+    headers: list[Header] = scan_log_headers(_REPO_ROOT / "logs") if resume else []
 
     for module in modules:
         print(f"\n{'='*60}")
@@ -241,6 +389,14 @@ def run_sweep(
                 print(f"  [{model.short}] SKIPPED — {blocked_reason}")
                 continue
 
+            if resume and already_done(
+                headers, model.inspect_id, module.tasks, pinned_temperature(model)
+            ):
+                print(f"  [{model.short}] DONE — all {len(module.tasks)} tasks have success logs")
+                _append_staging(f"| {datetime.date.today()} | {model.inspect_id} | DONE (resume) |")
+                resume_count += 1
+                continue
+
             ok, reason = model_status(model)
 
             if not ok:
@@ -252,9 +408,28 @@ def run_sweep(
                 skip_count += 1
                 continue
 
+            if model.tier == "local":
+                size = ollama_model_bytes(model)
+                verdict = (
+                    f"memory: {ollama_tag(model)} has no size in /api/tags"
+                    if size is None
+                    else memory_verdict(available_memory_bytes(), size)
+                )
+                if verdict and not dry_run:
+                    print(f"  [{model.short}] SKIPPED — {verdict}")
+                    _append_staging(
+                        f"| {datetime.date.today()} | {model.inspect_id} | SKIPPED — {verdict} |"
+                    )
+                    mem_skip_count += 1
+                    continue
+                if dry_run:
+                    print(f"  [{model.short}] memory check: {verdict or 'ok'}")
+
             # Model is available — run the eval.
             print(f"\n  [{model.short}] RUNNING")
             success = run_eval(module, model, dry_run=dry_run)
+            if model.tier == "local" and not dry_run:
+                ollama_unload(model)
             if success:
                 run_count += 1
                 _append_staging(
@@ -273,6 +448,8 @@ def run_sweep(
     print(f"{'='*60}")
     print(f"  Ran:          {run_count}")
     print(f"  Skipped:      {skip_count} (placeholder rows written)")
+    print(f"  Skipped (memory): {mem_skip_count} (rerun with more free memory or --resume)")
+    print(f"  Done (resume):    {resume_count}")
     print(f"  Failed:       {fail_count}")
     print(f"  Staging file: {_STAGING_PATH}")
     print()
@@ -325,6 +502,11 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print model and module availability table and exit.",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Skip (module, model) pairs whose tasks already have success logs in logs/.",
+    )
     return parser.parse_args()
 
 
@@ -360,6 +542,7 @@ def main() -> None:
         dry_run=args.dry_run,
         filter_model=args.model,
         filter_tier=args.tier,
+        resume=args.resume,
     )
 
 

@@ -49,6 +49,9 @@ under-delivers. Do not just add them without pulling something else.
   `google_web_search`, and the user hooks run on every call; a prompt passed to `-p` that
   starts with `--` is parsed as a flag. Unblock: Google login instead of the key, a settings
   override with `tools.core: []` and hooks off, the prompt on stdin, then the probe.
+- [ ] **Pin `--temperature 0` on the API tier sweep rows** (groq, gemini, anthropic) the way
+  the local tier is pinned in `scripts/sweep.py` (2026-10-09). Held back because the v1.0.0
+  paper rows ran at provider defaults; repinning them is a new result set, not a rerun.
 - [ ] **Constitutional AI as fifth defense baseline.** Current 3 defenses are
   spotlighting, LLM judge, tool arg constraints. Adding
   Bai et al. 2022 self-critique would give coverage of the "model defends

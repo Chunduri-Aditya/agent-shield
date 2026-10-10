@@ -326,6 +326,9 @@ sweep-cli:
 	uv run python scripts/sweep.py --tier subscription
 
 # Every pulled Ollama model (scripts/model_registry.py) across all modules.
+# Local (Ollama) rows at --temperature 0 behind the memory guard in scripts/sweep.py (3 GiB
+# reserve for a terminal and a browser). Run it alone: OLLAMA_CONTEXT_LENGTH=8192 make sweep-local.
+# `uv run python scripts/sweep.py --tier local --resume` continues after a stop.
 sweep-local:
 	uv run python scripts/sweep.py --tier local
 

@@ -79,3 +79,45 @@ def test_ollama_rows_cover_every_pulled_chat_model_and_check_their_own_tag(
     assert _ollama_ready(gemma) == (True, "ready (gemma4:12b)")
     assert _ollama_ready(qwen)[0] is False
     assert _ollama_ready(q8)[0] is True
+
+
+LOCAL_ROWS = [m for m in MODELS if m.tier == "local"]
+
+
+def test_local_rows_run_at_temperature_zero_and_cli_rows_keep_their_default() -> None:
+    from scripts.sweep import pinned_temperature
+
+    local = build_command(MODULE_BY_NAME["inputs"], LOCAL_ROWS[0])
+    assert local[local.index("--temperature") + 1] == "0"
+    assert local[-3:] == ["--epochs", "4", "--no-epochs-reducer"]
+    cli = build_command(MODULE_BY_NAME["inputs"], CLI_ROWS[0])
+    assert "--temperature" not in cli
+    assert pinned_temperature(LOCAL_ROWS[0]) == 0.0 and pinned_temperature(CLI_ROWS[0]) is None
+
+
+def test_memory_verdict_keeps_the_reserve_for_the_terminal_and_a_browser() -> None:
+    from scripts.sweep import GIB, MODEL_OVERHEAD_BYTES, RESERVE_BYTES, memory_verdict
+
+    weights = 3 * GIB
+    need = weights + MODEL_OVERHEAD_BYTES
+    assert memory_verdict(need + RESERVE_BYTES, weights) is None
+    reason = memory_verdict(need + RESERVE_BYTES - 1, weights)
+    assert reason is not None and reason.startswith("memory:") and "3.0 GiB reserve" in reason
+    # The 8 GiB q8_0 row beside the apps that were open after the 2026-10-09 reboot (7.4 GiB free).
+    assert memory_verdict(7 * GIB, 8 * GIB) is not None
+    assert memory_verdict(need + RESERVE_BYTES - 1, weights, reserve=0) is None
+
+
+def test_already_done_needs_every_task_success_at_the_pinned_temperature() -> None:
+    from scripts.sweep import Header, already_done
+
+    tasks = MODULE_BY_NAME["inputs"].tasks
+    ok: list[Header] = [("ollama/x", t, "success", 0.0) for t in tasks]
+    assert already_done(ok, "ollama/x", tasks, 0.0)
+    started: list[Header] = [*ok[:-1], (ok[-1][0], ok[-1][1], "started", 0.0)]
+    assert not already_done(started, "ollama/x", tasks, 0.0)
+    unpinned: list[Header] = [(m, t, s, None) for m, t, s, _ in ok]  # logs before the pin
+    assert not already_done(unpinned, "ollama/x", tasks, 0.0)
+    assert not already_done(ok, "ollama/y", tasks, 0.0)
+    cli: list[Header] = [("cli/c", t, "success", None) for t in tasks]
+    assert already_done(cli, "cli/c", tasks, None)

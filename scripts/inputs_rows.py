@@ -26,6 +26,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from inspect_ai.log import EvalLog, read_eval_log  # noqa: E402
+from inspect_ai.model import GenerateConfig  # noqa: E402
 
 from agent_shield.runtime.stats import wilson_interval  # noqa: E402
 
@@ -91,16 +92,22 @@ def _resolved_model(log: EvalLog) -> str:
     return f"{requested} → {'+'.join(ids)}"
 
 
+def temperature_note(gen: GenerateConfig | None) -> str:
+    """What the run sampled at, so a row cannot hide an unpinned temperature."""
+    if gen is None or gen.temperature is None:
+        return "temperature default (not pinned)"
+    return f"temperature {gen.temperature:g}"
+
+
 def _note(log: EvalLog) -> str:
     meta = next(
         (s.output.metadata for s in log.samples or [] if s.output and s.output.metadata), None
     )
+    parts: list[str] = []
     if meta and meta.get("cli"):
-        return (
-            f"{meta['cli']} CLI {meta.get('cli_version', '')}, tools off, "
-            "temperature: CLI default, seed nominal"
-        )
-    return ""
+        parts.append(f"{meta['cli']} CLI {meta.get('cli_version', '')}, tools off, seed nominal")
+    parts.append(temperature_note(log.eval.model_generate_config))
+    return "; ".join(parts)
 
 
 def row_from_log(log: EvalLog) -> Row:
