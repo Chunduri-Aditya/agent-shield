@@ -1,5 +1,10 @@
+import os
 import sys
 from pathlib import Path
+
+# Before any test module imports huggingface_hub: the mlx provider test asserts the hub was
+# never online, and tests/test_inputs_rows.py imports inspect_ai (which imports the hub) first.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
 import pytest
 

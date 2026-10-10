@@ -65,3 +65,23 @@ def test_results_md_persona_tables_carry_arm_and_judge(repo_root: Path) -> None:
     assert headers, f"{PERSONA_MODULE} section has no result table starting with a Date column"
     for header in headers:
         assert header.strip() == PERSONA_HEADER, f"{PERSONA_MODULE} table header differs: {header}"
+
+
+# Rows added from 2026-10-09 on name the scorer version that produced them (evals/_marker.py
+# MARKER_SCORER_VERSION; scripts/inputs_rows.py prints it), so a number cannot outlive its
+# scorer. Older rows predate the stamp and are left alone.
+SCORER_VERSION_FROM = "2026-10-09"
+
+
+def test_rows_from_the_versioned_era_name_their_scorer(repo_root: Path) -> None:
+    text = (repo_root / "RESULTS.md").read_text(encoding="utf-8")
+    offenders = []
+    for line in text.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 6 or not cells[0][:4].isdigit():
+            continue
+        if cells[0] < SCORER_VERSION_FROM or ".eval" not in line:
+            continue
+        if "_scorer v" not in line:
+            offenders.append(line[:80])
+    assert offenders == [], f"rows citing a log without a scorer version: {offenders}"

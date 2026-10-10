@@ -302,7 +302,7 @@ MODULES: tuple[ModuleSpec, ...] = (
     ModuleSpec(
         name="inputs",
         eval_file="evals/inputs.py",
-        tasks=("inputs_asr", "inputs_transparency"),
+        tasks=("inputs_asr", "inputs_transparency", "inputs_benign"),
         n=20,  # anchored CI run requires n=20
         seed=0,
         epochs=4,  # 5 attacks x 4 epochs, the way RESULTS.md's anchored rows were run

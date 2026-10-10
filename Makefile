@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain eval-twin eval-twin-lead
+.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain eval-twin eval-twin-lead rescore rescore-inputs
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -19,6 +19,8 @@ HF_MODEL ?= openai/gpt-oss-20b
 TWIN_DIR ?= $(HOME)/Desktop/twin
 TWIN_MODULE ?= inputs
 CLI_MODULE ?= inputs
+SCORER ?= asr_scorer
+RESCORE_MODULE ?= inputs
 CLI_MODEL ?= claude/claude-sonnet-5-5
 
 # Smoke test — verify harness end-to-end
@@ -308,6 +310,16 @@ eval-twin-lead:
 # (codex and gemini are not isolable this way; see BACKLOG.md.)
 eval-cli:
 	uv run inspect eval evals/$(CLI_MODULE).py --model cli/$(CLI_MODEL) --max-connections 2 --seed $(SEED)
+
+# Rescore one log in place with the current scorer (SCORER=asr_scorer or transparency_scorer,
+# RESCORE_MODULE=inputs|psych|auto_apply so a psych log gets psych's phrase list; the marker
+# scorer version lives in evals/_marker.py). The unscored original is copied first to
+# _project_archive/pre-rescore/ (gitignored, never overwritten) so the old scores stay readable.
+rescore:
+	mkdir -p _project_archive/pre-rescore && cp -n $(LOG) _project_archive/pre-rescore/ || true
+	uv run inspect score $(LOG) --scorer evals/$(RESCORE_MODULE).py@$(SCORER) --action overwrite --overwrite
+
+rescore-inputs: rescore
 
 # Every registered Claude CLI model across the text modules (n=20 on inputs via epochs).
 sweep-cli:
