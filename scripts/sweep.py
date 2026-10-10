@@ -224,6 +224,16 @@ def pinned_max_tokens(model: ModelSpec) -> int | None:
     return LOCAL_MAX_TOKENS if model.tier == "local" else None
 
 
+CLI_RETRIES = 3
+"""Sample retries for subscription (CLI) rows: the Claude CLI answers with a fallback model
+under load and the provider fails that sample; a retry usually reaches the requested model.
+The eval still fails if a sample is out of retries (fail_on_error stays strict)."""
+
+
+def pinned_retries(model: ModelSpec) -> int | None:
+    return CLI_RETRIES if model.tier == "subscription" else None
+
+
 def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     """The `uv run inspect eval` argv for one module on one model."""
     task_args: list[str] = []
@@ -242,6 +252,9 @@ def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     max_tokens = pinned_max_tokens(model)
     if max_tokens is not None:
         cmd += ["--max-tokens", str(max_tokens)]
+    retries = pinned_retries(model)
+    if retries is not None:
+        cmd += [f"--retry-on-error={retries}"]
     if module.epochs > 1:
         cmd += ["--epochs", str(module.epochs), "--no-epochs-reducer"]
     return cmd

@@ -93,6 +93,7 @@ def test_local_rows_run_at_temperature_zero_and_cli_rows_keep_their_default() ->
     assert local[-3:] == ["--epochs", "4", "--no-epochs-reducer"]
     cli = build_command(MODULE_BY_NAME["inputs"], CLI_ROWS[0])
     assert "--temperature" not in cli and "--max-tokens" not in cli
+    assert "--retry-on-error=3" in cli and "--retry-on-error=3" not in local
     assert pinned_temperature(LOCAL_ROWS[0]) == 0.0 and pinned_temperature(CLI_ROWS[0]) is None
 
 
