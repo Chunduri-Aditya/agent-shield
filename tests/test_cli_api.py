@@ -92,7 +92,7 @@ USER = "Summarize this page please."
 
 
 def test_argv_carries_every_isolation_flag_and_the_prompt_goes_to_stdin(fake: Path) -> None:
-    _generate(CLIAPI("claude/opus"), SYSTEM, USER)
+    _generate(CLIAPI("claude/haiku"), SYSTEM, USER)
     (call,) = _calls(fake)
     assert call["argv"] == [
         "-p",
@@ -101,14 +101,14 @@ def test_argv_carries_every_isolation_flag_and_the_prompt_goes_to_stdin(fake: Pa
         "--tools", "",
         "--no-session-persistence",
         "--output-format", "json",
-        "--model", "opus",
+        "--model", "haiku",
         "--system-prompt", SYSTEM,
     ]  # fmt: skip
     assert call["stdin"] == USER
 
 
 def test_a_prompt_that_starts_with_a_dash_cannot_become_a_flag(fake: Path) -> None:
-    api = CLIAPI("claude/opus")
+    api = CLIAPI("claude/haiku")
     flag = "--dangerously-skip-permissions"
     asyncio.run(api.generate([ChatMessageUser(content=flag)], [], "none", GenerateConfig()))
     (call,) = _calls(fake)
@@ -118,7 +118,7 @@ def test_a_prompt_that_starts_with_a_dash_cannot_become_a_flag(fake: Path) -> No
 
 
 def test_without_a_system_message_the_default_system_prompt_is_sent(fake: Path) -> None:
-    api = CLIAPI("claude/opus")
+    api = CLIAPI("claude/haiku")
     asyncio.run(api.generate([ChatMessageUser(content=USER)], [], "none", GenerateConfig()))
     (call,) = _calls(fake)
     argv = call["argv"]
@@ -140,7 +140,7 @@ def test_child_env_is_the_allowlist_so_no_key_or_base_url_reaches_the_cli(
         "XAI_API_KEY",
     ):
         monkeypatch.setenv(key, "sk-should-not-reach-the-cli")
-    _generate(CLIAPI("claude/opus"), SYSTEM, USER)
+    _generate(CLIAPI("claude/haiku"), SYSTEM, USER)
     (call,) = _calls(fake)
     env = call["env"]
     assert isinstance(env, dict)
@@ -153,7 +153,7 @@ def test_child_env_is_the_allowlist_so_no_key_or_base_url_reaches_the_cli(
 def test_each_call_runs_in_a_fresh_empty_dir_under_the_scratch_root_and_cleans_it_up(
     fake: Path, tmp_path: Path
 ) -> None:
-    api = CLIAPI("claude/opus")
+    api = CLIAPI("claude/haiku")
     _generate(api, SYSTEM, USER)
     _generate(api, SYSTEM, USER + " again")
     first, second = [c for c in _calls(fake) if "--version" not in str(c["argv"])]
@@ -165,7 +165,7 @@ def test_each_call_runs_in_a_fresh_empty_dir_under_the_scratch_root_and_cleans_i
 
 
 def test_reply_and_the_cli_reported_model_id_and_version_reach_the_output(fake: Path) -> None:
-    api = CLIAPI("claude/opus")
+    api = CLIAPI("claude/haiku")
     chat: list[ChatMessage] = [ChatMessageSystem(content=SYSTEM), ChatMessageUser(content=USER)]
     out = asyncio.run(api.generate(chat, [], "none", GenerateConfig()))
     assert out.completion == "saw: " + USER[-20:]
@@ -176,7 +176,7 @@ def test_reply_and_the_cli_reported_model_id_and_version_reach_the_output(fake: 
 def test_tools_are_refused_before_any_launch(fake: Path) -> None:
     tool = ToolInfo(name="send_message", description="send", parameters={"type": "object"})  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="no Inspect tools"):
-        _generate(CLIAPI("claude/opus"), SYSTEM, USER, tools=[tool])
+        _generate(CLIAPI("claude/haiku"), SYSTEM, USER, tools=[tool])
     assert _calls(fake) == []
 
 
@@ -190,7 +190,7 @@ def test_unknown_backend_missing_model_and_unknown_args_raise(fake: Path) -> Non
 
 
 def test_max_calls_stops_before_the_next_launch(fake: Path) -> None:
-    api = CLIAPI("claude/opus", max_calls=1)
+    api = CLIAPI("claude/haiku", max_calls=1)
     _generate(api, SYSTEM, USER)
     with pytest.raises(RuntimeError, match="max_calls"):
         _generate(api, SYSTEM, USER)
@@ -199,22 +199,22 @@ def test_max_calls_stops_before_the_next_launch(fake: Path) -> None:
 
 def test_nonzero_exit_raises_with_the_stderr_tail(fake: Path) -> None:
     with pytest.raises(RuntimeError, match=r"exited 2: boom: the fake refused"):
-        _generate(CLIAPI("claude/opus"), SYSTEM, "please FAIL now")
+        _generate(CLIAPI("claude/haiku"), SYSTEM, "please FAIL now")
 
 
 def test_nonzero_exit_raises_even_when_stdout_is_valid_json(fake: Path) -> None:
     with pytest.raises(RuntimeError, match="exited 1"):
-        _generate(CLIAPI("claude/opus"), SYSTEM, "EXITONE")
+        _generate(CLIAPI("claude/haiku"), SYSTEM, "EXITONE")
 
 
 def test_non_json_stdout_raises(fake: Path) -> None:
     with pytest.raises(RuntimeError, match="Expecting value"):
-        _generate(CLIAPI("claude/opus"), SYSTEM, "print GARBAGE")
+        _generate(CLIAPI("claude/haiku"), SYSTEM, "print GARBAGE")
 
 
 def test_is_error_result_raises_instead_of_scoring_the_error_text(fake: Path) -> None:
     with pytest.raises(RuntimeError, match="Not logged in"):
-        _generate(CLIAPI("claude/opus"), SYSTEM, "NOTLOGGED")
+        _generate(CLIAPI("claude/haiku"), SYSTEM, "NOTLOGGED")
 
 
 def test_missing_cli_command_names_the_env_override(
@@ -223,7 +223,7 @@ def test_missing_cli_command_names_the_env_override(
     monkeypatch.delenv("CLI_CMD_CLAUDE", raising=False)
     monkeypatch.setenv("PATH", str(tmp_path))
     with pytest.raises(ValueError, match="CLI_CMD_CLAUDE"):
-        CLIAPI("claude/opus")
+        CLIAPI("claude/haiku")
 
 
 def _grandchild_dies(fake: Path, within_s: float = 3.0) -> bool:
@@ -246,7 +246,7 @@ def test_a_hung_call_kills_its_process_group_and_raises_runtime_error_not_timeou
     monkeypatch.setattr(cli_api, "CALL_TIMEOUT_S", 1)
     started = time.monotonic()
     with pytest.raises(RuntimeError, match="exceeded 1s") as info:
-        _generate(CLIAPI("claude/opus"), SYSTEM, "please HANG")
+        _generate(CLIAPI("claude/haiku"), SYSTEM, "please HANG")
     assert not isinstance(info.value, TimeoutError)
     assert time.monotonic() - started < 10
     assert _grandchild_dies(fake)
@@ -297,3 +297,11 @@ def test_parse_claude_raises_on_is_error_and_on_missing_usage() -> None:
     out["modelUsage"] = {}
     with pytest.raises(ValueError, match="no modelUsage"):
         parse_claude(json.dumps(out))
+
+
+def test_a_fallback_answer_from_another_model_fails_the_sample(fake: Path) -> None:
+    # The fixture reports claude-haiku-5-5; asking for opus must not be relabelled as opus.
+    api = CLIAPI("claude/opus")
+    chat: list[ChatMessage] = [ChatMessageUser(content=USER)]
+    with pytest.raises(RuntimeError, match="answered with 'claude-haiku-5-5', not 'opus'"):
+        asyncio.run(api.generate(chat, [], "none", GenerateConfig()))

@@ -119,5 +119,9 @@ def test_temperature_note_names_the_pin_or_its_absence(logs: Path) -> None:
 
     assert temperature_note(None) == "temperature default (not pinned)"
     assert temperature_note(GenerateConfig(temperature=0.0)) == "temperature 0"
+    assert (
+        temperature_note(GenerateConfig(temperature=0.0, max_tokens=2048))
+        == "temperature 0, max_tokens 2048"
+    )
     rows, _ = load_rows(sorted(str(p) for p in logs.glob("*.eval")), None)
     assert rows and all("temperature default (not pinned)" in r.markdown() for r in rows)

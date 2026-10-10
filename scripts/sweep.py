@@ -214,6 +214,16 @@ def pinned_temperature(model: ModelSpec) -> float | None:
     return 0.0 if model.tier == "local" else None
 
 
+LOCAL_MAX_TOKENS = 2048
+"""Output cap for local rows: at temperature 0 a small model can loop without an end token
+(qwen3.5:0.8b passed 14,000 tokens on one sample, 2026-10-09) and Ollama's default cap is
+none. Every task's expected answer is far shorter; the rows note the cap."""
+
+
+def pinned_max_tokens(model: ModelSpec) -> int | None:
+    return LOCAL_MAX_TOKENS if model.tier == "local" else None
+
+
 def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     """The `uv run inspect eval` argv for one module on one model."""
     task_args: list[str] = []
@@ -229,6 +239,9 @@ def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     temperature = pinned_temperature(model)
     if temperature is not None:
         cmd += ["--temperature", str(int(temperature))]
+    max_tokens = pinned_max_tokens(model)
+    if max_tokens is not None:
+        cmd += ["--max-tokens", str(max_tokens)]
     if module.epochs > 1:
         cmd += ["--epochs", str(module.epochs), "--no-epochs-reducer"]
     return cmd
@@ -327,7 +340,8 @@ def _write_staging_header(modules: list[ModuleSpec], models: list[ModelSpec]) ->
         f"Modules: {', '.join(m.name for m in modules)}",
         f"Models:  {', '.join(m.short for m in models)}",
         f"Ollama context length: {os.getenv('OLLAMA_CONTEXT_LENGTH', 'unset (app default)')}",
-        f"Local rows: --temperature 0, memory reserve {_gib(RESERVE_BYTES)}, "
+        f"Local rows: --temperature 0, --max-tokens {LOCAL_MAX_TOKENS}, "
+        f"memory reserve {_gib(RESERVE_BYTES)}, "
         f"overhead allowance {_gib(MODEL_OVERHEAD_BYTES)}\n",
         "---\n",
     ]

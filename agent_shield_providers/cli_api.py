@@ -174,6 +174,13 @@ class CLIAPI(ModelAPI):
             reply, model_id = parse_claude(stdout)
         except ValueError as exc:  # JSONDecodeError is a ValueError
             raise RuntimeError(f"{self._backend}: {exc}") from exc
+        if self._model not in model_id:
+            # The CLI falls back to another model under load (claude-fable-5-1 answered as
+            # claude-opus-4-8 on 11 of 57 samples, 2026-10-09). A substituted answer is not a
+            # sample of the requested model: fail the sample instead of relabelling the row.
+            raise RuntimeError(
+                f"{self._backend} answered with {model_id!r}, not {self._model!r}: fallback refused"
+            )
         output = ModelOutput.from_content(model=model_id, content=reply)
         output.metadata = {"cli": self._backend, "cli_version": await self._cli_version()}
         return output

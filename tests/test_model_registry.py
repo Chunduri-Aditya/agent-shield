@@ -89,9 +89,10 @@ def test_local_rows_run_at_temperature_zero_and_cli_rows_keep_their_default() ->
 
     local = build_command(MODULE_BY_NAME["inputs"], LOCAL_ROWS[0])
     assert local[local.index("--temperature") + 1] == "0"
+    assert local[local.index("--max-tokens") + 1] == "2048"
     assert local[-3:] == ["--epochs", "4", "--no-epochs-reducer"]
     cli = build_command(MODULE_BY_NAME["inputs"], CLI_ROWS[0])
-    assert "--temperature" not in cli
+    assert "--temperature" not in cli and "--max-tokens" not in cli
     assert pinned_temperature(LOCAL_ROWS[0]) == 0.0 and pinned_temperature(CLI_ROWS[0]) is None
 
 

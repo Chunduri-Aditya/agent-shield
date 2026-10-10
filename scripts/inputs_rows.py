@@ -93,10 +93,14 @@ def _resolved_model(log: EvalLog) -> str:
 
 
 def temperature_note(gen: GenerateConfig | None) -> str:
-    """What the run sampled at, so a row cannot hide an unpinned temperature."""
+    """What the run sampled at and whether output was capped, so a row cannot hide either."""
     if gen is None or gen.temperature is None:
-        return "temperature default (not pinned)"
-    return f"temperature {gen.temperature:g}"
+        note = "temperature default (not pinned)"
+    else:
+        note = f"temperature {gen.temperature:g}"
+    if gen is not None and gen.max_tokens is not None:
+        note += f", max_tokens {gen.max_tokens}"
+    return note
 
 
 def _note(log: EvalLog) -> str:
