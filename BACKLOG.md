@@ -159,6 +159,19 @@ touch before v1.0.0.
   [`docs/DIFFERENTIATION.md`](docs/DIFFERENTIATION.md): TR-v2 + human agreement;
   TR–ASR joint plot; false-disclosure / alert fatigue study; cross-lingual TR;
   MCP-native TR on live servers (after powered `tools/` n=20).
+- [ ] **Thinking on versus off, one local model** (2026-10-10). The local tier runs
+  every Ollama model that reports the `thinking` capability with `--reasoning-effort none`
+  after the 2048 cap went entirely to reasoning on the qwen3.5 rows (empty completions
+  scored 0). Rerun qwen3.5:4b alone with thinking on at `--max-tokens 8192` on inputs and
+  psych to measure the delta; about 1 hour per task at the 2026-10-10 rate.
+- [ ] **Three pulled Ollama tags are not in `scripts/model_registry.py`** (2026-10-10):
+  `qwen3.5:4b-q8_0`, `qwen3:8b`, `qwen3:4b`. Add them to the local tier or drop the pulls.
+- [ ] **Scorer versions and refusal context for memory, exfil, drift and tools** (2026-10-10).
+  Those four modules' scorers stamp no `scorer_version`, so `scripts/inputs_rows.py`
+  refuses their logs, and `memory_asr_scorer` and `drift_asr_scorer` are bare substring
+  checks that count a refusal quoting the marker as a hit, the gap marker scorer v2 closed
+  for inputs and psych. Route them through `evals/_marker.py`, stamp the version, extend
+  `make rescore`, rescore the surviving local and CLI logs, then land their rows.
 
 ## Rejected (duplicate of existing suites — do not rebuild)
 
