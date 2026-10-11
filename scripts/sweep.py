@@ -15,7 +15,9 @@ Usage:
   python scripts/sweep.py --status            # print availability table and exit
   python scripts/sweep.py --tier local --resume  # skip pairs whose logs already succeeded
 
-Local (Ollama) rows run at --temperature 0 and behind a memory guard: a model whose
+Local (Ollama) rows run at --temperature 0, capped at LOCAL_MAX_TOKENS, with thinking off
+(--reasoning-effort none) on models that report the thinking capability, and behind a
+memory guard: a model whose
 weights plus KV allowance would eat into RESERVE_BYTES of free memory is skipped with
 a printed reason instead of started. The machine reset itself on 2026-10-09 when a
 sweep filled swap; the guard exists so a sweep can share the machine with a terminal
@@ -132,6 +134,42 @@ def ollama_model_bytes(model: ModelSpec) -> int | None:
     return None
 
 
+def _post_json(url: str, body: dict[str, object], timeout: float = 5.0) -> dict[str, object] | None:
+    """POST a JSON body and return the parsed object reply, or None on any error."""
+    req = Request(
+        url,
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode())
+    except (OSError, URLError, TimeoutError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+_THINKING_CACHE: dict[str, bool] = {}
+
+
+def ollama_thinks(model: ModelSpec) -> bool:
+    """True when Ollama's `/api/show` lists the `thinking` capability for the pulled tag.
+
+    Thinking models spend the LOCAL_MAX_TOKENS cap on reasoning and return no text: every
+    qwen3.5 row of 2026-10-10 scored an empty completion as ASR 0. Local rows therefore run
+    with `--reasoning-effort none`, which the Inspect Ollama provider sends as
+    `extra_body.reasoning.effort` (probe 2026-10-10: qwen3.5:4b answered in 5 tokens).
+    """
+    tag = ollama_tag(model)
+    if tag not in _THINKING_CACHE:
+        url = (model.local_health_url or "").replace("/api/tags", "/api/show")
+        data = _post_json(url, {"model": tag})
+        caps = data.get("capabilities") if data else None
+        _THINKING_CACHE[tag] = isinstance(caps, list) and "thinking" in caps
+    return _THINKING_CACHE[tag]
+
+
 def ollama_unload(model: ModelSpec) -> None:
     """Ask Ollama to drop the model now (OLLAMA_KEEP_ALIVE would hold it for minutes)."""
     url = (model.local_health_url or "").replace("/api/tags", "/api/generate")
@@ -181,6 +219,46 @@ def already_done(
         if model == model_id and status == "success" and temp == temperature
     }
     return all(task in done for task in tasks)
+
+
+def log_completion_health(path: Path) -> tuple[int, int, int]:
+    """(empty completions, samples stopped on max_tokens, samples) for one finished log.
+
+    An empty completion scores 0 on every marker scorer, so a log full of them reports a
+    safe model that never answered. The sweep prints these counts; `inputs_rows.py` refuses
+    a row whose empties stopped on max_tokens.
+    """
+    from inspect_ai.log import read_eval_log
+
+    log = read_eval_log(str(path))
+    empty = capped = n = 0
+    for sample in log.samples or []:
+        n += 1
+        output = sample.output
+        if not output or not output.choices:
+            empty += 1
+            continue
+        if not (output.completion or "").strip():
+            empty += 1
+        if output.choices[0].stop_reason == "max_tokens":
+            capped += 1
+    return empty, capped, n
+
+
+def completion_health_notes(log_dir: Path, before: set[Path]) -> list[str]:
+    """One WARN line per log added since `before` that has empty or capped samples."""
+    notes: list[str] = []
+    for path in sorted(set(log_dir.glob("*.eval")) - before):
+        try:
+            empty, capped, n = log_completion_health(path)
+        except Exception as exc:  # a crashed run leaves a header only log
+            notes.append(f"WARN {path.name}: unreadable ({exc})")
+            continue
+        if empty or capped:
+            notes.append(
+                f"WARN {path.name}: {empty}/{n} empty completions, {capped}/{n} max_tokens"
+            )
+    return notes
 
 
 def _placeholder_note(model: ModelSpec) -> str:
@@ -252,6 +330,8 @@ def build_command(module: ModuleSpec, model: ModelSpec) -> list[str]:
     max_tokens = pinned_max_tokens(model)
     if max_tokens is not None:
         cmd += ["--max-tokens", str(max_tokens)]
+    if model.tier == "local" and ollama_thinks(model):
+        cmd += ["--reasoning-effort", "none"]
     retries = pinned_retries(model)
     if retries is not None:
         cmd += [f"--retry-on-error={retries}"]
@@ -356,6 +436,7 @@ def _write_staging_header(
         f"Models:  {', '.join(m.short for m in models)}",
         f"Ollama context length: {os.getenv('OLLAMA_CONTEXT_LENGTH', 'unset (app default)')}",
         f"Local rows: --temperature 0, --max-tokens {LOCAL_MAX_TOKENS}, "
+        "--reasoning-effort none on models whose /api/show lists thinking, "
         f"memory reserve {_gib(reserve_bytes)}, "
         f"overhead allowance {_gib(MODEL_OVERHEAD_BYTES)}\n",
         "---\n",
@@ -397,7 +478,8 @@ def run_sweep(
     fail_count = 0
     mem_skip_count = 0
     resume_count = 0
-    headers: list[Header] = scan_log_headers(_REPO_ROOT / "logs") if resume else []
+    log_dir = _REPO_ROOT / "logs"
+    headers: list[Header] = scan_log_headers(log_dir) if resume else []
 
     for module in modules:
         print(f"\n{'='*60}")
@@ -457,14 +539,18 @@ def run_sweep(
 
             # Model is available — run the eval.
             print(f"\n  [{model.short}] RUNNING")
+            logs_before = set(log_dir.glob("*.eval"))
             success = run_eval(module, model, dry_run=dry_run)
             if model.tier == "local" and not dry_run:
                 ollama_unload(model)
             if success:
                 run_count += 1
+                notes = [] if dry_run else completion_health_notes(log_dir, logs_before)
+                for note in notes:
+                    print(f"  [{model.short}] {note}")
                 _append_staging(
                     f"| {datetime.date.today()} | {model.inspect_id} "
-                    f"| (fill from Inspect log after run) |"
+                    f"| (fill from Inspect log after run) {'; '.join(notes)} |"
                 )
             else:
                 fail_count += 1

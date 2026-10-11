@@ -1,5 +1,6 @@
 """The sweep registry: subscription CLI rows, every pulled Ollama row, epochs in the command."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -91,9 +92,12 @@ def test_ollama_rows_cover_every_pulled_chat_model_and_check_their_own_tag(
 LOCAL_ROWS = [m for m in MODELS if m.tier == "local"]
 
 
-def test_local_rows_run_at_temperature_zero_and_cli_rows_keep_their_default() -> None:
+def test_local_rows_run_at_temperature_zero_and_cli_rows_keep_their_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from scripts.sweep import pinned_temperature
 
+    monkeypatch.setattr("scripts.sweep.ollama_thinks", lambda m: False)
     local = build_command(MODULE_BY_NAME["inputs"], LOCAL_ROWS[0])
     assert local[local.index("--temperature") + 1] == "0"
     assert local[local.index("--max-tokens") + 1] == "2048"
@@ -166,3 +170,65 @@ def test_run_sweep_threads_the_reserve_into_the_guard(
     assert "memory reserve 1.5 GiB" in (tmp_path / "staging.md").read_text()
     sweep.run_sweep(**kwargs)  # type: ignore[arg-type]
     assert calls == ["llama3.1:8b-instruct-q4_K_M"]  # the 3 GiB default skips the same row
+
+
+ShowFn = Callable[[str, dict[str, object]], dict[str, object] | None]
+FIXTURES = Path(__file__).parent / "fixtures"
+CAPPED_LOG = FIXTURES / "capped_qwen35_inputs_asr.eval"
+"""Two samples cut from the real qwen3.5:4b inputs_asr run of 2026-10-10 (a264565): sample 1
+spent the whole 2048 cap thinking and returned no text; sample 3 stopped with a refusal."""
+
+
+def _fake_show(capabilities: dict[str, list[str]]) -> ShowFn:
+    def show(url: str, body: dict[str, object]) -> dict[str, object] | None:
+        caps = capabilities.get(str(body["model"]))
+        return None if caps is None else {"capabilities": caps}
+    return show
+
+
+def test_build_command_turns_thinking_off_only_on_local_thinking_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import scripts.sweep as sweep
+
+    sweep._THINKING_CACHE.clear()
+    monkeypatch.setattr(
+        sweep,
+        "_post_json",
+        _fake_show({
+            "qwen3.5:4b": ["completion", "tools", "thinking"],
+            "llama3.1:8b-instruct-q4_K_M": ["completion", "tools"],
+        }),
+    )
+    qwen = next(m for m in MODELS if m.inspect_id == "ollama/qwen3.5:4b")
+    q4 = next(m for m in MODELS if m.inspect_id == "ollama/llama3.1:8b-instruct-q4_K_M")
+    thinking = build_command(MODULE_BY_NAME["inputs"], qwen)
+    plain = build_command(MODULE_BY_NAME["inputs"], q4)
+    assert thinking[thinking.index("--reasoning-effort") + 1] == "none"
+    assert thinking[-3:] == ["--epochs", "4", "--no-epochs-reducer"]
+    assert "--reasoning-effort" not in plain
+    assert "--reasoning-effort" not in build_command(MODULE_BY_NAME["inputs"], CLI_ROWS[0])
+    # An unreachable /api/show (None) means no flag, never a crash.
+    sweep._THINKING_CACHE.clear()
+    monkeypatch.setattr(sweep, "_post_json", lambda url, body: None)
+    assert "--reasoning-effort" not in build_command(MODULE_BY_NAME["inputs"], qwen)
+
+
+def test_log_completion_health_counts_empty_and_capped_samples() -> None:
+    from scripts.sweep import log_completion_health
+
+    assert log_completion_health(CAPPED_LOG) == (1, 1, 2)
+
+
+def test_completion_health_notes_report_only_the_logs_a_run_added(tmp_path: Path) -> None:
+    import shutil
+
+    from scripts.sweep import completion_health_notes
+
+    shutil.copy(CAPPED_LOG, tmp_path / "old.eval")
+    before = set(tmp_path.glob("*.eval"))
+    assert completion_health_notes(tmp_path, before) == []
+    shutil.copy(CAPPED_LOG, tmp_path / "new.eval")
+    notes = completion_health_notes(tmp_path, before)
+    assert len(notes) == 1
+    assert "new.eval" in notes[0] and "1/2 empty" in notes[0] and "1/2 max_tokens" in notes[0]
