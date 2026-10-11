@@ -125,3 +125,59 @@ def test_temperature_note_names_the_pin_or_its_absence(logs: Path) -> None:
     )
     rows, _ = load_rows(sorted(str(p) for p in logs.glob("*.eval")), None)
     assert rows and all("temperature default (not pinned)" in r.markdown() for r in rows)
+
+
+CAPPED_LOG = Path(__file__).parent / "fixtures" / "capped_qwen35_inputs_asr.eval"
+"""Two samples from the real qwen3.5:4b inputs_asr run of 2026-10-10: one spent the 2048 cap
+thinking (max_tokens, no text), one stopped with a refusal."""
+
+
+def test_date_patterns_cover_every_module_and_honour_the_module_filter() -> None:
+    from scripts.inputs_rows import date_patterns
+
+    patterns = date_patterns("2026-10-10")
+    assert len(patterns) == 6
+    assert "logs/2026-10-10T*_exfil-*.eval" in patterns
+    assert "logs/2026-10-10T*_inputs-*.eval" in patterns
+    assert date_patterns("2026-10-10", module="drift") == ["logs/2026-10-10T*_drift-*.eval"]
+
+
+def test_module_column_canary_metric_and_text_result_note(logs: Path) -> None:
+    from scripts.inputs_rows import HEADER, row_from_log
+
+    assert HEADER.startswith("| Date | Module | Model |")
+    row = row_from_log(read_eval_log(sorted(str(p) for p in logs.glob("*inputs-asr*.eval"))[0]))
+    assert row.module == "inputs" and "text result" not in row.markdown()
+    row.task = "exfil_canary"
+    assert row.module == "exfil" and row.metric == "Canary"
+    assert "| exfil |" in row.markdown()
+    for task in ("memory_asr", "exfil_canary", "drift_transparency"):
+        row.task = task
+        assert row.note_for_module() == "text result"
+    row.task = "tools_asr"
+    assert row.note_for_module() == ""
+
+
+def test_capped_empty_sample_refuses_the_row_and_a_plain_empty_only_annotates() -> None:
+    from scripts.inputs_rows import row_from_log
+
+    log = read_eval_log(str(CAPPED_LOG))
+    with pytest.raises(ValueError, match="max_tokens"):
+        row_from_log(log)
+    assert log.samples and log.samples[0].output.choices
+    log.samples[0].output.choices[0].stop_reason = "stop"
+    row = row_from_log(log)
+    assert row.n == 2 and row.empty == 1
+    assert "| 2 (1 empty) |" in row.markdown()
+
+
+def test_reasoning_none_is_part_of_the_generation_note() -> None:
+    from inspect_ai.model import GenerateConfig
+
+    from scripts.inputs_rows import temperature_note
+
+    assert (
+        temperature_note(GenerateConfig(temperature=0.0, max_tokens=2048, reasoning_effort="none"))
+        == "temperature 0, max_tokens 2048, reasoning none"
+    )
+    assert "reasoning" not in temperature_note(GenerateConfig(temperature=0.0, max_tokens=2048))

@@ -1,15 +1,17 @@
 """
 RESULTS.md rows from Inspect logs, computed by code (never by hand).
 
-Reads inputs (and psych) logs, groups samples by model and task, and prints one markdown row
-per (model, task) in the anchored schema of RESULTS.md: per attack k/n, metric, mean to four
-decimals, n, seed, Wilson 95% CI, commit, scorer version, log, note. A log whose ASR scores
-carry no scorer_version metadata is refused: rescore it first (`make rescore LOG=...`,
-`RESCORE_MODULE=psych` for a psych log).
+Reads the sweep logs of the six modules (inputs, tools, psych, memory, exfil, drift), groups
+samples by model and task, and prints one markdown row per (model, task) in the anchored
+schema of RESULTS.md: module, per attack k/n, metric, mean to four decimals, n, seed, Wilson
+95% CI, commit, scorer version, log, note. A log is refused when its scores carry no
+scorer_version metadata (rescore it first: `make rescore LOG=...`, `RESCORE_MODULE=psych`
+for a psych log) or when a sample stopped on max_tokens with no text: that sample spent the
+cap thinking, and its 0 is a measurement failure, not an answer (qwen3.5 rows, 2026-10-10).
 
   uv run python scripts/inputs_rows.py --logs logs/2026-10-09T*inputs*.eval
-  uv run python scripts/inputs_rows.py --date 2026-10-09 --model cli/
-  uv run python scripts/inputs_rows.py --date 2026-10-09 --compare
+  uv run python scripts/inputs_rows.py --date 2026-10-10 --model ollama/
+  uv run python scripts/inputs_rows.py --date 2026-10-10 --module exfil --compare
 """
 
 from __future__ import annotations
@@ -30,12 +32,25 @@ from inspect_ai.model import GenerateConfig  # noqa: E402
 
 from agent_shield.runtime.stats import wilson_interval  # noqa: E402
 
-SCORERS = {"asr": "ASR", "transparency": "TR", "benign": "ASR (benign control)"}
+SCORERS = {
+    "asr": "ASR",
+    "transparency": "TR",
+    "benign": "ASR (benign control)",
+    "canary": "Canary",
+}
+MODULES = ("inputs", "tools", "psych", "memory", "exfil", "drift")
+TEXT_MODULES = frozenset({"memory", "exfil", "drift"})
+"""Modules whose tasks give the model no tools, so every row is a text result."""
 HEADER = (
-    "| Date | Model | Attacks (k/n) | Metric | Mean | n | Seed | 95% Wilson CI | Commit "
-    "| Scorer | Log | Note |"
+    "| Date | Module | Model | Attacks (k/n) | Metric | Mean | n | Seed | 95% Wilson CI "
+    "| Commit | Scorer | Log | Note |"
 )
-DIVIDER = "|---|---|---|---|---|---|---|---|---|---|---|---|"
+DIVIDER = "|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+
+
+def date_patterns(date: str, module: str | None = None) -> list[str]:
+    """The log globs for one sweep date, one per module (or the one module asked for)."""
+    return [f"logs/{date}T*_{m}-*.eval" for m in MODULES if module is None or m == module]
 
 
 @dataclass
@@ -47,6 +62,7 @@ class Row:
     hits: int
     n: int
     errors: int
+    empty: int
     seed: str
     commit: str
     scorer: str
@@ -54,6 +70,13 @@ class Row:
     note: str
     low: float = field(default=0.0)
     high: float = field(default=0.0)
+
+    @property
+    def module(self) -> str:
+        return self.task.split("_", 1)[0]
+
+    def note_for_module(self) -> str:
+        return "text result" if self.module in TEXT_MODULES else ""
 
     @property
     def metric(self) -> str:
@@ -69,10 +92,13 @@ class Row:
     def markdown(self) -> str:
         attacks = ", ".join(f"{a} {k}/{n}" for a, (k, n) in sorted(self.per_attack.items()))
         err = f" ({self.errors} errored)" if self.errors else ""
+        empty = f" ({self.empty} empty)" if self.empty else ""
+        note = "; ".join(part for part in (self.note_for_module(), self.note) if part)
         return (
-            f"| {self.date} | {self.model} | {attacks} | {self.metric} | {self.mean:.4f} | "
-            f"{self.n}{err} | {self.seed} | [{self.low:.4f}, {self.high:.4f}] | {self.commit} | "
-            f"{self.scorer} | `{self.log}` | {self.note} |"
+            f"| {self.date} | {self.module} | {self.model} | {attacks} | {self.metric} | "
+            f"{self.mean:.4f} | {self.n}{err}{empty} | {self.seed} | "
+            f"[{self.low:.4f}, {self.high:.4f}] | {self.commit} | {self.scorer} | `{self.log}` "
+            f"| {note} |"
         )
 
 
@@ -100,6 +126,8 @@ def temperature_note(gen: GenerateConfig | None) -> str:
         note = f"temperature {gen.temperature:g}"
     if gen is not None and gen.max_tokens is not None:
         note += f", max_tokens {gen.max_tokens}"
+    if gen is not None and gen.reasoning_effort == "none":
+        note += ", reasoning none"
     return note
 
 
@@ -118,11 +146,16 @@ def row_from_log(log: EvalLog) -> Row:
     scorer = _scorer_name(log)
     versions: set[object] = set()
     per_attack: dict[str, list[int]] = defaultdict(lambda: [0, 0])
-    hits = n = errors = 0
+    hits = n = errors = empty = capped_empty = 0
     for sample in log.samples or []:
         if sample.error:
             errors += 1
             continue
+        output = sample.output
+        if not output or not (output.completion or "").strip():
+            empty += 1
+            if output and output.choices and output.choices[0].stop_reason == "max_tokens":
+                capped_empty += 1
         score = (sample.scores or {}).get(scorer)
         if score is None:
             raise ValueError(
@@ -141,6 +174,12 @@ def row_from_log(log: EvalLog) -> Row:
             f"{Path(log.location).name}: scorer_version missing or mixed ({versions}); "
             "rescore it first (make rescore LOG=..., RESCORE_MODULE=psych for psych logs)"
         )
+    if capped_empty:
+        raise ValueError(
+            f"{Path(log.location).name}: {capped_empty} of {n} samples stopped on max_tokens "
+            "with no text (the cap went to thinking); rerun with --reasoning-effort none or a "
+            "higher cap"
+        )
     ci = wilson_interval(hits, n)
     revision = log.eval.revision
     commit = (revision.commit[:7] if revision and revision.commit else "?") + (
@@ -156,6 +195,7 @@ def row_from_log(log: EvalLog) -> Row:
         hits=hits,
         n=n,
         errors=errors,
+        empty=empty,
         seed=seed,
         commit=commit,
         scorer=f"{scorer} v{versions.pop()}",
@@ -209,7 +249,8 @@ def main() -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--logs", nargs="*", default=[], help="log files or globs")
-    parser.add_argument("--date", help="take every logs/<date>T*inputs*.eval and *psych*.eval")
+    parser.add_argument("--date", help="take every module's logs/<date>T*.eval")
+    parser.add_argument("--module", choices=MODULES, help="with --date: this module only")
     parser.add_argument("--model", help="keep only models whose id contains this")
     parser.add_argument("--compare", action="store_true", help="print the cross model table")
     args = parser.parse_args()
@@ -217,8 +258,8 @@ def main() -> None:
     for pattern in args.logs:
         paths += sorted(glob.glob(pattern))
     if args.date:
-        paths += sorted(glob.glob(f"logs/{args.date}T*inputs*.eval"))
-        paths += sorted(glob.glob(f"logs/{args.date}T*psych*.eval"))
+        for pattern in date_patterns(args.date, args.module):
+            paths += sorted(glob.glob(pattern))
     if not paths:
         raise SystemExit("no logs given")
     rows, refused = load_rows(paths, args.model)
