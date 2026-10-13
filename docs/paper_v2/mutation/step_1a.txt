@@ -1,0 +1,14 @@
+mutation rows, step 1a, HEAD 6fedb0c940b6b314c2365316e5d9364fbb0ac229, python .venv/bin/python3
+
+control: rc=0 GREEN (14 passed in 13.32s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| 1a-J4-gate-removed | task builds without running the risk gate (J4) | yes | yes | 1 | RED | 2: tests/pilot/test_tools_v12_task.py::test_task_refuses_to_build_without_confirmation, tests/pilot/test_tools_v12_task.py::test_task_refuses_to_build_when_ethics_does_not_clear_tl01 |
+| 1a-J4-ethics-ignored | risk gate treats TL-01 as cleared whatever ETHICS.md says (J4) | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v12_task.py::test_task_refuses_to_build_when_ethics_does_not_clear_tl01 |
+| 1a-log-model-api-unchecked | guard solver lets a run without --log-model-api through | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v12_task.py::test_mock_run_without_log_model_api_fails_every_sample |
+| 1a-anchored-id-dropped | anchored samples lose their anchored_id as sample id | yes | yes | 1 | RED | 3: tests/pilot/test_tools_v12_task.py::test_anchored_design_reuses_the_published_inputs, tests/pilot/test_tools_v12_task.py::test_all_sample_ids_cover_both_designs, tests/pilot/test_tools_v12_task.py::test_mock_run_with_log_model_api_delivers_the_directive[anchored-ids0] |
+| 1a-tool-choice-forced | tool_choice forced instead of auto | yes | yes | 1 | RED | 2: tests/pilot/test_tools_v12_task.py::test_mock_run_with_log_model_api_delivers_the_directive[anchored-ids0], tests/pilot/test_tools_v12_task.py::test_mock_run_with_log_model_api_delivers_the_directive[pilot-ids1] |
+| 1a-sampling-key | task config sets temperature | yes | yes | 1 | RED | 4: tests/pilot/test_tools_v12_task.py::test_task_sends_no_sampling_or_reasoning_keys[anchored], tests/pilot/test_tools_v12_task.py::test_task_sends_no_sampling_or_reasoning_keys[pilot], tests/pilot/test_tools_v12_task.py::test_mock_run_with_log_model_api_delivers_the_directive[anchored-ids0] |
+
+result: ALL RED, control GREEN
