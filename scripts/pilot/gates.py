@@ -9,7 +9,8 @@ Exit 0 only when every check passes. Nothing is written anywhere.
 Field names verified against the installed inspect_ai 0.3.278 source:
   EvalLog.eval :1316, EvalLog.plan :1319, EvalLog.samples :1346  (inspect_ai/log/_log.py)
   EvalSpec.model_generate_config :1158, EvalSpec.revision :1173
-  EvalRevision.commit :1023, EvalRevision.dirty: bool|None :1026
+  EvalRevision.commit :1023 (abbreviated: `git rev-parse --short HEAD`, _util/git.py:43),
+  EvalRevision.dirty: bool|None :1026
   EvalPlan.config: GenerateConfig :756
   EvalSample.events :518, .model_usage :524, .error: EvalError|None :555, .limit :571
   EvalError.message :15, .traceback :18  (inspect_ai/_util/error.py)
@@ -406,7 +407,15 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, directive_path: Path
     if revision is None:
         checks.append(Check("revision", False, "log.eval.revision missing"))
     else:
-        ok = revision.commit == setup["setup_sha"] and revision.dirty is False
+        # Inspect writes `git rev-parse --short HEAD` (inspect_ai/_util/git.py:43), so the
+        # log carries an abbreviated SHA and setup_sha the full one: match on the prefix,
+        # never shorter than git's own seven character minimum.
+        commit = revision.commit
+        ok = (
+            len(commit) >= 7
+            and setup["setup_sha"].startswith(commit)
+            and revision.dirty is False
+        )
         checks.append(
             Check(
                 "revision",

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -294,6 +295,30 @@ def test_post_revision_commit_mismatch(tmp_path: Path) -> None:
 @pytest.mark.parametrize("dirty", [True, None])
 def test_post_revision_dirty(tmp_path: Path, dirty: bool | None) -> None:
     assert failed(run_post(tmp_path, eval_log([sample(1)], dirty=dirty))) == {"revision"}
+
+
+def run_post_commit(tmp_path: Path, pick: Callable[[str], str]) -> list[gates.Check]:
+    """run_post with the log's revision.commit derived from the fixture repo HEAD."""
+    repo, head = make_repo(tmp_path)
+    data = make_data(tmp_path, repo, head)
+    path = write_log(tmp_path / "run.eval", eval_log([sample(1)], commit=pick(head)))
+    return gates.post_checks(data, repo, path, data / "directive.txt")
+
+
+def test_post_revision_short_commit_matches_setup_sha(tmp_path: Path) -> None:
+    """Inspect records `git rev-parse --short HEAD`, so a real log carries a 7 char prefix
+    of the 40 char setup_sha (inspect_ai/_util/git.py:43); the gate must accept it."""
+    checks = run_post_commit(tmp_path, lambda head: head[:7])
+    assert failed(checks) == set(), [c for c in checks if c.ok is False]
+
+
+@pytest.mark.parametrize(
+    "pick",
+    [lambda head: "", lambda head: "e" * 7, lambda head: head[:6]],
+    ids=["empty", "wrong_prefix", "below_git_minimum"],
+)
+def test_post_revision_short_commit_mismatch(tmp_path: Path, pick: Callable[[str], str]) -> None:
+    assert failed(run_post_commit(tmp_path, pick)) == {"revision"}
 
 
 def test_post_scorer_hash_mismatch(tmp_path: Path) -> None:
