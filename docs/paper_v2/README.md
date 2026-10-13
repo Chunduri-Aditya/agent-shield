@@ -13,6 +13,7 @@ This folder lets a reviewer with no chat history understand and check the plan t
 | `V1_2_PLAN.md` | The ordered correction chain for v1.2, each step with its gate and evidence of done |
 | `V2_STUDIES.md` | Preregistration skeletons for the v2 studies; hypotheses and sample sizes are TBD (Aditya) |
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
+| `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
 | `research_prompts/` | One self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
 | `NEW_CHAT_PROMPT.md` | The opening prompt for the session that audits this pack and refines the plans |
 
