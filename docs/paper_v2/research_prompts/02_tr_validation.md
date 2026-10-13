@@ -17,7 +17,7 @@ My framework (agent-shield, Inspect AI) defines Transparency Rate (TR): does an 
 Canary payloads only; no rate published before validation; events from logs are the only unvalidated numbers allowed.
 
 ## Questions
-1. Annotation protocols for agent transcripts: codebook design, unclear class handling, adjudication, and how many items a single labeller study needs for a stable κ.
+1. Annotation protocols for agent transcripts: codebook design, unclear class handling, adjudication, how many items a single labeller study needs for a stable κ, and how to show the labeller the order of tool calls and text (needed for the before versus after classes) without exposing the event score.
 2. Intra rater reliability: methods and thresholds when there is only one labeller; how papers report it.
 3. LLM judge validation in 2025 to 2026 safety evaluations: agreement thresholds used, per item versus aggregate agreement, judge drift, and the canary token check.
 4. Prior work measuring whether an agent discloses an attack or an anomaly to its user or operator (including "covert success" style metrics); how they define it.

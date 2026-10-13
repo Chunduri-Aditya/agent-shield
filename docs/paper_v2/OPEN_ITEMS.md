@@ -16,6 +16,9 @@
 | O11 | The pilot rules R1 to R10 cited by D09, V1_2_PLAN and the README exist in no repo, pack or data file; only citations by number survive (`DATA/claude-*/REPORT.md`, `BLOCKED.md`, `inventory.md`; the pilot prompt lists 7 hard gates, not R1 to R10) | Aditya writes the ten rules into `V1_2_PLAN.md` before any step runs |
 | O12 | The $25 total cap and $5 reserve (D12) are policy from the pilot prompt; code enforces $20 only (E24) | state both as policy, cite `gates.py:58` for the enforced cap |
 | O13 | Whether `Qwen/Qwen3.5-4B` in bf16 (9.3 GB) plus the lens fits the 18 GB laptop with the 3 GiB reserve; D24 argued about an 8B model, and torch MPS bf16 support is UNVERIFIED | `vm_stat` headroom check plus one load attempt, nothing reported |
+| O14 | Whether a transcript retokenised with the Qwen chat template equals the token sequence the serving stack produced (D30 assumes the Inspect log holds the sequence; it holds text) | on one sample, compare the serving stack's prompt token count with the HF tokenizer's |
+| O15 | `make risk-preflight` is named in `SESSION_STATE.md` and `AGENT_SHIELD_TODO.md:252` but the Makefile has no such target (repo drift, outside the pack) | `grep -n risk-preflight Makefile`; add the target or fix the two documents |
+| O16 | D06 and E09 call the 3 prompt × 20 sample design "original", but `docs/powered_tools_tr_design.md` is dated 2026-07-31, after the 2026-06-22 publication; the published claim is `paper_v1.1.tex:649-650` with no log behind it (E13) | the corrections section says the n=20 design was claimed but never run |
 
 ## Risks
 | Id | Risk | Mitigation |
@@ -26,3 +29,8 @@
 | R04 | Provider classifiers may also block Sonnet 4.5 or future panel models | the smoke step's refusal count is checked before any main run; a block is recorded as an outcome (D04) |
 | R05 | The anchored design's effective n is at most 3 | state it beside every anchored number (D11) |
 | R06 | Labeller drift: the same person labels TR, codes rationales and writes the paper | blind export, sealed key, 10% relabel (D16); a second labeller if one becomes available |
+| R07 | Retokenisation mismatch between the served agent run and the post run lens pass (D30) | same checkpoint and precision for both; the O14 equality check on one sample before any lens number is read |
+| R08 | The erratum promises "a TL-01 rerun at n=20 on the delivered description" (E02) while D09 changes the metric | the W1 correction row gives both counts (strict event, any call) |
+| R09 | Labelling load: the D18 headline needs validated TR on every v2 sample with one labeller and sample sizes TBD | hours per 100 transcripts measured at v1.2 step 7 and used to size P × m |
+| R10 | The repo's risk gate blocks TL-01 today (`scripts/risk_check.py --module tools` prints BLOCKED; `ETHICS.md` has no TL-01 entry while `AGENT_SHIELD_TODO.md:252` is checked) | judgment call J4 in `V1_2_PLAN.md` before step 4 |
+| R11 | Blind export cannot hide provider style: tool schemas, redacted thinking signatures and phrasing differ by provider, and the labeller has read the Sonnet 5.5 transcripts | export message text only, strip schemas and provider fields, state the limit in the paper |

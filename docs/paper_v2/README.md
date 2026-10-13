@@ -1,6 +1,6 @@
 # Paper v1.2 and v2: context pack
 
-Status: decisions confirmed by Aditya on 2026-10-13 in a grilling session. **Audit pending.** Nothing in this folder has run, been spent, or been published.
+Status: decisions confirmed by Aditya on 2026-10-13 in a grilling session. **Audited 2026-10-13** by six read only reviewers: factual fixes landed in `bd9613b`, plan refinements in the commit after it; judgment calls J1 to J9 wait in `V1_2_PLAN.md` and `V2_STUDIES.md`. Nothing in this folder has run, been spent, or been published.
 
 This folder lets a reviewer with no chat history understand and check the plan to (1) correct the published preprint (v1.2) and (2) write a v2 paper with new studies. Every fact cites a file, a log or a URL. Anything not checked is marked UNVERIFIED.
 
@@ -37,4 +37,4 @@ Report findings in four tiers (blocking, should fix, consider, nit) with file:li
 
 ## Conventions
 - Prose follows the repo rule: no hyphens in prose; code, model ids, paths and URLs keep theirs.
-- No published numbers: rates (ASR, TR, UUA) from the current scorers never appear here (pilot rule R7, D05). Costs, counts, gate results and file paths do.
+- No published numbers: rates (ASR, TR, UUA) from the current scorers never appear here (pilot rule R7, D05; the rules themselves are unrecorded, O11). Costs, counts, gate results and file paths do.

@@ -19,6 +19,7 @@ For the v2 paper of agent-shield (agent security evaluations on Inspect AI) I pl
 3. Prior or concurrent work detecting prompt injection from activations (probes, latent space monitors such as SecMCP in arXiv:2508.06418, `J-lens` based detectors), with measured rates and benign false positive rates.
 4. Free or low cost routes to bf16 inference with forward hooks on a 4B to 27B model in 2026: free notebooks, monthly free credits, research credits open to independent researchers; hard spend limits.
 5. Whether fp16 versus bf16 changes lens readouts enough to matter.
+6. Which serving route gives an Inspect tool loop on Qwen3.5-4B in bf16 and returns or lets me recover token ids, and how to verify that a retokenised transcript equals the served sequence.
 
 ## Output format
 1. Findings table with sources and impact on the Study B design; UNVERIFIED where unconfirmed.

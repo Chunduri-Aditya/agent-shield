@@ -24,4 +24,5 @@ For the v2 paper of agent-shield (defensive agent security evaluations on Inspec
 1. Findings table with sources and impact on the design; UNVERIFIED where unconfirmed.
 2. A refined codebook proposal with definitions and one example each (canary context only).
 3. The ethics questions my repo's review should answer for the persuasion variants.
-4. At most 5 decisions for me, recommended option first.
+4. Anchor sources and framework ids (OWASP LLM Top 10, OWASP Agentic, MITRE ATLAS) for authority, urgency and social proof framing inside tool descriptions, one row each.
+5. At most 5 decisions for me, recommended option first.

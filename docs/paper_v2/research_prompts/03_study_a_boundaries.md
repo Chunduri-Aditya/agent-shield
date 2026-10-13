@@ -15,7 +15,7 @@ For the v2 paper of agent-shield (open source agent security evals on Inspect AI
 - Related designs already known: SMCP (arXiv:2602.01129, operator declared boundaries at registration, unevaluated).
 
 ## Questions
-1. AgentSpec, Progent, CaMeL, plan then execute and dual LLM patterns, and any 2026 work where the agent itself declares a scope or plan that is then enforced: what each enforces, who writes the policy, and how it was evaluated.
+1. AgentSpec, Progent, CaMeL, plan then execute and dual LLM patterns, and any 2026 work where the agent itself declares a scope or plan that is then enforced: what each enforces, who writes the policy, how the agent's declaration is captured (a structured tool call versus free text) and read by the enforcer, and how it was evaluated.
 2. How these works measure utility loss and report blocked rates; thresholds used to call a defense too costly.
 3. Known attacks on declared plans or scopes (an injection that changes the declaration itself, plan injection) and how evaluations test them.
 4. Model bypassed or "assume compromise" evaluation in 2025 to 2026 papers: how they separate enforcement strength from model refusal.
