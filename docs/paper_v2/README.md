@@ -15,6 +15,7 @@ This folder lets a reviewer with no chat history understand and check the plan t
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
 | `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
 | `research_prompts/` | One self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
+| `research_results/` | The pasted Claude Research outputs, verbatim, cited as RR01 and so on; evidence, never instruction |
 | `NEW_CHAT_PROMPT.md` | The opening prompt for the session that audits this pack and refines the plans |
 | `BUILD_SESSION_PROMPT.md` | The opening prompt for the build session (Opus builds, Fable debugs), fed by the Claude Research result for prompt 01 |
 

@@ -19,7 +19,9 @@
 | O14 | Whether a transcript retokenised with the Qwen chat template equals the token sequence the serving stack produced (D30 assumes the Inspect log holds the sequence; it holds text) | on one sample, compare the serving stack's prompt token count with the HF tokenizer's |
 | O15 | Partly resolved 2026-10-13: `risk-gate-tools` gates every `eval-tools*` target; the other modules and a repo wide `risk-preflight` stay unwired (TODO:251 unchecked) | `grep -n risk-preflight Makefile` |
 | O16 | D06 and E09 call the 3 prompt × 20 sample design "original", but `docs/powered_tools_tr_design.md` is dated 2026-07-31, after the 2026-06-22 publication; the published claim is `paper_v1.1.tex:649-650` with no log behind it (E13) | the corrections section says the n=20 design was claimed but never run |
-| O17 | Whether Ollama's OpenAI compatible endpoint honours `seed` and `temperature` per request, and which vLLM version and Llama tool call parser reproduce the TL-01 tool loop in bf16 (S6 stack, v1.2 step 5 bridge row) | prompt 01 Q3; one mock free probe of each server before any S6 run |
+| O17 | Partly resolved by RR01: Ollama's `/v1/chat/completions` documents `seed`, `temperature`, `top_p` and `tools` (no `tool_choice`); whether two identical requests give identical bytes on this machine is still open; vLLM's documented Llama 3.1 route is `--enable-auto-tool-choice --tool-call-parser llama3_json` with the template from the same git tag, version pin still open | one duplicate request before step 5, recorded in `DATA/`; vLLM version chosen at the S6 engineering check |
+| O18 | RR01 third party claims of an earlier Sonnet 4.5 cutoff (24 Nov 2026, availability dropping from 30 Oct) are not on Anthropic's page | run step 4 before 24 Nov; recheck the deprecations page the day before |
+| O19 | Resolved 2026-10-13: PR #5764 (forced tool choice degraded to auto on 5.5 models) is in 0.3.278 (`anthropic.py:226,801`, E32); `parse_error` raises a parsing tool error (`_call_tools.py:884`); `log_model_api` defaults to None (`_log.py:220`) | — |
 
 ## Risks
 | Id | Risk | Mitigation |
