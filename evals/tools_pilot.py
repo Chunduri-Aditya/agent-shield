@@ -15,6 +15,16 @@ Usage:
 """
 from __future__ import annotations
 
+# ruff: noqa: E402
+import sys
+from pathlib import Path
+
+# Ensure repo root is on sys.path so the `evals` package is importable
+# regardless of how Inspect AI resolves the working directory.
+_REPO_ROOT = Path(__file__).parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 from inspect_ai.solver import generate, use_tools
