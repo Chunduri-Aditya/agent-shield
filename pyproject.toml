@@ -42,8 +42,8 @@ packages = [
 
 [dependency-groups]
 dev = [
-    "inspect-ai>=0.3.207",
-    "anthropic>=0.96.0",
+    "inspect-ai==0.3.278",
+    "anthropic>=1.0.0",
     "openai>=2.32.0",
     "google-genai>=1.0.0",
     "pytest>=9.0.3",
