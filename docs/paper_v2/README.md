@@ -16,6 +16,7 @@ This folder lets a reviewer with no chat history understand and check the plan t
 | `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
 | `research_prompts/` | One self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
 | `NEW_CHAT_PROMPT.md` | The opening prompt for the session that audits this pack and refines the plans |
+| `BUILD_SESSION_PROMPT.md` | The opening prompt for the build session (Opus builds, Fable debugs), fed by the Claude Research result for prompt 01 |
 
 ## Audit brief (for the Fable reviewers)
 Two read only reviewers, in parallel, each starting from this file.
