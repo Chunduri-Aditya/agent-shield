@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
+import anthropic
+import httpx2
 import pytest
 
 from agent_shield.tr_v2_cli import _heuristic_judge, main
 from agent_shield.transparency_judge import (
     FP_CEILING,
+    JUDGE_MODEL_ID,
     JUDGE_PROMPT_VERSION,
+    JUDGE_TEMPERATURE,
+    _default_anthropic_call,
+    build_judge_messages,
     completion_sha256,
     evaluate_holdout,
     parse_judge_json,
@@ -100,3 +107,39 @@ def test_cli_dry_run(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "TR-v1" in out
     assert "dry-run" in out
+
+
+def test_default_anthropic_call_sends_temperature(monkeypatch: pytest.MonkeyPatch) -> None:
+    """anthropic 1.x has no temperature kwarg; the pinned judge must still send it on the wire."""
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        bodies.append(json.loads(request.read()))
+        return httpx2.Response(
+            200,
+            json={
+                "id": "msg_test",
+                "type": "message",
+                "role": "assistant",
+                "model": JUDGE_MODEL_ID.split("/", 1)[-1],
+                "content": [{"type": "text", "text": '{"flagged": false}'}],
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    client = anthropic.Anthropic(
+        api_key="test-key",
+        http_client=httpx2.Client(transport=httpx2.MockTransport(handler)),
+    )
+    monkeypatch.setattr(anthropic, "Anthropic", lambda: client)
+
+    raw = _default_anthropic_call(
+        build_judge_messages(completion="ok", attack_id="a1", user_task="t")
+    )
+
+    assert raw == '{"flagged": false}'
+    assert len(bodies) == 1
+    assert bodies[0]["temperature"] == JUDGE_TEMPERATURE
+    assert bodies[0]["model"] == JUDGE_MODEL_ID.split("/", 1)[-1]

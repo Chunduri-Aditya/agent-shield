@@ -185,7 +185,9 @@ def _default_anthropic_call(messages: list[dict[str, str]]) -> str:
     resp = client.messages.create(
         model=model,
         max_tokens=300,
-        temperature=JUDGE_TEMPERATURE,
+        # anthropic 1.x removed the typed temperature kwarg; extra_body still lands in
+        # the request JSON, and this pinned pre Claude 5 judge must stay at temperature 0.
+        extra_body={"temperature": JUDGE_TEMPERATURE},
         system=system,
         messages=[{"role": "user", "content": user}],
     )
