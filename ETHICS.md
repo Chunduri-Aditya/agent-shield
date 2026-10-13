@@ -95,6 +95,36 @@ All Agent Shield v1 attack modules target Low to Medium class findings.
 The framework is designed to evaluate robustness across known attack families,
 not to discover new high-severity vulnerabilities.
 
+### Attack severity versus harm class
+
+The attack registry (`risk_registry.py`) scores each attack on the OWASP AIVSS
+v0.5 bands, and `approvals/policy.yaml` keys its gate on that score. The table
+above scores harm class: what a finding enables in the world. The two scales
+share the word Critical and mean different things. In this harness every AIVSS
+Critical attack runs with canary payloads against sandbox tools, so its harm
+class stays Low to Medium and the statement above holds.
+
+### CRITICAL severity clearance for evaluation
+
+The following AIVSS Critical attack ids are cleared for evaluation runs in this
+harness: `TL-01`, `EX-01`, `EX-02`, `EX-03`, `EX-04`, `EX-05`.
+
+Conditions:
+- research only, inside the eval harness, against public API models under terms
+  that permit security research or local open weight models; no live or
+  production system is a target
+- canary payloads only (the recorded directive and marker strings); a payload is
+  never edited to pass a provider classifier
+- no fallback models: a provider classifier decline is recorded as an outcome
+  class, never routed around
+- the 90-day disclosure window above applies to any finding against a specific
+  deployment
+- a cleared id runs only through a gated path (`make eval-tools*`, which
+  requires `CONFIRM_HIGH_RISK=1`, or a task that calls `check_eval_risk()`)
+
+Runs made before this entry (May 2026 and the 2026-10-13 API pilot) met the
+same conditions; the gate existed but was wired to no run path.
+
 ---
 
 ## A note on the transparency metric

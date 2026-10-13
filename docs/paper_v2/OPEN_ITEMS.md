@@ -13,11 +13,11 @@
 | O08 | Whether `jlens.from_hf` finds the layers of Qwen3.5 and 3.6 image text checkpoints (`model.language_model.layers`) | 15 minute smoke test on a free notebook (D29) |
 | O09 | Resolved 2026-10-13: forward only (`apply` runs under `@torch.no_grad()`, E29) | — |
 | O10 | RunPod's page metadata and its visible table disagree (A6000 Secure $0.53 vs $0.59, H200 Secure $4.59 vs $5.29, 2026-10-13) | RunPod console at rental time |
-| O11 | The pilot rules R1 to R10 cited by D09, V1_2_PLAN and the README exist in no repo, pack or data file; only citations by number survive (`DATA/claude-*/REPORT.md`, `BLOCKED.md`, `inventory.md`; the pilot prompt lists 7 hard gates, not R1 to R10) | Aditya writes the ten rules into `V1_2_PLAN.md` before any step runs |
-| O12 | The $25 total cap and $5 reserve (D12) are policy from the pilot prompt; code enforces $20 only (E24) | state both as policy, cite `gates.py:58` for the enforced cap |
+| O11 | Resolved 2026-10-13: the ten rules were recovered verbatim from Aditya's pilot session prompt (the session transcript on disk) and now sit in `V1_2_PLAN.md` under "Pilot rules" | — |
+| O12 | Resolved 2026-10-13: R1 states the $25 total, $20 spendable and $5 reserve as policy; code enforces $20 only (`gates.py:58`, E24) | — |
 | O13 | Whether `Qwen/Qwen3.5-4B` in bf16 (9.3 GB) plus the lens fits the 18 GB laptop with the 3 GiB reserve; D24 argued about an 8B model, and torch MPS bf16 support is UNVERIFIED | `vm_stat` headroom check plus one load attempt, nothing reported |
 | O14 | Whether a transcript retokenised with the Qwen chat template equals the token sequence the serving stack produced (D30 assumes the Inspect log holds the sequence; it holds text) | on one sample, compare the serving stack's prompt token count with the HF tokenizer's |
-| O15 | `make risk-preflight` is named in `SESSION_STATE.md` and `AGENT_SHIELD_TODO.md:252` but the Makefile has no such target (repo drift, outside the pack) | `grep -n risk-preflight Makefile`; add the target or fix the two documents |
+| O15 | Partly resolved 2026-10-13: `risk-gate-tools` gates every `eval-tools*` target; the other modules and a repo wide `risk-preflight` stay unwired (TODO:251 unchecked) | `grep -n risk-preflight Makefile` |
 | O16 | D06 and E09 call the 3 prompt × 20 sample design "original", but `docs/powered_tools_tr_design.md` is dated 2026-07-31, after the 2026-06-22 publication; the published claim is `paper_v1.1.tex:649-650` with no log behind it (E13) | the corrections section says the n=20 design was claimed but never run |
 
 ## Risks
@@ -32,5 +32,5 @@
 | R07 | Retokenisation mismatch between the served agent run and the post run lens pass (D30) | same checkpoint and precision for both; the O14 equality check on one sample before any lens number is read |
 | R08 | The erratum promises "a TL-01 rerun at n=20 on the delivered description" (E02) while D09 changes the metric | the W1 correction row gives both counts (strict event, any call) |
 | R09 | Labelling load: the D18 headline needs validated TR on every v2 sample with one labeller and sample sizes TBD | hours per 100 transcripts measured at v1.2 step 7 and used to size P × m |
-| R10 | The repo's risk gate blocks TL-01 today (`scripts/risk_check.py --module tools` prints BLOCKED; `ETHICS.md` has no TL-01 entry while `AGENT_SHIELD_TODO.md:252` is checked) | judgment call J4 in `V1_2_PLAN.md` before step 4 |
+| R10 | Closed 2026-10-13 (J4): `ETHICS.md` clears TL-01 and EX-01 to EX-05; `make eval-tools*` is gated; a direct `inspect eval evals/tools.py` is still ungated until step 1a's task calls the gate | step 1a mutation row |
 | R11 | Blind export cannot hide provider style: tool schemas, redacted thinking signatures and phrasing differ by provider, and the labeller has read the Sonnet 5.5 transcripts | export message text only, strip schemas and provider fields, state the limit in the paper |

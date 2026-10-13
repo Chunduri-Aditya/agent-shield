@@ -1,4 +1,4 @@
-.PHONY: eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain eval-twin eval-twin-lead rescore rescore-inputs
+.PHONY: risk-gate-tools eval eval-inputs eval-inputs-groq eval-inputs-gemini eval-inputs-grok eval-inputs-defended eval-auto-apply eval-auto-apply-asr eval-auto-apply-transparency eval-auto-apply-groq eval-tools eval-tools-anchored eval-tools-groq eval-tools-grok eval-psych eval-psych-groq eval-psych-gemini eval-psych-grok eval-psych-defended eval-memory eval-memory-groq eval-memory-grok eval-exfil eval-exfil-groq eval-exfil-gemini eval-exfil-grok eval-drift eval-drift-groq eval-drift-gemini eval-drift-grok eval-defense eval-all eval-persona-write eval-persona-judge persona-meta persona-probe persona-judge-sweep free-agents eval-free-ollama eval-free-lmstudio eval-free-vllm eval-free-mlx eval-free-groq eval-free-gemini eval-free-openrouter eval-free-cerebras eval-free-github-models eval-free-cloudflare eval-free-hf eval-llama-local eval-llama-groq eval-gemini kaggle-auth-check kaggle-auth-online kaggle-inputs sweep sweep-dry sweep-module help status test lint fmt clean report report-log risk-check risk-check-all post-check guard mcp-proxy-demo mcp-proxy-badge guard-proof tr-v2-holdout corpus-import bundle eval-inputs-explain eval-tools-explain eval-psych-explain eval-memory-explain eval-exfil-explain eval-drift-explain eval-twin eval-twin-lead rescore rescore-inputs
 
 MODEL ?= anthropic/claude-sonnet-4-5
 FREE_MODULE ?= inputs
@@ -64,27 +64,33 @@ eval-auto-apply-groq:
 	uv run inspect eval evals/auto_apply.py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
 # Module: tools/ — MCP tool poisoning ASR + transparency
-eval-tools:
+# Hard gate for the CRITICAL tools module: every eval-tools* target depends on
+# it. Exits non zero unless ETHICS.md clears TL-01 and CONFIRM_HIGH_RISK=1 is
+# set: make eval-tools-anchored CONFIRM_HIGH_RISK=1
+risk-gate-tools:
+	uv run python scripts/risk_check.py --module tools --enforce $(if $(CONFIRM_HIGH_RISK),--confirm-high-risk,)
+
+eval-tools: risk-gate-tools
 	uv run inspect eval evals/tools.py --model $(MODEL) --seed $(SEED)
 
-eval-tools-asr:
+eval-tools-asr: risk-gate-tools
 	uv run inspect eval evals/tools.py@tools_asr --model $(MODEL) --seed $(SEED)
 
-eval-tools-transparency:
+eval-tools-transparency: risk-gate-tools
 	uv run inspect eval evals/tools.py@tools_transparency --model $(MODEL) --seed $(SEED)
 
 # Anchored agentic TL-01 (n=20, seed 0). Requires CONFIRM_HIGH_RISK=1 (CRITICAL).
 # Models: Sonnet, ollama/llama3.1:8b, google/gemini-3.5-flash. Groq excluded.
-eval-tools-anchored:
+eval-tools-anchored: risk-gate-tools
 	uv run inspect eval \
 	  evals/tools.py@tools_asr_anchored \
 	  evals/tools.py@tools_transparency_anchored \
 	  --model $(MODEL) --seed $(SEED)
 
-eval-tools-groq:
+eval-tools-groq: risk-gate-tools
 	uv run inspect eval evals/tools.py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
-eval-tools-grok:
+eval-tools-grok: risk-gate-tools
 	OPENAI_API_KEY=$$XAI_API_KEY OPENAI_BASE_URL=https://api.x.ai/v1 \
 	  uv run inspect eval evals/tools.py --model openai/$(GROK_MODEL) --seed $(SEED)
 

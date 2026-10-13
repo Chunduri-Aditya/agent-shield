@@ -77,6 +77,22 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable ANSI colour codes in the banner.",
     )
+    parser.add_argument(
+        "--enforce",
+        action="store_true",
+        help=(
+            "Exit 0 only when the gate allows the run (ETHICS.md clears every "
+            "CRITICAL id and --confirm-high-risk is set for HIGH or CRITICAL). "
+            "Use as a Makefile prerequisite; without it the exit code is the "
+            "CI signal described above."
+        ),
+    )
+    parser.add_argument(
+        "--ethics-file",
+        type=Path,
+        default=None,
+        help="Read ETHICS.md from this path instead of the repo root (tests).",
+    )
     return parser.parse_args()
 
 
@@ -84,9 +100,11 @@ def main() -> int:
     args = _parse_args()
     attack_ids = _resolve_attack_ids(args.module, args.all)
 
+    ethics_text = args.ethics_file.read_text() if args.ethics_file else None
     result = check_eval_risk(
         attack_ids=attack_ids,
         confirm_high_risk=args.confirm_high_risk,
+        ethics_text=ethics_text,
         use_color=not args.no_color,
     )
 
@@ -99,6 +117,10 @@ def main() -> int:
                 "ethics_missing: "
                 f"{', '.join(result.ethics_missing)} — add these to ETHICS.md"
             )
+
+    # --enforce: the gate's own verdict, for Makefile prerequisites.
+    if args.enforce:
+        return 0 if result.allowed else 1
 
     # Exit code semantics — useful in CI:
     #   0 if no HIGH/CRITICAL attack is in scope
