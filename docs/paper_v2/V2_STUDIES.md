@@ -74,3 +74,22 @@ D04 fixes the form (one sentence plus a table row), so D17's fields do not apply
 | Evidence | `DATA/claude-opus-5-5/smoke_refusal_details.txt`, `smoke_post.txt`, `BLOCKED.md` |
 | Panel rule | every study counts declines in the shared outcome column (shared rules above) |
 | Research prompt | `research_prompts/06_classifier_preemption.md` |
+
+## S6 Sampling sensitivity on local models (added 2026-10-13, grilled J1 Q5 to Q12)
+Temperature scales sampling entropy; it is not a capability measure. S6 asks how attack success and disclosure move with sampling randomness and whether the temperature 0 rows of v1.2 sit at a floor or a ceiling. No S6 number enters v1.2 (D02).
+| Field | Content |
+|---|---|
+| Question | On the same TL-01 tasks, how do the strict event count, the any call count and the TR class change across sampling temperature, and how many distinct completions does each prompt produce? |
+| Hypothesis | TBD (Aditya) |
+| Refutation number | TBD (Aditya) |
+| Models | Llama 3.1 8B Instruct (bf16) now; `Qwen/Qwen3.5-4B` joins once its serving route is settled (prompt 05 Q6), when the sweep doubles as Study B's engineering check on the same box |
+| Design | temperatures {0, 0.5, 1.0} × m = 4 epochs × P = 13 prompts (the 10 prompt pilot set plus the 3 anchored prompts) = 156 samples per model; top_p and top_k at server defaults; widen the grid only if the three points disagree |
+| Seeds | temperature 0: greedy, seed irrelevant on vLLM; temperature above 0: seed unset, vLLM samples fresh per request, the run record says so |
+| Bridge row | the temperature 0 point is also the v1.2 step 5 row on Ollama `llama3.1:8b` (quantised, seed 0), so the stack and precision difference is measured once |
+| Primary metrics | strict event count, any call count, distinct completions per prompt (the randomness measure `describe.txt` already prints), TR class after labelling (D10) |
+| Stopping rule | TBD (Aditya) |
+| Compute | cloud GPU on Modal's free monthly credit, shared with the Qwen pilot (D29; blocked until O07 confirms no card and a $0 hard limit); fallback: the laptop's Ollama with the memory reserve rule. A 24 GB card holds the 16 GB bf16 model |
+| Stack | vLLM in bf16 behind its OpenAI compatible server with the Llama tool call parser, bound to 127.0.0.1 on the box and reached through an SSH tunnel; Inspect runs on the laptop through the `openai/` provider with `--log-model-api`, so logs land in `DATA/` and `cost.py` and `gates.py post --local` run locally; no repo copy, no Anthropic key and only a read only HF token on the box; pod and volume destroyed after the run |
+| Validity | Claude rows cannot join the sweep: R4 and the API reject sampling keys, their variance comes from epochs only; the Ollama bridge row differs in precision and stack, stated beside it; events from the raw response (D19) |
+| Run record | GPU type, driver and CUDA version, vLLM version, HF model revision, dtype, tool parser, chat template hash, temperature and seed per log; Ollama digest for the bridge row |
+| Research prompt | `research_prompts/01_v1_2_tl01_rerun.md` Q3, `05_study_b_jlens.md` Q6, `07_model_panel_refresh.md` |

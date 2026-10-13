@@ -20,7 +20,7 @@ Canary payloads only. Spend cap $25 for the whole project, fail closed. No rate 
 ## Questions
 1. Inspect AI 0.3.278: which log fields hold tool call events and raw provider requests and responses (`--log-model-api`), and how should a scorer read tool call arguments robustly (ToolEvent versus assistant message tool calls)? Any known gaps?
 2. Sonnet 4.5: current deprecation and retirement status on the Claude API, and whether its request shape (sampling parameters, tool choice) differs from the 5.5 models in Inspect.
-3. Ollama with Llama 3.1 8B: current tool calling support and known parsing failures; which Ollama version and template to pin; which quantisation the `llama3.1:8b` tag resolves to today and how to pin its digest.
+3. Ollama with Llama 3.1 8B: current tool calling support and known parsing failures; which Ollama version and template to pin; which quantisation the `llama3.1:8b` tag resolves to today and how to pin its digest; whether its OpenAI compatible endpoint honours `seed` and `temperature` per request; and, for a bf16 comparison row, which vLLM version and Llama tool call parser give the same tool loop through an OpenAI compatible server.
 4. How AgentDojo, InjecAgent, MCPTox (arXiv:2508.14925) and any 2026 successors score tool call events: what counts as success (recipient match, argument match, partial), and how they report it beside utility.
 5. Statistics for a rerun with effective n of 3 and of 10: what can and cannot be claimed, with interval methods for clustered repeats.
 

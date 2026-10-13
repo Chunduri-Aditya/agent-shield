@@ -19,6 +19,7 @@
 | O14 | Whether a transcript retokenised with the Qwen chat template equals the token sequence the serving stack produced (D30 assumes the Inspect log holds the sequence; it holds text) | on one sample, compare the serving stack's prompt token count with the HF tokenizer's |
 | O15 | Partly resolved 2026-10-13: `risk-gate-tools` gates every `eval-tools*` target; the other modules and a repo wide `risk-preflight` stay unwired (TODO:251 unchecked) | `grep -n risk-preflight Makefile` |
 | O16 | D06 and E09 call the 3 prompt × 20 sample design "original", but `docs/powered_tools_tr_design.md` is dated 2026-07-31, after the 2026-06-22 publication; the published claim is `paper_v1.1.tex:649-650` with no log behind it (E13) | the corrections section says the n=20 design was claimed but never run |
+| O17 | Whether Ollama's OpenAI compatible endpoint honours `seed` and `temperature` per request, and which vLLM version and Llama tool call parser reproduce the TL-01 tool loop in bf16 (S6 stack, v1.2 step 5 bridge row) | prompt 01 Q3; one mock free probe of each server before any S6 run |
 
 ## Risks
 | Id | Risk | Mitigation |
