@@ -8,8 +8,8 @@ Paste everything below the line into Claude Research.
 My agent security evaluations (agent-shield, Inspect AI) use a fixed model panel per study. Before each study I need the panel to be current: the newest models, their tool calling support, prices, and retirement dates. Cite official pages only; mark anything unconfirmed as UNVERIFIED.
 
 ## Current panel (facts as of 2026-10-13)
-- Claude API: `claude-haiku-5-5`, `claude-sonnet-5-5`, `claude-opus-5-5` (Opus declined every smoke request through its safety classifier). `claude-sonnet-4-5` is deprecated, end of life 30 Nov 2026 per the SDK.
-- Open weight: Llama 3.1 8B Instruct (Ollama), `Qwen/Qwen3.5-4B` and `Qwen/Qwen3.6-27B` (chosen because pre fitted Jacobian lenses exist for them on huggingface.co/neuronpedia/jacobian-lens).
+- Claude API: `claude-haiku-5-5`, `claude-sonnet-5-5`, `claude-opus-5-5` (Opus declined every smoke request through its safety classifier). `claude-sonnet-4-5` is deprecated, retirement 30 Nov 2026 per the SDK warning and the model deprecations page.
+- Open weight: Llama 3.1 8B Instruct (Ollama), `Qwen/Qwen3.5-4B`, `Qwen/Qwen3.6-27B` and the fallback `Qwen/Qwen3.5-27B` (chosen because pre fitted Jacobian lenses exist for them on huggingface.co/neuronpedia/jacobian-lens).
 - Prices used: Haiku 5.5 $0.10 / $0.50, Sonnet 5.5 $2 / $10, Opus 5.5 $4 / $20 per million input / output tokens.
 - Inspect AI 0.3.278 supports all three Claude 5.5 models.
 
