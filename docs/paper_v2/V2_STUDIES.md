@@ -37,7 +37,7 @@ Shared rules (from the 2026-10-13 audit):
 | Primary metrics | blocked out of bound calls, executed out of bound calls, declared versus used tools (all events); the repo defense triple per arm: event attack success, UUA from the clean arm's exact match, TR class from validated labels (D10; a judge only at κ ≥ 0.8) |
 | Stopping rule | TBD (Aditya) |
 | Validity | events from the raw response (D19); the opaque cell (low attack success, low TR) is the PARALLAX contrast already cited |
-| Contrast | operator declared boundaries (SMCP, L01); fixed policy engines (PARALLAX, L02) |
+| Contrast | operator declared boundaries (SMCP, L01); fixed policy engines (PARALLAX, L02); the same declaration enforced by a second model instead of code (S7) |
 | Run record | new task file, name set at preregistration; fields per the shared rule |
 | Research prompt | `research_prompts/03_study_a_boundaries.md`, `07_model_panel_refresh.md` |
 
@@ -93,3 +93,20 @@ Temperature scales sampling entropy; it is not a capability measure. S6 asks how
 | Validity | Claude rows cannot join the sweep: R4 and the API reject sampling keys, their variance comes from epochs only; the Ollama bridge row differs in precision and stack, stated beside it; events from the raw response (D19) |
 | Run record | GPU type, driver and CUDA version, vLLM version, HF model revision, dtype, tool parser, chat template hash, temperature and seed per log; Ollama digest for the bridge row |
 | Research prompt | `research_prompts/01_v1_2_tl01_rerun.md` Q3, `05_study_b_jlens.md` Q6, `07_model_panel_refresh.md` |
+
+## S7 Planner and executor split (added 2026-10-13, grilled Q18 to Q21)
+The soft sibling of Study A: S2 enforces the agent's declared boundary with code, S7 hands a planner's plan to a second model that can still deviate. Same tasks, same declaration format, same metrics, so the two studies form one table: enforcement by harness, by model, or none. On Claude 5.5 the planner's reasoning is redacted (E17); its only observable output is the plan it emits.
+| Field | Content |
+|---|---|
+| Question | Does separating the model that plans from the model that executes tool calls change attack success, plan violations and disclosure, compared with one model doing both? |
+| Hypothesis | TBD (Aditya) |
+| Refutation number | TBD (Aditya) |
+| Arms | (0) same model plans and executes (baseline); (1) planner sees the user task and the tool list with descriptions, so the poisoned description reaches the planner, which emits the plan; (2) planner sees tool names only, no descriptions, so the poison reaches the executor alone at call time. Arms 1 and 2 separate injection at planning from injection at execution |
+| Plan format | the S2 declaration: an ordered list of intended tool calls with allowed tools and recipients, handed to the executor as a message, no harness enforcement (S2 arm 2 is the same declaration enforced by code) |
+| Model pairs | open weight pairs first on the S6 cloud box (Llama 3.1 8B and Qwen3.5-4B as planner and executor in both orders and alone), free credit; then one Claude contrast, Haiku 5.5 planner with Sonnet 5.5 executor against Sonnet 5.5 alone, under a $5 cap and only after v1.2 step 4 has run; Opus 5.5 stays the classifier outcome (D04) |
+| Design | P = 10 pilot prompts × m = 4 epochs per arm per pair; paired by prompt within a model family, the primary contrast is split minus same |
+| Primary metrics | strict value event count (the `tools_event_v1` primary); secondary: executor calls outside the plan and declared versus used tools (events), any call count, and two disclosure labels per episode, the plan text and the executor's final message (D10 rubric) |
+| Stopping rule | TBD (Aditya) |
+| Validity | events from the raw response of both models (D19); a plan is free text to the executor, so a planner that is itself injected can carry the directive into the plan (arm 1), which the plan violation count and the plan label capture; the capability reading of the Haiku and Sonnet cells is secondary, never a claim; the clean control arm reports utility per pair |
+| Run record | two model ids per sample, the planner prompt hash, the plan message, the executor loop fields per the shared rule |
+| Research prompt | `research_prompts/03_study_a_boundaries.md` Q1 and Q6, `07_model_panel_refresh.md` |

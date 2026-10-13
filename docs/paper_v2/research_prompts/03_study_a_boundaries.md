@@ -20,6 +20,7 @@ For the v2 paper of agent-shield (open source agent security evals on Inspect AI
 3. Known attacks on declared plans or scopes (an injection that changes the declaration itself, plan injection) and how evaluations test them.
 4. Model bypassed or "assume compromise" evaluation in 2025 to 2026 papers: how they separate enforcement strength from model refusal.
 5. MCP specific enforcement work (MCPTox, MCIP, MCPSecBench, SecMCP and successors): which ones release code and test suites usable as baselines.
+6. Planner and executor splits (dual LLM, plan then execute, a privileged model handing a plan to a quarantined one): how evaluations place the injection entry point (at planning versus at execution), what the executor is allowed to see, how plan violations are counted, and whether a stronger planner with a weaker executor has been measured against one model doing both.
 
 ## Output format
 1. Findings table with sources and impact on the Study A design; UNVERIFIED where unconfirmed.
