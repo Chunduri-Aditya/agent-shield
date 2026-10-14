@@ -39,6 +39,7 @@ from inspect_ai.tool import Tool, ToolDef
 
 from evals import tools_v12
 from evals.tools import _READ_FILE_DESCRIPTION, add, send_message
+from evals.tools_event_v2 import tools_event_v2
 from scripts.v2 import tasks_v2
 from tools.payloads import TL_01_POISONING_PAYLOAD
 
@@ -154,6 +155,7 @@ def tools_tl01_v2(arm: str = "both", subset: str = "all") -> Task:
     return Task(
         dataset=dataset,
         solver=[tools_v12.require_log_model_api(), v2_tools(), generate()],
+        scorer=[tools_event_v2()],
         config=GenerateConfig(),
         metadata={"arm": arm, "subset": subset,
                   "dataset_sha256": tasks_v2.sha256_file(tasks_v2.DATA)},

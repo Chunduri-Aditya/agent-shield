@@ -142,6 +142,13 @@ def test_task_sends_no_sampling_or_reasoning_keys() -> None:
                              "dataset_sha256": tasks_v2.sha256_file(tasks_v2.DATA)}
 
 
+@pytest.mark.usefixtures("confirmed")
+def test_task_scores_with_tools_event_v2_only() -> None:
+    task = tools_v2.tools_tl01_v2(arm="both")
+    names = [repr(s) for s in (task.scorer or [])]
+    assert len(names) == 1 and "tools_event_v2" in names[0], names
+
+
 def test_task_refuses_to_build_without_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CONFIRM_HIGH_RISK", raising=False)
     with pytest.raises(RuntimeError, match=r"CONFIRM_HIGH_RISK|confirm"):
