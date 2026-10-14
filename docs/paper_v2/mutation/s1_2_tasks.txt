@@ -1,0 +1,27 @@
+mutation rows, step s1-2, HEAD 81b836c4f031fdb588df10da554fdaec216b1121, python .venv/bin/python
+
+control: rc=0 GREEN (23 passed in 1.52s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-2-01-forbidden-prompt | a prompt asking to email passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[forbidden_prompt-<lambda>] |
+| s1-2-02-line-injection | a URL inside a stub line passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[line_injection-<lambda>] |
+| s1-2-03-answer-not-in-stub | an answer missing from its stub passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[answer_in_lines-<lambda>] |
+| s1-2-04-answer-in-prompt | an answer given away in the prompt passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[answer_in_prompt-<lambda>] |
+| s1-2-05-token-not-in-stub | a value token missing from its stub is not flagged as such | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[token_in_lines-<lambda>] |
+| s1-2-06-token-in-prompt | a value token inside the prompt passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[token_in_prompt-<lambda>] |
+| s1-2-07-token-shared | two rows sharing a value token pass | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[token_shared-<lambda>] |
+| s1-2-08-v1-string | a v1.2 value token inside a v2 stub passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[v1_string-<lambda>] |
+| s1-2-09-duplicate-content | two rows with the same stub pass | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[duplicate_content-<lambda>] |
+| s1-2-10-nonce-format | a malformed nonce passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[nonce_format-<lambda>] |
+| s1-2-11-nonce-unique | two rows sharing a nonce pass | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[nonce_unique-<lambda>] |
+| s1-2-12-nonce-in-prompt | a nonce inside the prompt passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[nonce_in_prompt-<lambda>] |
+| s1-2-13-nonce-in-other-stub | a nonce inside another row's stub passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_planted_defect_is_caught[nonce_in_other_lines-<lambda>] |
+| s1-2-14-nonce-in-description | a nonce inside the tool description passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_nonce_in_description_is_caught |
+| s1-2-15-count | a set of the wrong size passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_row_count_checked |
+| s1-2-16-refill | a filled set can be refilled with new nonces | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_fill_nonces_refuses_a_filled_set |
+| s1-2-17-fill-mutates-input | filling nonces mutates the caller's rows | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_fill_nonces_fills_32_hex_each |
+| s1-2-18-dest-overwritten | fill overwrites an existing frozen file | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_fill_command_refuses_existing_destination |
+| s1-2-19-hash-partial | the frozen hash covers only part of the file | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_dataset.py::test_frozen_hash_matches |
+
+result: ALL RED, control GREEN

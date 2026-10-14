@@ -1,4 +1,4 @@
-"""Mutation rows for the v1.2 build steps (V1_2_PLAN 1a, 1b, 2b).
+"""Mutation rows for the v1.2 build steps (V1_2_PLAN 1a, 1b, 2b) and the v2 S1 steps.
 
 Each row reintroduces one defect into a scratch copy of the repo and runs the tests meant
 to catch it. A row passes when the tests go RED. The working tree is never touched: the
@@ -242,6 +242,61 @@ ROWS["overnight"] = (
     Row("on-05-blocked-continues", "a blocked night keeps running", ON,
         "        raise SystemExit(f\"BLOCKED: {cause} (see {self.out / 'BLOCKED.md'})\")\n",
         "        return None\n", (TON,)),
+)
+
+# v2 S1 plan Phase 2: the frozen task set and its rules (scripts/v2/tasks_v2.py).
+TDS = "tests/pilot/test_tools_v2_dataset.py"
+TV2 = "scripts/v2/tasks_v2.py"
+
+ROWS["s1-2"] = (
+    Row("s1-2-01-forbidden-prompt", "a prompt asking to email passes", TV2,
+        '        if m := FORBIDDEN_PROMPT.search(prompt):\n'
+        '            bad("forbidden_prompt", rid, repr(m.group(0)))\n', "", (TDS,)),
+    Row("s1-2-02-line-injection", "a URL inside a stub line passes", TV2,
+        '            if m := LINE_INJECTION.search(line):\n'
+        '                bad("line_injection", rid, repr(m.group(0)))\n',
+        "            pass\n", (TDS,)),
+    Row("s1-2-03-answer-not-in-stub", "an answer missing from its stub passes", TV2,
+        '        if answer not in text:\n            bad("answer_in_lines", rid, repr(answer))\n',
+        "", (TDS,)),
+    Row("s1-2-04-answer-in-prompt", "an answer given away in the prompt passes", TV2,
+        '        if answer.lower() in prompt.lower():\n'
+        '            bad("answer_in_prompt", rid, repr(answer))\n', "", (TDS,)),
+    Row("s1-2-05-token-not-in-stub", "a value token missing from its stub is not flagged as such",
+        TV2, "            if tok not in text:\n", "            if False:\n", (TDS,)),
+    Row("s1-2-06-token-in-prompt", "a value token inside the prompt passes", TV2,
+        '            if tok.lower() in prompt.lower():\n'
+        '                bad("token_in_prompt", rid, repr(tok))\n', "", (TDS,)),
+    Row("s1-2-07-token-shared", "two rows sharing a value token pass", TV2,
+        "            if a_id != b_id and a.lower() in b.lower():\n",
+        "            if False:\n", (TDS,)),
+    Row("s1-2-08-v1-string", "a v1.2 value token inside a v2 stub passes", TV2,
+        "            if s in blob:\n", "            if False:\n", (TDS,)),
+    Row("s1-2-09-duplicate-content", "two rows with the same stub pass", TV2,
+        '("duplicate_content", lambda r: tuple(r["lines"]))',
+        '("duplicate_content", lambda r: r["id"])', (TDS,)),
+    Row("s1-2-10-nonce-format", "a malformed nonce passes", TV2,
+        "        if NONCE.fullmatch(nonce) is None:\n", "        if not nonce:\n", (TDS,)),
+    Row("s1-2-11-nonce-unique", "two rows sharing a nonce pass", TV2,
+        "            if n > 1 and value:\n", "            if False:\n", (TDS,)),
+    Row("s1-2-12-nonce-in-prompt", "a nonce inside the prompt passes", TV2,
+        "        if nonce in prompt:\n", "        if False:\n", (TDS,)),
+    Row("s1-2-13-nonce-in-other-stub", "a nonce inside another row's stub passes", TV2,
+        '            if j != i and tuple(other) == KEYS and nonce in json.dumps(other["lines"]):\n',
+        "            if False:\n", (TDS,)),
+    Row("s1-2-14-nonce-in-description", "a nonce inside the tool description passes", TV2,
+        "        if description and nonce in description:\n", "        if False:\n", (TDS,)),
+    Row("s1-2-15-count", "a set of the wrong size passes", TV2,
+        "    if expected is not None and len(rows) != expected:\n", "    if False:\n", (TDS,)),
+    Row("s1-2-16-refill", "a filled set can be refilled with new nonces", TV2,
+        '    if any(r["nonce"] for r in rows):\n', "    if False:\n", (TDS,)),
+    Row("s1-2-17-fill-mutates-input", "filling nonces mutates the caller's rows", TV2,
+        "    out = copy.deepcopy(rows)\n", "    out = rows\n", (TDS,)),
+    Row("s1-2-18-dest-overwritten", "fill overwrites an existing frozen file", TV2,
+        "        if args.dest.exists():\n", "        if False:\n", (TDS,)),
+    Row("s1-2-19-hash-partial", "the frozen hash covers only part of the file", TV2,
+        "    return hashlib.sha256(path.read_bytes()).hexdigest()\n",
+        "    return hashlib.sha256(path.read_bytes()[:-1]).hexdigest()\n", (TDS,)),
 )
 
 
