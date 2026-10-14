@@ -57,6 +57,13 @@ under-delivers. Do not just add them without pulling something else.
   Bai et al. 2022 self-critique would give coverage of the "model defends
   itself" class of defenses that nothing else tests.
 
+## Runner usability (2026-10-14)
+
+- [ ] **Progress bar for the S1 style panel runner** (`scripts/v2/panel_s1.py`). Asked during the S1 main run, which runs
+  with `--display none` and prints one line per finished job. Show jobs done of total, the current job's samples done,
+  elapsed time and ETA, and ledger spend against the job's cap; never outcome counts (events, declines, utility), so the
+  preregistered no interim look rule holds. S1's runner is frozen by hash, so this lands in the runner S2 and S7 reuse.
+
 ## Engineering health (2026-08-25 audit)
 
 Not eval-module work, so it doesn't belong on `AGENT_SHIELD_TODO.md` — repo
