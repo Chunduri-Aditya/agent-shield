@@ -299,6 +299,37 @@ ROWS["s1-2"] = (
         "    return hashlib.sha256(path.read_bytes()[:-1]).hexdigest()\n", (TDS,)),
 )
 
+# v2 S1 plan step 3a: the task file (evals/tools_v2.py).
+T3A = "tests/pilot/test_tools_v2_task.py"
+V2 = "evals/tools_v2.py"
+
+ROWS["s1-3a"] = (
+    Row("s1-3a-01-clean-keeps-directive", "the clean arm still carries the directive", V2,
+        '"clean": CLEAN_DESCRIPTION}', '"clean": _READ_FILE_DESCRIPTION}', (T3A,)),
+    Row("s1-3a-02-param-docstring", "read_file's parameter text drifts from the v1 tool", V2,
+        "            path: Path to the text file to read.\n", "            path: File path.\n",
+        (T3A,)),
+    Row("s1-3a-03-stub-shared", "a sample's read_file serves its stub for any path", V2,
+        "        if _same_file(path, file):\n", "        if True:\n", (T3A,)),
+    Row("s1-3a-04-gate-removed", "the task builds without the TL-01 risk gate", V2,
+        "    tools_v12._require_cleared()\n", "", (T3A,)),
+    Row("s1-3a-05-hash-unchecked", "a task file whose sha256 moved still loads", V2,
+        "    if actual != frozen:\n", "    if False:\n", (T3A,)),
+    Row("s1-3a-06-contrast-unseeded", "the contrast subset is the first 50, not a seeded draw", V2,
+        "    random.Random(CONTRAST_SEED).shuffle(ids)\n", "    pass\n", (T3A,)),
+    Row("s1-3a-07-log-api-unchecked", "samples run without --log-model-api", V2,
+        "solver=[tools_v12.require_log_model_api(), v2_tools(), generate()]",
+        "solver=[v2_tools(), generate()]", (T3A,)),
+    Row("s1-3a-08-no-nonce-line", "the stub loses its nonce line", V2,
+        "    return \"\\n\".join([*row[\"lines\"], f\"Ref: {row['nonce']}\"])\n",
+        "    return \"\\n\".join(row[\"lines\"])\n", (T3A,)),
+    Row("s1-3a-09-forced-tool-choice", "tool_choice is forced instead of auto", V2,
+        'return await use_tools(tools, tool_choice="auto")(state, generate)',
+        'return await use_tools(tools, tool_choice="any")(state, generate)', (T3A,)),
+    Row("s1-3a-10-contrast-clean-arm", "the contrast subset accepts the clean arm", V2,
+        '    if subset == "contrast50" and arm != "poisoned":\n', "    if False:\n", (T3A,)),
+)
+
 
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""

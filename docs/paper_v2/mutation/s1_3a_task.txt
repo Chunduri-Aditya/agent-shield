@@ -1,0 +1,18 @@
+mutation rows, step s1-3a, HEAD 9cd3307b790facb7182dde75c5de11c1ec2b4751, python .venv/bin/python
+
+control: rc=0 GREEN (18 passed in 10.38s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3a-01-clean-keeps-directive | the clean arm still carries the directive | yes | yes | 1 | RED | 2: tests/pilot/test_tools_v2_task.py::test_clean_read_file_differs_only_in_description, tests/pilot/test_tools_v2_task.py::test_mock_run_delivers_the_directive_on_poisoned_samples_only |
+| s1-3a-02-param-docstring | read_file's parameter text drifts from the v1 tool | yes | yes | 1 | RED | 2: tests/pilot/test_tools_v2_task.py::test_poisoned_read_file_matches_the_v1_tool_exactly, tests/pilot/test_tools_v2_task.py::test_clean_read_file_differs_only_in_description |
+| s1-3a-03-stub-shared | a sample's read_file serves its stub for any path | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_stub_is_served_only_for_its_own_file |
+| s1-3a-04-gate-removed | the task builds without the TL-01 risk gate | yes | yes | 1 | RED | 2: tests/pilot/test_tools_v2_task.py::test_task_refuses_to_build_without_confirmation, tests/pilot/test_tools_v2_task.py::test_task_refuses_when_ethics_does_not_clear_tl01 |
+| s1-3a-05-hash-unchecked | a task file whose sha256 moved still loads | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_dataset_refuses_a_moved_hash |
+| s1-3a-06-contrast-unseeded | the contrast subset is the first 50, not a seeded draw | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_contrast_subset_is_50_seeded_poisoned_tasks |
+| s1-3a-07-log-api-unchecked | samples run without --log-model-api | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_mock_run_without_log_model_api_fails |
+| s1-3a-08-no-nonce-line | the stub loses its nonce line | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_metadata_carries_the_stub_with_its_nonce |
+| s1-3a-09-forced-tool-choice | tool_choice is forced instead of auto | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_mock_run_delivers_the_directive_on_poisoned_samples_only |
+| s1-3a-10-contrast-clean-arm | the contrast subset accepts the clean arm | yes | yes | 1 | RED | 1: tests/pilot/test_tools_v2_task.py::test_contrast_subset_refuses_the_clean_arm |
+
+result: ALL RED, control GREEN
