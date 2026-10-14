@@ -48,3 +48,30 @@ One row per fact. Repo paths are relative to the repository root at commit `24f1
 | E30 | Neuronpedia lens fits for Qwen: `Qwen3.5-4B` config requests `n_prompts 1000` with `stop_at_delta 0.002` and records `prompts_fitted: 417`; `Qwen3.5-27B` records `prompts_fitted: 672`; dataset `Salesforce/wikitext` `wikitext-103-raw-v1` train, bf16. The `qwen3.6-27b/jlens` folder holds `Qwen3.6-27B_jacobian_lens_n1000.pt` and `CREDIT.md` with no config | https://huggingface.co/neuronpedia/jacobian-lens `qwen3.5-4b/jlens/Salesforce-wikitext/config.yaml`, `qwen3.5-27b/jlens/.../config.yaml`; `https://huggingface.co/api/models/neuronpedia/jacobian-lens` siblings |
 | E32 | Local checks of RR01 on 2026-10-13: `inspect_ai/model/_providers/anthropic.py:226,801` carries `tool_choice_degraded` (PR #5764 is in 0.3.278); `inspect_ai/model/_call_tools.py:884` raises a tool parsing error on a non null `parse_error`; `inspect_ai/log/_log.py:220` sets `log_model_api` default None; `ollama --version` 0.40.2; `ollama list` shows `llama3.1:8b-instruct-q4_K_M` id `46e0c10c039e`, manifest model layer `sha256:667b0c1932bc…` 4,920,738,944 bytes | commands in the row; `docs/paper_v2/research_results/01_v1_2_tl01_rerun.md` |
 | E31 | Tectonic 0.16.9 (XeTeX, xdvipdfmx) builds `paper_v1.1.tex` from `0fa6e62` to a 19 page PDF whose extracted text matches the published 18 page pdfTeX PDF at 0.9691 with 30 typesetting only regions; the current tex builds to 20 pages with 9 overfull box warnings and no undefined reference | `docs/paper_v2/BUILD_BASELINE.md`; `DATA/evidence/paper_build_baseline/` |
+
+## v2 Claude API facts (retrieved 2026-10-14)
+
+| Id | Fact | Source |
+|---|---|---|
+| E33 | `models.list` on the project API key returns 14 ids: `claude-haiku-5-5`, `claude-sonnet-5-5`, `claude-opus-5-5`, `claude-fable-5-1`, `claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-opus-4-6`, `claude-opus-4-5-20251101`, `claude-haiku-4-5-20251001`, `claude-sonnet-4-5-20250929`. No Mythos id is served to this key | Anthropic SDK 1.13.0 `Anthropic().models.list(limit=100)`, run 2026-10-14 |
+| E34 | List prices per million tokens for the panel, in the table below, copied by script from the pricing page; they match RR08's panel table on every row. Cache reads on Opus 5.5 and Sonnet 5.5 are 0.05× input and on Fable 5.1 0.025× (page footnotes 1 and 2), so `prices.yaml`'s Sonnet 5.5 cache read of $0.10 is correct. Sonnet 5's $2 / $10 is now the standard price (footnote 3) | https://platform.claude.com/docs/en/about-claude/pricing |
+| E35 | Inspect 0.3.278 (installed source): `display` is sent only when a reasoning config is set (`anthropic.py:1356-1371`), so a summarized display without an effort change needs `-M extra_body`, which replaces the whole `thinking` object (`:1599-1601`); with no reasoning config, bound thinking models get `{"type": "adaptive", "block_binding": ...}` and no `display` (`:1619-1621`); forced tool choice is degraded to `auto` only on Fable 5.1, Opus 5.5 and Sonnet 5.5 and omitted only under extended thinking (`util/util.py:214-220`, `anthropic.py:798-823`); on a fallback `ModelOutput.model` is rewritten to the serving model (`:4387-4397`); no model prices ship with Inspect (no cost keys in `model/_model_data/*.yml`) | `.venv/lib/python3.11/site-packages/inspect_ai/`, read 2026-10-14 |
+
+E34 price table (USD per million tokens, retrieved 2026-10-14):
+
+| Model | Input | 5m cache write | 1h cache write | Cache read | Output |
+|---|---|---|---|---|---|
+| Fable 5.1 | $10 | $12.50 | $20 | $0.25 | $50 |
+| Fable 5 | $10 | $12.50 | $20 | $1 | $50 |
+| Opus 5.5 | $4 | $5 | $8 | $0.20 | $20 |
+| Opus 5 | $5 | $6.25 | $10 | $0.50 | $25 |
+| Opus 4.8 | $5 | $6.25 | $10 | $0.50 | $25 |
+| Opus 4.7 | $5 | $6.25 | $10 | $0.50 | $25 |
+| Opus 4.6 | $5 | $6.25 | $10 | $0.50 | $25 |
+| Opus 4.5 | $5 | $6.25 | $10 | $0.50 | $25 |
+| Sonnet 5.5 | $2 | $2.50 | $4 | $0.10 | $10 |
+| Sonnet 5 | $2 | $2.50 | $4 | $0.20 | $10 |
+| Sonnet 4.6 | $3 | $3.75 | $6 | $0.30 | $15 |
+| Sonnet 4.5 | $3 | $3.75 | $6 | $0.30 | $15 |
+| Haiku 5.5 (prompts up to 100,000 tokens) | $0.10 | $0.125 | $0.20 | $0.01 | $0.50 |
+| Haiku 4.5 | $1 | $1.25 | $2 | $0.10 | $5 |
