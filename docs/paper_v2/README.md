@@ -7,11 +7,14 @@ This folder lets a reviewer with no chat history understand and check the plan t
 ## Files
 | File | Purpose |
 |---|---|
-| `DECISIONS.md` | The design decisions (D01 to D37; section F, D31 to D37, added 2026-10-14): what was chosen, what was rejected, why, and what evidence it rests on |
+| `DECISIONS.md` | The design decisions (D01 to D40; section F, D31 to D40, added 2026-10-14): what was chosen, what was rejected, why, and what evidence it rests on |
 | `EVIDENCE.md` | Every fact the decisions rest on, one row each, with its source |
 | `LITERATURE.md` | What v2 takes from each external source read on 2026-10-13, with novelty overlap and what not to overstate |
 | `V1_2_PLAN.md` | The ordered correction chain for v1.2, each step with its gate and evidence of done |
 | `V2_STUDIES.md` | Preregistration skeletons for the v2 studies; hypotheses and sample sizes are TBD (Aditya) |
+| `prereg/S1.md` | S1 preregistration from Aditya's answers (2026-10-14); frozen by hash at the S1 freeze |
+| `POST_S1_PLAN.md` | Build plan for S2, S7 and the AgentDojo row after S1 |
+| `../EVAL_DESIGN_FRAMEWORK.md` | Section 1: requirements every v2 study meets before a paid run (D17) |
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
 | `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
 | `research_prompts/` | One self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
