@@ -224,6 +224,27 @@ ROWS["2b"] = (
 )
 
 
+TON = "tests/pilot/test_overnight_local.py"
+ON = "scripts/pilot/overnight_local.py"
+
+ROWS["overnight"] = (
+    Row("on-01-reserve-ignored", "memory check drops the runtime and reserve", ON,
+        "    need = model_bytes / GIB + RUNTIME_GIB + RESERVE_GIB\n",
+        "    need = model_bytes / GIB\n", (TON,)),
+    Row("on-02-duplicate-digests", "smoke runs one model twice under two names", ON,
+        '        if "tools" not in m.capabilities or m.digest in seen:\n',
+        '        if "tools" not in m.capabilities:\n', (TON,)),
+    Row("on-03-unpinned-sampling", "local rows lose temperature 0 and seed 0", ON,
+        '    cmd += ["--model", f"ollama/{model}", "--temperature", "0", "--seed", "0"]\n',
+        '    cmd += ["--model", f"ollama/{model}"]\n', (TON,)),
+    Row("on-04-remote-ollama", "a non loopback OLLAMA_BASE_URL is accepted", ON,
+        '    ok = host in ("localhost", "127.0.0.1")\n', "    ok = True\n", (TON,)),
+    Row("on-05-blocked-continues", "a blocked night keeps running", ON,
+        "        raise SystemExit(f\"BLOCKED: {cause} (see {self.out / 'BLOCKED.md'})\")\n",
+        "        return None\n", (TON,)),
+)
+
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

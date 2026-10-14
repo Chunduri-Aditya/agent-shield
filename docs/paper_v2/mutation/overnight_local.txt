@@ -1,0 +1,13 @@
+mutation rows, step overnight, HEAD 16ef6ebb9baf994f61fb6de068abaa2e3491306f, python .venv/bin/python3
+
+control: rc=0 GREEN (18 passed in 1.35s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| on-01-reserve-ignored | memory check drops the runtime and reserve | yes | yes | 1 | RED | 2: tests/pilot/test_overnight_local.py::test_headroom_keeps_runtime_and_a_three_gib_reserve[8.99-5.0-False], tests/pilot/test_overnight_local.py::test_headroom_keeps_runtime_and_a_three_gib_reserve[4.0-0.5-False] |
+| on-02-duplicate-digests | smoke runs one model twice under two names | yes | yes | 1 | RED | 1: tests/pilot/test_overnight_local.py::test_smoke_covers_tool_models_once_each_smallest_first |
+| on-03-unpinned-sampling | local rows lose temperature 0 and seed 0 | yes | yes | 1 | RED | 1: tests/pilot/test_overnight_local.py::test_local_row_command_pins_temperature_seed_and_the_ollama_route |
+| on-04-remote-ollama | a non loopback OLLAMA_BASE_URL is accepted | yes | yes | 1 | RED | 2: tests/pilot/test_overnight_local.py::test_ollama_base_url_must_stay_on_loopback[https://gpu.example.com:11434-False], tests/pilot/test_overnight_local.py::test_ollama_base_url_must_stay_on_loopback[http://localhost.example.com:11434-False] |
+| on-05-blocked-continues | a blocked night keeps running | yes | yes | 1 | RED | 1: tests/pilot/test_overnight_local.py::test_blocked_night_writes_the_cause_and_stops |
+
+result: ALL RED, control GREEN
