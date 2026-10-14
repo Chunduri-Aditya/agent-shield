@@ -60,12 +60,38 @@ def completion_key(sample: EvalSample) -> tuple[str, int]:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest(), len(calls)
 
 
+ARM_SUFFIX = {":P": "poisoned", ":C": "clean"}
+
+
 def describe(log_path: Path) -> Description:
     """Compute the description as data so tests can read it without parsing text."""
     log = read_log(log_path)
     samples = list(log.samples or [])
     if not samples:
         raise PilotError(f"{log_path}: log holds no samples")
+    return _describe(samples)
+
+
+def describe_by_arm(log_path: Path) -> dict[str, Description]:
+    """One description per S1 arm, split on the sample id suffix (`:P`, `:C`).
+
+    Counting distinct ids across both arms would double P, since every task appears once
+    per arm. An id without a known suffix is an error, not a third arm.
+    """
+    log = read_log(log_path)
+    samples = list(log.samples or [])
+    if not samples:
+        raise PilotError(f"{log_path}: log holds no samples")
+    by_arm: dict[str, list[EvalSample]] = defaultdict(list)
+    for sample in samples:
+        arm = ARM_SUFFIX.get(str(sample.id)[-2:])
+        if arm is None:
+            raise PilotError(f"{log_path}: sample id {sample.id!r} has no arm suffix")
+        by_arm[arm].append(sample)
+    return {arm: _describe(rows) for arm, rows in sorted(by_arm.items(), reverse=True)}
+
+
+def _describe(samples: list[EvalSample]) -> Description:
     epochs: dict[str, set[int]] = defaultdict(set)
     keys: dict[str, set[str]] = defaultdict(set)
     calls_per_sample: Counter[int] = Counter()
@@ -111,11 +137,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Describe a pilot log")
     parser.add_argument("--data", required=True, type=Path)
     parser.add_argument("--log", required=True, type=Path)
+    parser.add_argument("--by-arm", action="store_true", help="S1 logs: one block per arm")
     args = parser.parse_args(argv)
     try:
         require_dir(args.data)
         log_path = Path(args.log).resolve()
-        print_description(log_path, describe(log_path))
+        if args.by_arm:
+            for arm, info in describe_by_arm(log_path).items():
+                print(f"arm {arm}")
+                print_description(log_path, info)
+                print()
+        else:
+            print_description(log_path, describe(log_path))
     except (PilotError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

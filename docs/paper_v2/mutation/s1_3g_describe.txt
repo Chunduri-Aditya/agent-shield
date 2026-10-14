@@ -1,0 +1,10 @@
+mutation rows, step s1-3g, HEAD 733339dcc9dbae434ce69f8e7559b83f68bc229b, python .venv/bin/python
+
+control: rc=0 GREEN (4 passed in 1.78s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3g-01-arms-merged | both arms are counted as one | yes | yes | 1 | RED | 2: tests/pilot/test_describe_s1.py::test_by_arm_counts_prompts_within_each_arm, tests/pilot/test_describe_s1.py::test_cli_by_arm_prints_one_block_per_arm |
+| s1-3g-02-suffix-unchecked | an id without an arm suffix is accepted | yes | yes | 1 | RED | 1: tests/pilot/test_describe_s1.py::test_an_id_without_an_arm_suffix_is_refused |
+
+result: ALL RED, control GREEN

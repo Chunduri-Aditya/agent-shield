@@ -478,6 +478,18 @@ ROWS["s1-3c"] = (
         '        Check("log_model_api", True,\n', (T3C,)),
 )
 
+# v2 S1 plan step 3g: describe.py per arm.
+T3G = "tests/pilot/test_describe_s1.py"
+DSC = "scripts/pilot/describe.py"
+
+ROWS["s1-3g"] = (
+    Row("s1-3g-01-arms-merged", "both arms are counted as one", DSC,
+        "        by_arm[arm].append(sample)\n", '        by_arm["poisoned"].append(sample)\n',
+        (T3G,)),
+    Row("s1-3g-02-suffix-unchecked", "an id without an arm suffix is accepted", DSC,
+        "        if arm is None:\n", "        if False:\n", (T3G,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(
