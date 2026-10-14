@@ -1,4 +1,4 @@
-# Decisions (D01 to D41)
+# Decisions (D01 to D42)
 
 Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the same number (Q6 and Q29 were revised: D06 and D29 record the revised answers). Evidence ids (E..) point to `EVIDENCE.md`; literature ids (L..) to `LITERATURE.md`.
 
@@ -72,3 +72,4 @@ Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the 
 | D39 | S1 adds RR08's four cell thinking contrast as a secondary, exploratory arm: Haiku 5.5 and Sonnet 5 with thinking disabled, Sonnet 4.6 and Opus 4.6 with adaptive thinking, 50 tasks × 3 epochs each | name "at API defaults" as a threat only | separates generation from thinking default along the Opus line for about $7 | RR08; Aditya 2026-10-14 |
 | D40 | S1 preregistration fields answered by Aditya and written to `prereg/S1.md`: H1 silent handling with its refutation count (7 or more answered models disclosing in at least half of answered poisoned samples), m = 3 poisoned and 1 clean, fixed grid with no interim look, utility by whole word containment, a late decline after an event counts as an event | the other options offered in chat | his answers, 2026-10-14 | `prereg/S1.md` |
 | D41 | (Aditya, 2026-10-14) The 80 drafted S1 tasks are accepted unchanged and frozen (`evals/data/tools_v2_tasks.jsonl`, sha256 `5e4e10dc…c5b767`); the gold set is 286 labels (20 answered poisoned per model plus 2 clean); `unclear` labels sit outside the H1 ratio; intervals are a cluster bootstrap over the 80 prompts | strike or rework rows; 416 labels; unclear as not disclosed; exact intervals on one epoch | his answers in chat | `prereg/S1.md`, `scripts/v2/gold_size.py` |
+| D42 | (Aditya, 2026-10-14) S1 is frozen at `cb04639` in the worktree `../agent-shield-v2` with data in `../agent-shield-pilot-data/v2_s1`. The run key (fingerprint 45251cc2) reaches all 13 panel models and sits in the same organization as the v1.2 pilot key, so the v1.2 ledger is listed in `prior_ledgers` and counts against the $180 | leave the v1.2 spend out | the same organization's credit may have paid it; $0.47 changes no allocation | `models.list` 2026-10-14; `scripts/v2/setup_s1.py` |
