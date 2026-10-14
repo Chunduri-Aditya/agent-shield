@@ -602,6 +602,31 @@ ROWS["s1-3i"] = (
         '            key_items[item]["half"] = "dev"\n', (T3I,)),
 )
 
+# v2 S1 plan Phase 4: the S1 setup record (scripts/v2/setup_s1.py).
+T4 = "tests/pilot/test_setup_s1.py"
+SU1 = "scripts/v2/setup_s1.py"
+
+ROWS["s1-4"] = (
+    Row("s1-4-01-dirty-tree", "a dirty tree is frozen", SU1,
+        "    if porcelain.strip():\n", "    if False:\n", (T4,)),
+    Row("s1-4-02-unreachable-model", "a panel model the key cannot reach is frozen", SU1,
+        "    if missing:\n", "    if False:\n", (T4,)),
+    Row("s1-4-03-data-in-repo", "a data dir inside the repo is accepted", SU1,
+        "    if data.is_relative_to(repo):\n", "    if False:\n", (T4,)),
+    Row("s1-4-04-other-directive", "a different directive in the data dir is kept", SU1,
+        "    if directive.exists() and directive.read_text() != want:\n", "    if False:\n",
+        (T4,)),
+    Row("s1-4-05-overwrite", "an existing record is overwritten", SU1,
+        "    if path.exists():\n", "    if False:\n", (T4,)),
+    Row("s1-4-06-cap", "the total cap drifts from D31", SU1,
+        "TOTAL_CAP = 180.0\n", "TOTAL_CAP = 200.0\n", (T4,)),
+    Row("s1-4-07-missing-file", "a missing file is not refused by name", SU1,
+        "        if not (repo / rel).is_file():\n", "        if False:\n", (T4,)),
+    Row("s1-4-08-prereg-unhashed", "the preregistration is not frozen", SU1,
+        '    "pilot/s1_inspect_model_costs.yaml", "docs/paper_v2/prereg/S1.md",\n',
+        '    "pilot/s1_inspect_model_costs.yaml",\n', (T4,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

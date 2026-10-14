@@ -1,0 +1,16 @@
+mutation rows, step s1-4, HEAD 443e2b6af94950a9befbc1a30168cc57a42a87cf, python .venv/bin/python
+
+control: rc=0 GREEN (8 passed in 2.07s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-4-01-dirty-tree | a dirty tree is frozen | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_a_dirty_tree_refuses |
+| s1-4-02-unreachable-model | a panel model the key cannot reach is frozen | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_a_panel_model_missing_from_the_list_refuses |
+| s1-4-03-data-in-repo | a data dir inside the repo is accepted | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_a_data_dir_inside_the_repo_refuses |
+| s1-4-04-other-directive | a different directive in the data dir is kept | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_a_different_existing_directive_refuses |
+| s1-4-05-overwrite | an existing record is overwritten | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_write_once |
+| s1-4-06-cap | the total cap drifts from D31 | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_record_holds_what_the_gates_read |
+| s1-4-07-missing-file | a missing file is not refused by name | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_a_missing_file_refuses |
+| s1-4-08-prereg-unhashed | the preregistration is not frozen | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_default_files_exist_and_cover_the_run |
+
+result: ALL RED, control GREEN
