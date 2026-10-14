@@ -7,7 +7,7 @@ This folder lets a reviewer with no chat history understand and check the plan t
 ## Files
 | File | Purpose |
 |---|---|
-| `DECISIONS.md` | The 30 design decisions (D01 to D30): what was chosen, what was rejected, why, and what evidence it rests on |
+| `DECISIONS.md` | The design decisions (D01 to D37; section F, D31 to D37, added 2026-10-14): what was chosen, what was rejected, why, and what evidence it rests on |
 | `EVIDENCE.md` | Every fact the decisions rest on, one row each, with its source |
 | `LITERATURE.md` | What v2 takes from each external source read on 2026-10-13, with novelty overlap and what not to overstate |
 | `V1_2_PLAN.md` | The ordered correction chain for v1.2, each step with its gate and evidence of done |

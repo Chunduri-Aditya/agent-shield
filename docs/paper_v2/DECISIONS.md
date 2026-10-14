@@ -1,4 +1,4 @@
-# Decisions (D01 to D30)
+# Decisions (D01 to D37)
 
 Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the same number (Q6 and Q29 were revised: D06 and D29 record the revised answers). Evidence ids (E..) point to `EVIDENCE.md`; literature ids (L..) to `LITERATURE.md`.
 
@@ -8,7 +8,7 @@ Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the 
 |---|---|---|---|---|
 | D01 | Purpose: verify the claims already made, using Claude models through the API; reuse the harness for further agentic tests; later study boundary setting decided by the model and internal monitoring (`J-space`) | a portfolio piece only; new studies first | the published paper carries 13 withdrawn claims, so verification comes first | E01, E02. Note (J7, 2026-10-13): D20 and D27 extend the panel to open weight models for v2; the API clause here describes the v1.2 verification runs |
 | D02 | v1.2 is **corrections only**; every new study goes into v2 | new studies inside v1.2; skipping v1.2 | corrections should not wait on new studies; the withdrawn claims stay live under the author's name until v1.2 exists | E02 |
-| D18 | v2 headline: Transparency Rate (TR) on Claude agents plus open weight models, measured with the validated rubric (D10). The word "frontier" is dropped because the panel is Claude only plus open weights. Final framing decided later | boundary contracts as headline; a methods paper | TR is the paper's novel axis; the "disclosed after acting" class appeared in the Sonnet 5.5 smoke transcripts | E14, L05 |
+| D18 | v2 headline: Transparency Rate (TR) on Claude agents plus open weight models, measured with the validated rubric (D10). The word "frontier" is dropped because the panel is Claude only plus open weights. Final framing decided later **Conflict noted 2026-10-14:** D31 puts the credit on Claude only and S4 and S6 have no funded plan, so the open weight half of this headline has no producer yet. Decision pending Aditya: keep it (run the free O07, O08, O13 checks first) or narrow the v2 framing to Claude agents | boundary contracts as headline; a methods paper | TR is the paper's novel axis; the "disclosed after acting" class appeared in the Sonnet 5.5 smoke transcripts | E14, L05 |
 | D22 | v2 venue decided after the results | Zenodo plus arXiv now; workshop now | the venue changes no other decision; arXiv endorsement is UNVERIFIED (OPEN_ITEMS O05) | E28 (O05 resolved: endorsement required) |
 
 ## B. v1.2 corrections
@@ -21,7 +21,7 @@ Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the 
 | D13 | Build: `make paper` with **tectonic** (the only TeX engine installed), pinned in the repo; record the PDF's md5 beside the Zenodo upload. Check first that tectonic compiles `paper_v1.1.tex` faithfully | Overleaf; both | reproducible from the repo, no account dependency | E11 |
 | D14 | v1.2 has corrected text inline plus a "Corrections from v1.1" section listing W1 to W13 (old claim, new claim, evidence) | v1.1 text plus appended erratum; silent rewrite | the concept DOI resolves to v1.2, so it must read correctly on its own and show its history | E02 |
 | D15 | v1.2 reports only what is validated: inputs and psych rescored under marker scorer v2, TL-01 events (D09), TR on the hand labelled set (D10). Memory, exfil and drift stay **withdrawn pending scorer validation** | port memory, exfil and drift onto the marker first | ships sooner; never needs a number it cannot defend | E07, E12 |
-| D21 | v1.2 first, then v2. Order: `tools_event_v1` → rescore inputs and psych → Sonnet 4.5 anchored rerun (early, before retirement) + Llama 3.1 8B rerun → blind label export → corrections section → tectonic build → upload. Only the v2 preregistration documents may proceed in parallel | v1.2 and v2 in parallel | the correction unblocks citing the work honestly | `V1_2_PLAN.md` |
+| D21 | v1.2 first, then v2. Order: `tools_event_v1` → rescore inputs and psych → Sonnet 4.5 anchored rerun (early, before retirement) + Llama 3.1 8B rerun → blind label export → corrections section → tectonic build → upload. Only the v2 preregistration documents may proceed in parallel **Conflict noted 2026-10-14:** D34 and the S1 plan build and run S1 before v1.2 steps 3 and 5 to 10 close, which this row forbids (only preregistration documents may run in parallel). Amendment pending Aditya: recommended, v1.2 still publishes first and no S1 number appears anywhere before the v1.2 upload, while the S1 build and paid runs proceed because Opus 4.5 and Sonnet 4.5 retire (E27, RR08) | v1.2 and v2 in parallel | the correction unblocks citing the work honestly | `V1_2_PLAN.md` |
 
 ## C. Measurement rules (both versions)
 

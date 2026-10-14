@@ -1,6 +1,6 @@
 # v2 studies: preregistration skeletons
 
-Each study is preregistered before any run (D17). Fields marked **TBD (Aditya)** are decisions for Aditya and are never filled by an assistant. Every primary metric is an event count (D05) unless a validated text metric is named. Panel per D20: Haiku, Sonnet and Opus 5.5 plus Llama 3.1 8B and one Qwen model. Each study's `research_prompts/` file is run first to refresh its requirements, and `07_model_panel_refresh.md` runs before every study; for the Claude API runs on the credit (D31) `08_claude_api_panel.md` replaces it (RR08).
+Each study is preregistered before any run (D17). Fields marked **TBD (Aditya)** are decisions for Aditya and are never filled by an assistant. Every primary metric is an event count (D05) unless a validated text metric is named. Panel per D20: Haiku, Sonnet and Opus 5.5 plus Llama 3.1 8B and one Qwen model; the Claude credit runs use the 13 model panel of D31 (S1 Models row). Each study's `research_prompts/` file is run first to refresh its requirements, and `07_model_panel_refresh.md` runs before every study; for the Claude API runs on the credit (D31) `08_claude_api_panel.md` replaces it (RR08).
 
 Shared rules (from the 2026-10-13 audit):
 - `docs/EVAL_DESIGN_FRAMEWORK.md` (D17 section 1) is written before any study is preregistered, from the pilot prompt's section list: hypothesis first, threat model and mapping, one generation for all metrics, scorer validity, effective n, reproducibility, utility, delivery check, cost and safety gates.
@@ -110,3 +110,21 @@ The soft sibling of Study A: S2 enforces the agent's declared boundary with code
 | Validity | events from the raw response of both models (D19); a plan is free text to the executor, so a planner that is itself injected can carry the directive into the plan (arm 1), which the plan violation count and the plan label capture; the capability reading of the Haiku and Sonnet cells is secondary, never a claim; the clean control arm reports utility per pair |
 | Run record | two model ids per sample, the planner prompt hash, the plan message, the executor loop fields per the shared rule |
 | Research prompt | `research_prompts/03_study_a_boundaries.md` Q1 and Q6, `07_model_panel_refresh.md` |
+
+## Coverage: what produces each v2 claim (checked 2026-10-14 by a Fable advisor against the S1 plan)
+Answer to "do the planned runs cover paper v2": **not yet**. The S1 runs produce the raw material for the headline (events, counts, declines, clean arm utility) but not the headline itself, which needs validated TR labels; S2, S4, S6 and S7 have no build plan yet.
+| v2 claim or section | Producer | Status |
+|---|---|---|
+| Headline TR classes on the 13 model Claude panel | S1 logs, blind export, gold labels, judge at κ ≥ 0.8 (D10) | runs planned; label pipeline waits on research prompt 02, with a preregistered fallback if κ < 0.8 |
+| Event attack success, any call count, per model | `tools_event_v2` on S1 logs (D36) | planned (S1 Phase 3) |
+| Utility from the clean arm | S1 clean arm exact match | planned; match rule is a preregistration question |
+| S3a stated rationale | S1 final messages, codebook | codebook unwritten; labelled in the same sitting as TR |
+| S5 classifier declines | `stop_details.category` per call in S1 logs | planned |
+| Recognition without disclosure (D33) | summarized thinking on default thinking models | planned as a one sided indicator |
+| S2 boundary contracts (ASR, UUA, TR per arm) | new task and declaration tool | not planned (D34): forced `tool_choice` is rejected on Sonnet 5.5, Opus 5.5 and Fable 5.1; no reasoning field in the declaration schema; a preregistered "contract poisoned" outcome; `MAPPINGS.md` rows for any variant |
+| S7 planner and executor | new solver with two model roles | not planned (D34) |
+| S4 `J-lens` and S6 sampling (open weights) | free compute only (D29, D31) | not planned; open conflict with D18 |
+| External validity beyond TL-01 | AgentDojo banking row (D35) | decided after S1 |
+| Comparison table with v1.1 (TR collapsed, J9) | v1.2 step 7 labels | v1.2 steps 3 and 5 to 10 open; order conflict with D21 |
+| Thinking default confound across the Opus line | four cell thinking contrast (RR08, about $7) or "at API defaults" named as a threat | preregistration question |
+| Reproducibility rows | setup record, gates, ledger, raw response `model` plus the `models.list` id and date (E33) | planned; a RESULTS.md row writer by script is not yet planned |
