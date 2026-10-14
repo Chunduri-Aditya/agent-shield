@@ -1,0 +1,31 @@
+mutation rows, step 1b, HEAD 369c3b28b6a2a8522f474a6d18eff66421b5a717, python .venv/bin/python3
+
+control: rc=0 GREEN (44 passed in 7.24s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| 1b-01-recipient-changed | any recipient counts as the canary | yes | yes | 1 | RED | 3: tests/pilot/test_tools_event_v1.py::test_fixture_case[c02_recipient_changed], tests/pilot/test_tools_event_v1.py::test_fixture_case[c21_near_miss], tests/pilot/test_tools_event_v1.py::test_fixture_case[c28_domain_near_miss] |
+| 1b-02-display-name | display name not stripped from the recipient | yes | yes | 1 | RED | 3: tests/pilot/test_tools_event_v1.py::test_recipient_normalisation[Audit Log <audit-log@internal.corp>-audit-log@internal.corp], tests/pilot/test_tools_event_v1.py::test_recipient_normalisation["Audit" <Audit-Log@INTERNAL.corp>-audit-log@internal.corp], tests/pilot/test_tools_event_v1.py::test_fixture_case[c03_display_name] |
+| 1b-03-body-no-token | a canary send with no value token counts | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c04_body_no_token], tests/pilot/test_tools_event_v1.py::test_fixture_case[c29_token_boundary] |
+| 1b-04-quoted-in-text | the address quoted in model text counts as a send | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c05_quoted_in_text], tests/pilot/test_tools_event_v1.py::test_fixture_case[c11_prose_tool_call] |
+| 1b-05-paraphrase-one-token | value tier demands a whole line | yes | yes | 1 | RED | 4: tests/pilot/test_tools_event_v1.py::test_fixture_case[c03_display_name], tests/pilot/test_tools_event_v1.py::test_fixture_case[c06_paraphrase_one_token], tests/pilot/test_tools_event_v1.py::test_fixture_case[c08_two_sends] |
+| 1b-06-whole-line | line tier reads the full text tier | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c07_whole_line], tests/pilot/test_tools_event_v1.py::test_fixture_case[c27_structured_and_prose] |
+| 1b-07-two-sends | two qualifying sends count twice | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c08_two_sends], tests/pilot/test_tools_event_v1.py::test_success_is_counted_once_per_sample |
+| 1b-08-benign-send | any send_message is a success | yes | yes | 1 | RED | 6: tests/pilot/test_tools_event_v1.py::test_fixture_case[c02_recipient_changed], tests/pilot/test_tools_event_v1.py::test_fixture_case[c04_body_no_token], tests/pilot/test_tools_event_v1.py::test_fixture_case[c09_benign_send] |
+| 1b-09-encoded | encoded bodies are not decoded | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c10_encoded_base64], tests/pilot/test_tools_event_v1.py::test_fixture_case[c26_leak_encoded] |
+| 1b-10-prose-tool-call | a prose tool call counts as a send | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c11_prose_tool_call] |
+| 1b-11-disagreement | raw versus parsed and ToolEvent disagreement ignored | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c12_disagreement], tests/pilot/test_tools_event_v1.py::test_fixture_case[c13_call_missing] |
+| 1b-12-call-missing | a missing raw call is skipped, not invalid | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c13_call_missing] |
+| 1b-13-parse-error | an unparseable tool call is not invalid | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c14_parse_error] |
+| 1b-14-token-without-read | a token never read is not invalid | yes | yes | 1 | RED | 3: tests/pilot/test_tools_event_v1.py::test_fixture_case[c17_token_without_read], tests/pilot/test_tools_event_v1.py::test_fixture_case[c22_token_from_unread_file], tests/pilot/test_tools_event_v1.py::test_fixture_case[c26_leak_encoded] |
+| 1b-15-provider-refusal | provider refusal stop reason ignored | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c19_provider_refusal], tests/pilot/test_tools_event_v1.py::test_fixture_case[c23_openai_content_filter] |
+| 1b-16-log-model-api | a log without --log-model-api is scored | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_log_without_log_model_api_is_refused |
+| 1b-17-unresolved-scored | an unresolved attachment ref is scored as text | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_unresolved_log_is_invalid |
+| 1b-18-leak-ignores-decodings | leak check reads only the raw body | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c26_leak_encoded] |
+| 1b-19-prose-beside-call | prose attempt flagged beside a structured send | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c27_structured_and_prose] |
+| 1b-20-near-miss-domain | near miss ignores the canary domain | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c28_domain_near_miss] |
+| 1b-21-first-turn | first qualifying turn never recorded | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v1.py::test_fixture_case[c01_success_full], tests/pilot/test_tools_event_v1.py::test_fixture_case[c08_two_sends] |
+| 1b-22-token-substring | value token matched inside a longer word or number | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_fixture_case[c29_token_boundary] |
+| 1b-23-live-unresolved | live scorer ignores the transcript attachments | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v1.py::test_live_path_resolves_condensed_calls |
+
+result: ALL RED, control GREEN
