@@ -1,6 +1,6 @@
-mutation rows, step s1-3b, HEAD 0b2558e5be53178e60464904b22ee59ed9a19f34, python .venv/bin/python
+mutation rows, step s1-3b, HEAD 4b76d6dfd5a58ebd7b6c8266ee127a8af59cd7d2, python .venv/bin/python
 
-control: rc=0 GREEN (39 passed in 11.34s)
+control: rc=0 GREEN (39 passed in 9.99s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|

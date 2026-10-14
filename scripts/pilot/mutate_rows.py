@@ -377,6 +377,41 @@ ROWS["s1-3b"] = (
 )
 
 
+# v2 S1 plan steps 3d and 3e: the panel policy, the request diff and the S1 prices.
+T3D = "tests/pilot/test_s1_panel.py"
+PAN = "scripts/v2/s1_panel.py"
+RDF = "scripts/v2/request_diff.py"
+
+ROWS["s1-3d"] = (
+    Row("s1-3d-01-binding-dropped", "the policy drops block_binding on bound models", PAN,
+        '        thinking["block_binding"] = dict(_BINDING)\n', "        pass\n", (T3D,)),
+    Row("s1-3d-02-no-display", "the policy omits the summarized display", PAN,
+        'thinking: dict[str, Any] = {"type": "adaptive", "display": "summarized"}',
+        'thinking: dict[str, Any] = {"type": "adaptive"}', (T3D,)),
+    Row("s1-3d-03-opus48-thinks", "Opus 4.8 is treated as thinking by default", PAN,
+        '    "claude-sonnet-5", "claude-haiku-5-5",\n})',
+        '    "claude-sonnet-5", "claude-haiku-5-5", "claude-opus-4-8",\n})', (T3D,)),
+    Row("s1-3d-04-effort-added", "the policy also sets an effort", PAN,
+        '    return {"extra_body": {"thinking": thinking}}\n',
+        '    return {"extra_body": {"thinking": thinking, "output_config": {"effort": "high"}}}\n',
+        (T3D,)),
+    Row("s1-3d-05-contrast-not-flipped", "the Haiku 5.5 off cell keeps thinking on", PAN,
+        '        "claude-haiku-5-5", {"extra_body": {"thinking": {"type": "disabled"}}}),\n',
+        '        "claude-haiku-5-5", {"extra_body": {"thinking": {"type": "adaptive"}}}),\n',
+        (T3D,)),
+    Row("s1-3d-06-diff-ignores-other-keys", "the request diff ignores other body keys", RDF,
+        "    if rest_d != rest_p:\n", "    if False:\n", (T3D,)),
+    Row("s1-3d-07-diff-ignores-thinking", "the request diff ignores the thinking object", RDF,
+        "    if p_think != want:\n", "    if False:\n", (T3D,)),
+    Row("s1-3e-01-price-typo", "Fable 5.1 cache read priced at 0.025", "pilot/s1_prices.yaml",
+        "cache_write_1h: 20.00, cache_read: 0.25}", "cache_write_1h: 20.00, cache_read: 0.025}",
+        (T3D,)),
+    Row("s1-3e-02-inspect-row-missing", "a panel model has no Inspect cost row",
+        "pilot/s1_inspect_model_costs.yaml",
+        "anthropic/claude-haiku-5-5: {input: 0.10, output: 0.50, input_cache_write: 0.125,"
+        " input_cache_read: 0.01}\n", "", (T3D,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(
@@ -472,8 +507,10 @@ def main(argv: list[str] | None = None) -> int:
             after = target.read_text(encoding="utf-8")
             landed = after != text and after == text.replace(row.old, row.new)
         cache = scratch / f"cache-{row.id}"
-        where = imported_from(copy, module_of(row.path), cache) if landed else ""
-        from_copy = where.startswith(str(copy))
+        is_py = row.path.endswith(".py")
+        where = imported_from(copy, module_of(row.path), cache) if landed and is_py else ""
+        # A data file (YAML, JSON) is read by path from the copy, not imported.
+        from_copy = where.startswith(str(copy)) if is_py else landed
         rc, out = run_tests(copy, row.tests, cache) if landed and from_copy else (-1, "")
         red = landed and from_copy and rc != 0
         ok &= red

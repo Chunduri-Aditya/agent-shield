@@ -1,0 +1,17 @@
+mutation rows, step s1-3d, HEAD 4b76d6dfd5a58ebd7b6c8266ee127a8af59cd7d2, python .venv/bin/python
+
+control: rc=0 GREEN (9 passed, 3 warnings in 4.95s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3d-01-binding-dropped | the policy drops block_binding on bound models | yes | yes | 1 | RED | 3: tests/pilot/test_s1_panel.py::test_model_args_add_only_the_summarized_display, tests/pilot/test_s1_panel.py::test_pinned_model_arg_files_match_the_policy, tests/pilot/test_s1_panel.py::test_request_diff_changes_only_the_thinking_display_offline |
+| s1-3d-02-no-display | the policy omits the summarized display | yes | yes | 1 | RED | 3: tests/pilot/test_s1_panel.py::test_model_args_add_only_the_summarized_display, tests/pilot/test_s1_panel.py::test_pinned_model_arg_files_match_the_policy, tests/pilot/test_s1_panel.py::test_request_diff_changes_only_the_thinking_display_offline |
+| s1-3d-03-opus48-thinks | Opus 4.8 is treated as thinking by default | yes | yes | 1 | RED | 3: tests/pilot/test_s1_panel.py::test_thinking_on_set_matches_the_docs_table, tests/pilot/test_s1_panel.py::test_model_args_add_only_the_summarized_display, tests/pilot/test_s1_panel.py::test_request_diff_changes_only_the_thinking_display_offline |
+| s1-3d-04-effort-added | the policy also sets an effort | yes | yes | 1 | RED | 3: tests/pilot/test_s1_panel.py::test_model_args_add_only_the_summarized_display, tests/pilot/test_s1_panel.py::test_pinned_model_arg_files_match_the_policy, tests/pilot/test_s1_panel.py::test_request_diff_changes_only_the_thinking_display_offline |
+| s1-3d-05-contrast-not-flipped | the Haiku 5.5 off cell keeps thinking on | yes | yes | 1 | RED | 1: tests/pilot/test_s1_panel.py::test_contrast_cells_flip_thinking_against_the_default |
+| s1-3d-06-diff-ignores-other-keys | the request diff ignores other body keys | yes | yes | 1 | RED | 1: tests/pilot/test_s1_panel.py::test_request_diff_flags_any_other_body_change |
+| s1-3d-07-diff-ignores-thinking | the request diff ignores the thinking object | yes | yes | 1 | RED | 1: tests/pilot/test_s1_panel.py::test_request_diff_flags_thinking_turned_on_for_a_default_off_model |
+| s1-3e-01-price-typo | Fable 5.1 cache read priced at 0.025 | yes | yes | 1 | RED | 1: tests/pilot/test_s1_panel.py::test_prices_match_e34_in_both_files |
+| s1-3e-02-inspect-row-missing | a panel model has no Inspect cost row | yes | yes | 1 | RED | 1: tests/pilot/test_s1_panel.py::test_prices_match_e34_in_both_files |
+
+result: ALL RED, control GREEN

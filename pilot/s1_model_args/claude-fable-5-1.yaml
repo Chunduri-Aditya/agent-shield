@@ -1,0 +1,8 @@
+# S1 model args for claude-fable-5-1 (scripts/v2/s1_panel.py model_args, D33): summarized
+# thinking display only; checked by tests/pilot/test_s1_panel.py and request_diff.py.
+extra_body:
+  thinking:
+    type: adaptive
+    display: summarized
+    block_binding:
+      prefix_mismatch_behavior: drop_block
