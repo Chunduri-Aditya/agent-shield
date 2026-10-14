@@ -490,6 +490,31 @@ ROWS["s1-3g"] = (
         "        if arm is None:\n", "        if False:\n", (T3G,)),
 )
 
+# v2 S1 plan step 3f: per model caps (scripts/v2/allocate_s1.py).
+T3F = "tests/pilot/test_allocate_s1.py"
+ALC = "scripts/v2/allocate_s1.py"
+
+ROWS["s1-3f"] = (
+    Row("s1-3f-01-mean-not-max", "the cap uses the mean smoke cost", ALC,
+        "            top = max(costs)\n", "            top = sum(costs) / len(costs)\n", (T3F,)),
+    Row("s1-3f-02-ledgers-ignored", "earlier spend does not shrink the budget", ALC,
+        "    spent = _spent(data_dir, setup)\n", "    spent = 0.0\n", (T3F,)),
+    Row("s1-3f-03-judge-not-reserved", "the judge budget is not reserved", ALC,
+        "    if total_caps + judge_budget > budget:\n", "    if total_caps > budget:\n", (T3F,)),
+    Row("s1-3f-04-overwrite", "an existing allocation is overwritten", ALC,
+        "    if out_path.exists():\n", "    if False:\n", (T3F,)),
+    Row("s1-3f-05-no-floor", "an all declined smoke gets a zero cap", ALC,
+        "            if top <= 0.0:\n", "            if False:\n", (T3F,)),
+    Row("s1-3f-06-fallback-accepted", "smoke usage under another model is accepted", ALC,
+        "                    if strip_provider(short) != model:\n",
+        "                    if False:\n",
+        (T3F,)),
+    Row("s1-3f-07-missing-smoke", "a planned model without a smoke log is skipped", ALC,
+        "            if not logs:\n                raise PilotError(",
+        "            if not logs:\n                continue\n                raise PilotError(",
+        (T3F,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

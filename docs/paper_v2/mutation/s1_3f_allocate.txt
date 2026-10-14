@@ -1,0 +1,15 @@
+mutation rows, step s1-3f, HEAD 7c7e6bf86559ace1e7297d323be5cdfad5c4128f, python .venv/bin/python
+
+control: rc=0 GREEN (9 passed in 1.59s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3f-01-mean-not-max | the cap uses the mean smoke cost | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_cap_is_max_smoke_cost_times_samples_times_safety |
+| s1-3f-02-ledgers-ignored | earlier spend does not shrink the budget | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_prior_and_own_ledgers_shrink_the_budget |
+| s1-3f-03-judge-not-reserved | the judge budget is not reserved | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_judge_budget_is_reserved |
+| s1-3f-04-overwrite | an existing allocation is overwritten | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_writes_once |
+| s1-3f-05-no-floor | an all declined smoke gets a zero cap | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_all_declined_smoke_uses_the_rr08_floor |
+| s1-3f-06-fallback-accepted | smoke usage under another model is accepted | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_usage_under_another_model_refuses |
+| s1-3f-07-missing-smoke | a planned model without a smoke log is skipped | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_missing_smoke_log_refuses |
+
+result: ALL RED, control GREEN
