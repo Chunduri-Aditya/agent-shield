@@ -280,3 +280,58 @@ def test_a_passed_but_unpriced_log_blocks(env: dict[str, Any]) -> None:
     with pytest.raises(SystemExit, match="BLOCKED"):
         runner(env, fake).smoke()
     assert fake.count("eval") == 0
+
+
+# ---- C5: a dated amendment skips a model that retired before its main run ----
+
+def full_allocation(env: dict[str, Any]) -> None:
+    cells: dict[str, Any] = {"main": s1_panel.PANEL}
+    cells |= {n: [c.model] for n, c in s1_panel.CONTRAST_CELLS.items()}
+    (env["data"] / "allocation.json").write_text(json.dumps(
+        {cell: {m: {"cap": 9.0, "max_cost_per_sample": 0.02} for m in models}
+         for cell, models in cells.items()}))
+
+
+def test_skip_records_a_dated_amendment(env: dict[str, Any]) -> None:
+    runner(env, Fake()).skip("claude-opus-4-5-20251101", "Retired on the Claude API before main.")
+    amend = json.loads((env["data"] / panel_s1.AMENDMENTS).read_text())
+    [row] = amend["skip_models"]
+    assert row["model"] == "claude-opus-4-5-20251101"
+    assert row["reason"] == "Retired on the Claude API before main."
+    assert row["date"]
+
+
+@pytest.mark.parametrize(("model", "reason"), [
+    ("claude-fable-5", "Not in the panel at all, so refused."),
+    ("claude-opus-4-5-20251101", "short"),
+])
+def test_skip_refuses_bad_input(env: dict[str, Any], model: str, reason: str) -> None:
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        runner(env, Fake()).skip(model, reason)
+
+
+def test_skip_refuses_a_model_with_a_main_log(env: dict[str, Any]) -> None:
+    job = next(j for j in panel_s1.plan_jobs("main") if j.model == "claude-opus-4-5-20251101")
+    d = panel_s1.job_dir(env["data"], job)
+    d.mkdir(parents=True)
+    (d / "ran.eval").write_text("log")
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        runner(env, Fake()).skip("claude-opus-4-5-20251101",
+                                 "Retired on the Claude API before main.")
+
+
+def test_main_skips_an_amended_model(env: dict[str, Any]) -> None:
+    full_allocation(env)
+    runner(env, Fake()).skip("claude-opus-4-5-20251101", "Retired on the Claude API before main.")
+    fake = Fake()
+    runner(env, fake).main()
+    assert fake.count("eval") == 12 * 2 + 4
+    models = {c[c.index("--model") + 1] for c in fake.calls if Fake.kind(c) == "eval"}
+    assert "anthropic/claude-opus-4-5-20251101" not in models
+
+
+def test_summary_does_not_wait_for_a_skipped_model(env: dict[str, Any]) -> None:
+    runner(env, Fake()).skip("claude-opus-4-5-20251101", "Retired on the Claude API before main.")
+    required = panel_s1.required_main_jobs(env["data"])
+    assert all(j.model != "claude-opus-4-5-20251101" for j in required)
+    assert len(required) == 12 * 2 + 4

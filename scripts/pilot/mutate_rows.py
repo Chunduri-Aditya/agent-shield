@@ -665,6 +665,26 @@ ROWS["s1-review"] = (
         ' (as in the scorer)."""\n    return bool(response.get("content"))\n', (T3C,)),
 )
 
+# Review C5: a dated amendment skips a model that retired before its main run.
+ROWS["s1-c5"] = (
+    Row("s1-c5-01-skip-ignored-by-main", "main still runs an amended model", RUN,
+        '        for job in required_main_jobs(self.data):\n            row = allocation',
+        '        for job in plan_jobs("main"):\n            row = allocation', (T3H,)),
+    Row("s1-c5-02-summary-waits", "summary still waits for an amended model", RUN,
+        "    return [j for j in plan_jobs(\"main\") if j.model not in skipped]\n",
+        "    return plan_jobs(\"main\")\n", (T3H,)),
+    Row("s1-c5-03-any-model", "a model outside the panel can be skipped", RUN,
+        "        if model not in s1_panel.PANEL:\n"
+        "            self.blocked(f\"{model} is not in the S1 panel\"",
+        "        if False:\n"
+        "            self.blocked(f\"{model} is not in the S1 panel\"", (T3H,)),
+    Row("s1-c5-04-no-reason", "an amendment needs no reason", RUN,
+        "        if len(reason.split()) < 4:\n", "        if False:\n", (T3H,)),
+    Row("s1-c5-05-skip-with-data", "a model with main data can be skipped", RUN,
+        '            if job.model == model and d.exists() and any(d.glob("*.eval")):\n',
+        "            if False:\n", (T3H,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

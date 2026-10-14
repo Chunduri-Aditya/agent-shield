@@ -1,0 +1,13 @@
+mutation rows, step s1-c5, HEAD 79cd8ff515ba40e16f94bc24526164bfeab94ff3, python .venv/bin/python
+
+control: rc=0 GREEN (26 passed in 1.74s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-c5-01-skip-ignored-by-main | main still runs an amended model | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_main_skips_an_amended_model |
+| s1-c5-02-summary-waits | summary still waits for an amended model | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_main_skips_an_amended_model, tests/pilot/test_panel_s1.py::test_summary_does_not_wait_for_a_skipped_model |
+| s1-c5-03-any-model | a model outside the panel can be skipped | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_skip_refuses_bad_input[claude-fable-5-Not in the panel at all, so refused.] |
+| s1-c5-04-no-reason | an amendment needs no reason | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_skip_refuses_bad_input[claude-opus-4-5-20251101-short] |
+| s1-c5-05-skip-with-data | a model with main data can be skipped | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_skip_refuses_a_model_with_a_main_log |
+
+result: ALL RED, control GREEN

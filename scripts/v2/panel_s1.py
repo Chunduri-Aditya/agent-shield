@@ -59,6 +59,7 @@ SMOKE_TIMEOUT_S = 30 * 60
 MAIN_TIMEOUT_S = 4 * 60 * 60
 STEP_TIMEOUT_S = 10 * 60
 COST_LIMIT_FACTOR = 3.0
+AMENDMENTS = "amendments.json"
 
 Execute = Callable[[list[str], Path, Path, dict[str, str], int], "int | None"]
 
@@ -109,6 +110,20 @@ def plan_jobs(phase: str) -> list[Job]:
         else:
             jobs.append(Job(name, cell.model, phase, "poisoned", "contrast50", 3, 50 * 3, None))
     return jobs
+
+
+def skipped_models(data: Path) -> set[str]:
+    """Models a dated amendment took out of the main phase (a retirement before main)."""
+    path = Path(data) / AMENDMENTS
+    if not path.exists():
+        return set()
+    return {row["model"] for row in json.loads(path.read_text()).get("skip_models", [])}
+
+
+def required_main_jobs(data: Path) -> list[Job]:
+    """The main jobs still owed: the preregistered grid minus amended skips."""
+    skipped = skipped_models(data)
+    return [j for j in plan_jobs("main") if j.model not in skipped]
 
 
 def model_config(job: Job) -> Path | None:
@@ -291,7 +306,9 @@ class Runner:
         if not path.exists():
             self.blocked("allocation.json is missing", path, "run allocate_s1.py after the smoke")
         allocation = json.loads(path.read_text())
-        for job in plan_jobs("main"):
+        for model in sorted(skipped_models(self.data)):
+            self.say(f"skip {model}: dated amendment in {AMENDMENTS}")
+        for job in required_main_jobs(self.data):
             row = allocation.get(job.cell, {}).get(job.model)
             if not isinstance(row, dict) or "max_cost_per_sample" not in row:
                 self.blocked(f"no allocation row for {job.cell} {job.model}", path,
@@ -303,7 +320,7 @@ class Runner:
     def summary(self) -> None:
         """Outcome counts per job, only once every main job passed and was priced."""
         rows = []
-        for job in plan_jobs("main"):
+        for job in required_main_jobs(self.data):
             d = job_dir(self.data, job)
             log = newest_log(d) if d.exists() else None
             post = d / "post.txt"
@@ -327,19 +344,50 @@ class Runner:
                  "|" + "---|" * (len(cols) + 3)]
         lines += [f"| {j.cell} | {j.model} | {j.arm} | "
                   + " | ".join(str(c.get(k, 0)) for k in cols) + " |" for j, c in rows]
+        skipped = sorted(skipped_models(self.data))
+        if skipped:
+            lines += ["", f"Skipped by dated amendment ({AMENDMENTS}): " + ", ".join(skipped)]
         self.out.mkdir(parents=True, exist_ok=True)
         (self.out / "S1_COUNTS.md").write_text("\n".join(lines) + "\n")
         self.say(f"wrote {self.out / 'S1_COUNTS.md'}")
 
 
+    def skip(self, model: str, reason: str) -> None:
+        """Record a dated amendment that takes a retired model out of the main phase."""
+        if model not in s1_panel.PANEL:
+            self.blocked(f"{model} is not in the S1 panel", "scripts/v2/s1_panel.py",
+                         "check the id")
+        if len(reason.split()) < 4:
+            self.blocked("an amendment needs a reason of at least one sentence", "--reason",
+                         "say why the model cannot run its main jobs")
+        for job in plan_jobs("main"):
+            d = job_dir(self.data, job)
+            if job.model == model and d.exists() and any(d.glob("*.eval")):
+                self.blocked(f"{model} already has a main log in {d}", d,
+                             "a model with main data is reported, not skipped")
+        path = self.data / AMENDMENTS
+        amend = json.loads(path.read_text()) if path.exists() else {"skip_models": []}
+        amend["skip_models"].append({"model": model, "reason": reason,
+                                     "date": datetime.now(UTC).isoformat(timespec="seconds")})
+        path.write_text(json.dumps(amend, indent=2) + "\n")
+        self.say(f"amendment recorded in {path}: skip {model}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="S1 panel runner")
-    parser.add_argument("phase", choices=("smoke", "main", "summary"))
+    parser.add_argument("phase", choices=("smoke", "main", "summary", "skip"))
     parser.add_argument("--data", required=True, type=Path)
     parser.add_argument("--repo", type=Path, default=REPO)
+    parser.add_argument("--model", help="skip: the panel model to take out of main")
+    parser.add_argument("--reason", help="skip: why, in a sentence (the dated amendment)")
     args = parser.parse_args(argv)
     runner = Runner(args.repo, args.data)
-    getattr(runner, args.phase)()
+    if args.phase == "skip":
+        if not args.model or not args.reason:
+            parser.error("skip needs --model and --reason")
+        runner.skip(args.model, args.reason)
+    else:
+        getattr(runner, args.phase)()
     return 0
 
 
