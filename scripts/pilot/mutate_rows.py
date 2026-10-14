@@ -169,6 +169,61 @@ ROWS["1b"] = (
 )
 
 
+T2B = "tests/pilot/test_pilot_gates_local.py"
+T2B_OLD = "tests/pilot/test_pilot_gates.py"
+GATES = "scripts/pilot/gates.py"
+
+ROWS["2b"] = (
+    Row("2b-01-top-p-allowed", "local mode lets top_p through", GATES,
+        'LOCAL_FORBIDDEN_KEYS = ("top_p", "top_k")', 'LOCAL_FORBIDDEN_KEYS = ("top_k",)',
+        (T2B, T2B_OLD)),
+    Row("2b-02-top-k-allowed", "local mode lets top_k through", GATES,
+        'LOCAL_FORBIDDEN_KEYS = ("top_p", "top_k")', 'LOCAL_FORBIDDEN_KEYS = ("top_p",)',
+        (T2B, T2B_OLD)),
+    Row("2b-03-openai-shape-ignored", "local mode cannot read the OpenAI tool list", GATES,
+        '        if tool.get("type") != "function" or not isinstance(fn, dict):\n',
+        "        if True:\n", (T2B, T2B_OLD)),
+    Row("2b-04-expect-unchecked", "expected temperature and seed always pass", GATES,
+        '        return Check(name, False, f"want {key}={want!r}: {shown}")',
+        '        return Check(name, True, f"want {key}={want!r}: {shown}")', (T2B, T2B_OLD)),
+    Row("2b-05-raw-request-unchecked", "expected values not read from the raw request", GATES,
+        "            if event.call is None or event.call.request.get(key) != want:\n",
+        "            if event.call is None:\n", (T2B, T2B_OLD)),
+    Row("2b-06-any-provider-local", "any provider passes as local", GATES,
+        '    ok = model.startswith("ollama/") and (base is None or host in LOCAL_HOSTS)',
+        "    ok = base is None or host in LOCAL_HOSTS", (T2B, T2B_OLD)),
+    Row("2b-07-remote-base-url-local", "a recorded remote base url passes as local", GATES,
+        '    ok = model.startswith("ollama/") and (base is None or host in LOCAL_HOSTS)',
+        '    ok = model.startswith("ollama/")', (T2B, T2B_OLD)),
+    Row("2b-08-log-model-api-unrequired", "local mode does not require --log-model-api", GATES,
+        "                log.eval.config.log_model_api is True,\n", "                True,\n",
+        (T2B, T2B_OLD)),
+    Row("2b-09-expect-without-local", "--expect-* accepted without --local", GATES,
+        '        parser.error("--expect-temperature and --expect-seed need --local")',
+        "        pass", (T2B, T2B_OLD)),
+    Row("2b-10-claude-gate-loosened", "the Claude gate forbids only top_p and top_k", GATES,
+        "    keys = LOCAL_FORBIDDEN_KEYS if local else SAMPLING_KEYS\n",
+        "    keys = LOCAL_FORBIDDEN_KEYS\n", (T2B, T2B_OLD)),
+    # rows added after the step 2b review
+    Row("2b-11-event-config-unchecked", "expect ignores ModelEvent.config", GATES,
+        "            if getattr(event.config, key) != want:\n", "            if False:\n",
+        (T2B, T2B_OLD)),
+    Row("2b-12-log-config-unchecked", "expect ignores the log generate config", GATES,
+        "    if got != want:\n", "    if False:\n", (T2B, T2B_OLD)),
+    Row("2b-13-local-log-keys-unchecked", "local mode skips eval and plan config keys", GATES,
+        "    for key in set_sampling_keys(log.eval.model_generate_config, keys):\n",
+        "    for key in set_sampling_keys(log.eval.model_generate_config, ()):\n",
+        (T2B, T2B_OLD)),
+    Row("2b-14-finish-reason-ignored", "the OpenAI finish reason is never read", GATES,
+        '                    raw_counts[str(choices[0].get("finish_reason"))] += 1\n',
+        '                    raw_counts["stop"] += 1\n', (T2B, T2B_OLD)),
+    Row("2b-15-hostname-substring", "a base url containing localhost passes", GATES,
+        "    host = urlparse(base).hostname if base else None\n",
+        '    host = "localhost" if base and "localhost" in base else None\n',
+        (T2B, T2B_OLD)),
+)
+
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

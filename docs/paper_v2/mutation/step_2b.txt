@@ -1,0 +1,23 @@
+mutation rows, step 2b, HEAD 6e70cb7011f3d3e95caf42cb43112e78a44fd3fe, python .venv/bin/python3
+
+control: rc=0 GREEN (72 passed in 10.20s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| 2b-01-top-p-allowed | local mode lets top_p through | yes | yes | 1 | RED | 3: tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_and_top_k_in_the_raw_request[top_p], tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_in_the_event_config, tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_in_the_log_config |
+| 2b-02-top-k-allowed | local mode lets top_k through | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_and_top_k_in_the_raw_request[top_k] |
+| 2b-03-openai-shape-ignored | local mode cannot read the OpenAI tool list | yes | yes | 1 | RED | 15: tests/pilot/test_pilot_gates_local.py::test_ollama_real_log_passes_the_local_gate, tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_and_top_k_in_the_raw_request[top_p], tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_and_top_k_in_the_raw_request[top_k] |
+| 2b-04-expect-unchecked | expected temperature and seed always pass | yes | yes | 1 | RED | 5: tests/pilot/test_pilot_gates_local.py::test_local_gate_checks_the_expected_temperature, tests/pilot/test_pilot_gates_local.py::test_local_gate_checks_the_expected_seed, tests/pilot/test_pilot_gates_local.py::test_local_gate_sees_a_raw_request_that_drifts_from_the_expected_seed |
+| 2b-05-raw-request-unchecked | expected values not read from the raw request | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_local_gate_sees_a_raw_request_that_drifts_from_the_expected_seed |
+| 2b-06-any-provider-local | any provider passes as local | yes | yes | 1 | RED | 2: tests/pilot/test_pilot_gates_local.py::test_anthropic_real_log_is_refused_by_the_local_gate, tests/pilot/test_pilot_gates_local.py::test_local_gate_refuses_the_openai_provider |
+| 2b-07-remote-base-url-local | a recorded remote base url passes as local | yes | yes | 1 | RED | 2: tests/pilot/test_pilot_gates_local.py::test_local_gate_refuses_a_recorded_remote_base_url[https://api.example.com/v1], tests/pilot/test_pilot_gates_local.py::test_local_gate_refuses_a_recorded_remote_base_url[https://localhost.example.com/v1] |
+| 2b-08-log-model-api-unrequired | local mode does not require --log-model-api | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_local_gate_needs_log_model_api |
+| 2b-09-expect-without-local | --expect-* accepted without --local | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_expect_flags_need_local_mode |
+| 2b-10-claude-gate-loosened | the Claude gate forbids only top_p and top_k | yes | yes | 1 | RED | 5: tests/pilot/test_pilot_gates_local.py::test_claude_gate_still_forbids_temperature, tests/pilot/test_pilot_gates_local.py::test_ollama_real_log_fails_the_claude_gate, tests/pilot/test_pilot_gates.py::test_post_event_failures[kwargs3-expected3] |
+| 2b-11-event-config-unchecked | expect ignores ModelEvent.config | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_local_gate_sees_an_event_config_that_drifts_from_the_expected_seed |
+| 2b-12-log-config-unchecked | expect ignores the log generate config | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_local_gate_sees_a_log_config_that_drifts_from_the_expected_temperature |
+| 2b-13-local-log-keys-unchecked | local mode skips eval and plan config keys | yes | yes | 1 | RED | 2: tests/pilot/test_pilot_gates_local.py::test_local_gate_forbids_top_p_in_the_log_config, tests/pilot/test_pilot_gates.py::test_post_config_in_log_generate_config[eval] |
+| 2b-14-finish-reason-ignored | the OpenAI finish reason is never read | yes | yes | 1 | RED | 1: tests/pilot/test_pilot_gates_local.py::test_ollama_real_log_passes_the_local_gate |
+| 2b-15-hostname-substring | a base url containing localhost passes | yes | yes | 1 | RED | 2: tests/pilot/test_pilot_gates_local.py::test_local_gate_refuses_a_recorded_remote_base_url[https://localhost.example.com/v1], tests/pilot/test_pilot_gates_local.py::test_local_gate_accepts_a_recorded_loopback_base_url |
+
+result: ALL RED, control GREEN

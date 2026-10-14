@@ -3,6 +3,13 @@
 Usage:
   gates.py pre  --data D --repo R --model M --samples N --est-per-sample C --model-cap X
   gates.py post --data D --repo R --log PATH [--directive D/directive.txt]
+                [--local [--expect-temperature T] [--expect-seed S]]
+
+`post --local` (V1_2_PLAN step 2b, J1) is the gate for a local model row: temperature and
+seed are allowed (top_p and top_k stay forbidden), the raw tool list is read in the OpenAI
+shape, nothing is priced, and every other check stays. `--expect-temperature` and
+`--expect-seed` assert the row of record by value in the log config, every ModelEvent
+config and every raw request.
 
 Exit 0 only when every check passes. Nothing is written anywhere.
 
@@ -37,6 +44,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -60,6 +68,8 @@ SAFETY = 1.25
 SIZE_CAP = 100_000
 TRUNCATION_MAX = 0.10
 SAMPLING_KEYS = ("temperature", "top_p", "top_k", "seed")
+LOCAL_FORBIDDEN_KEYS = ("top_p", "top_k")
+LOCAL_HOSTS = ("localhost", "127.0.0.1")
 TOOL_NAME = "read_file"
 STATUS_RE = re.compile(
     r"(?:Error code:\s*|status_code\s*=\s*|HTTP\s+|status\s+)(\d{3})\b", re.IGNORECASE
@@ -167,7 +177,21 @@ def sample_label(sample: EvalSample) -> str:
     return f"{sample.id}#{sample.epoch}"
 
 
-def check_delivery(sample: EvalSample, directive: str) -> str | None:
+def raw_tool_description(tool: Any, *, local: bool) -> tuple[str, Any] | None:
+    """(name, description) of one raw tool entry; Anthropic shape, or OpenAI when local."""
+    if not isinstance(tool, dict):
+        return None
+    if local:
+        fn = tool.get("function")
+        if tool.get("type") != "function" or not isinstance(fn, dict):
+            return None
+        return str(fn.get("name")), fn.get("description")
+    if "name" not in tool:
+        return None
+    return str(tool.get("name")), tool.get("description")
+
+
+def check_delivery(sample: EvalSample, directive: str, *, local: bool = False) -> str | None:
     """Return None when the directive reached the first model call, else the reason."""
     events = model_events(sample)
     if not events:
@@ -183,34 +207,40 @@ def check_delivery(sample: EvalSample, directive: str) -> str | None:
     raw_tools = first.call.request.get("tools")
     if not isinstance(raw_tools, list):
         return "ModelEvent.call.request['tools'] missing"
-    raw = [t for t in raw_tools if isinstance(t, dict) and t.get("name") == TOOL_NAME]
+    entries = [raw_tool_description(t, local=local) for t in raw_tools]
+    raw = [e for e in entries if e is not None and e[0] == TOOL_NAME]
     if len(raw) != 1:
-        return f"call.request['tools'] has {len(raw)} entries named {TOOL_NAME}"
-    description = raw[0].get("description")
+        shape = "OpenAI" if local else "Anthropic"
+        return f"call.request['tools'] has {len(raw)} {shape} shaped entries named {TOOL_NAME}"
+    description = raw[0][1]
     if not isinstance(description, str) or directive not in description:
         return f"call.request['tools'][{TOOL_NAME}]['description'] lacks the directive"
     return None
 
 
-def set_sampling_keys(config: GenerateConfig) -> list[str]:
-    return [k for k in SAMPLING_KEYS if getattr(config, k) is not None]
+def set_sampling_keys(
+    config: GenerateConfig, keys: tuple[str, ...] = SAMPLING_KEYS
+) -> list[str]:
+    return [k for k in keys if getattr(config, k) is not None]
 
 
-def check_config_sample(sample: EvalSample) -> str | None:
+def check_config_sample(
+    sample: EvalSample, keys: tuple[str, ...] = SAMPLING_KEYS
+) -> str | None:
     problems: list[str] = []
     for i, event in enumerate(model_events(sample)):
-        for key in set_sampling_keys(event.config):
+        for key in set_sampling_keys(event.config, keys):
             problems.append(f"ModelEvent[{i}].config.{key}")
         if event.call is None:
             problems.append(f"ModelEvent[{i}].call is None, raw request unverified")
             continue
         request = event.call.request
-        for key in SAMPLING_KEYS:
+        for key in keys:
             if key in request:
                 problems.append(f"ModelEvent[{i}].call.request[{key!r}]")
         extra = request.get("extra_body")
         if isinstance(extra, dict):
-            for key in SAMPLING_KEYS:
+            for key in keys:
                 if key in extra:
                     problems.append(f"ModelEvent[{i}].call.request['extra_body'][{key!r}]")
     return "; ".join(problems) or None
@@ -313,7 +343,12 @@ def stop_reason_check(samples: list[EvalSample]) -> Check:
                 "(no choices)" if event.output.empty else event.output.stop_reason
             ] += 1
             if event.call is not None and event.call.response is not None:
-                raw_counts[str(event.call.response.get("stop_reason"))] += 1
+                response = event.call.response
+                choices = response.get("choices")
+                if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+                    raw_counts[str(choices[0].get("finish_reason"))] += 1
+                else:
+                    raw_counts[str(response.get("stop_reason"))] += 1
     return Check(
         "stop_reason",
         None,
@@ -323,7 +358,58 @@ def stop_reason_check(samples: list[EvalSample]) -> Check:
     )
 
 
-def post_checks(data_dir: Path, repo: Path, log_path: Path, directive_path: Path) -> list[Check]:
+def expect_check(
+    name: str, key: str, want: float | int, log: EvalLog, samples: list[EvalSample]
+) -> Check:
+    """The value of record in the log config, every ModelEvent config and raw request."""
+    problems: list[str] = []
+    got = getattr(log.eval.model_generate_config, key)
+    if got != want:
+        problems.append(f"eval.model_generate_config.{key}={got!r}")
+    for sample in samples:
+        for i, event in enumerate(model_events(sample)):
+            if getattr(event.config, key) != want:
+                problems.append(
+                    f"{sample_label(sample)} ModelEvent[{i}].config.{key}"
+                    f"={getattr(event.config, key)!r}"
+                )
+            if event.call is None or event.call.request.get(key) != want:
+                raw = None if event.call is None else event.call.request.get(key)
+                problems.append(
+                    f"{sample_label(sample)} ModelEvent[{i}].call.request[{key!r}]={raw!r}"
+                )
+    if problems:
+        shown = "; ".join(problems[:5])
+        return Check(name, False, f"want {key}={want!r}: {shown}")
+    return Check(name, True, f"{key}={want!r} in log config, every ModelEvent and raw request")
+
+
+def local_model_check(log: EvalLog) -> Check:
+    """A local row: the `ollama/` provider, and a recorded base url, if any, on loopback.
+
+    Only `ollama/` counts: Inspect sends `openai/` to the Responses API even at localhost,
+    which drops the seed (V1_2_PLAN build session decisions). The log records only a base
+    url passed on the command line; one routed through `OLLAMA_BASE_URL` is invisible here,
+    so the overnight runner checks that variable itself.
+    """
+    model = log.eval.model
+    base = log.eval.model_base_url
+    host = urlparse(base).hostname if base else None
+    ok = model.startswith("ollama/") and (base is None or host in LOCAL_HOSTS)
+    shown = base or "none recorded (OLLAMA_BASE_URL is not logged)"
+    return Check("local_model", ok, f"model {model}, base url {shown}")
+
+
+def post_checks(
+    data_dir: Path,
+    repo: Path,
+    log_path: Path,
+    directive_path: Path,
+    *,
+    local: bool = False,
+    expect_temperature: float | None = None,
+    expect_seed: int | None = None,
+) -> list[Check]:
     setup = load_setup(data_dir)
     directive = directive_path.read_text().rstrip("\r\n")
     if not directive:
@@ -338,7 +424,7 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, directive_path: Path
         per_sample(
             "delivery",
             samples,
-            lambda s: check_delivery(s, directive),
+            lambda s: check_delivery(s, directive, local=local),
             f"first ModelEvent.tools[{TOOL_NAME}].description and"
             f" ModelEvent.call.request['tools'][{TOOL_NAME}]['description'] contain the"
             f" directive ({len(directive)} chars)",
@@ -355,16 +441,17 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, directive_path: Path
         )
     )
 
+    keys = LOCAL_FORBIDDEN_KEYS if local else SAMPLING_KEYS
     log_level: list[str] = []
-    for key in set_sampling_keys(log.eval.model_generate_config):
+    for key in set_sampling_keys(log.eval.model_generate_config, keys):
         log_level.append(f"eval.model_generate_config.{key}")
-    for key in set_sampling_keys(log.plan.config):
+    for key in set_sampling_keys(log.plan.config, keys):
         log_level.append(f"plan.config.{key}")
     config_check = per_sample(
         "config",
         samples,
-        check_config_sample,
-        "no temperature/top_p/top_k/seed in eval, plan, ModelEvent.config, raw request"
+        lambda s: check_config_sample(s, keys),
+        f"no {'/'.join(keys)} in eval, plan, ModelEvent.config, raw request"
         " or its extra_body",
     )
     if log_level:
@@ -372,6 +459,22 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, directive_path: Path
             "config", False, "set: " + "; ".join(log_level) + " | " + config_check.evidence
         )
     checks.append(config_check)
+    if local:
+        checks.append(local_model_check(log))
+        checks.append(
+            Check(
+                "log_model_api",
+                log.eval.config.log_model_api is True,
+                f"eval.config.log_model_api={log.eval.config.log_model_api!r}",
+            )
+        )
+        if expect_temperature is not None:
+            checks.append(
+                expect_check("expect_temperature", "temperature", expect_temperature, log, samples)
+            )
+        if expect_seed is not None:
+            checks.append(expect_check("expect_seed", "seed", expect_seed, log, samples))
+        checks.append(Check("cost", None, "local model: not priced, cost 0, no ledger row"))
 
     checks.append(
         per_sample("usage", samples, check_usage, "model_usage with total_tokens > 0")
@@ -453,7 +556,14 @@ def main(argv: list[str] | None = None) -> int:
     post.add_argument("--repo", required=True, type=Path)
     post.add_argument("--log", required=True, type=Path)
     post.add_argument("--directive", type=Path)
+    post.add_argument("--local", action="store_true", help="gate for a local model row (J1)")
+    post.add_argument("--expect-temperature", type=float)
+    post.add_argument("--expect-seed", type=int)
     args = parser.parse_args(argv)
+    if args.cmd == "post" and not args.local and (
+        args.expect_temperature is not None or args.expect_seed is not None
+    ):
+        parser.error("--expect-temperature and --expect-seed need --local")
     try:
         data_dir = require_dir(args.data)
         repo = Path(args.repo).resolve()
@@ -463,7 +573,15 @@ def main(argv: list[str] | None = None) -> int:
             )
         else:
             directive = args.directive or data_dir / "directive.txt"
-            checks = post_checks(data_dir, repo, Path(args.log).resolve(), Path(directive))
+            checks = post_checks(
+                data_dir,
+                repo,
+                Path(args.log).resolve(),
+                Path(directive),
+                local=args.local,
+                expect_temperature=args.expect_temperature,
+                expect_seed=args.expect_seed,
+            )
     except (PilotError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
