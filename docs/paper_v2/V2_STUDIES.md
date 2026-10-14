@@ -115,7 +115,7 @@ The soft sibling of Study A: S2 enforces the agent's declared boundary with code
 Answer to "do the planned runs cover paper v2": **not yet** at the check; gaps closed the same day are marked below. The S1 runs produce the raw material for the headline (events, counts, declines, clean arm utility) but not the headline itself, which needs validated TR labels; S2, S4, S6 and S7 have no build plan yet.
 | v2 claim or section | Producer | Status |
 |---|---|---|
-| Headline TR classes on the 13 model Claude panel | S1 logs, blind export, gold labels, judge at κ ≥ 0.8 (D10) | runs planned; S1 preregistered (`prereg/S1.md`, D40); gold set size waits on RR02; fallback if κ < 0.8 decided (D38) |
+| Headline TR classes on the 13 model Claude panel | S1 logs, blind export, gold labels, judge at κ ≥ 0.8 (D10) | runs planned; S1 preregistered (`prereg/S1.md`, D40); gold set sized at 286 labels by `scripts/v2/gold_size.py` (held out half ≥ 140); fallback if κ < 0.8 decided (D38); codebook wording from RR02 before labelling |
 | Event attack success, any call count, per model | `tools_event_v2` on S1 logs (D36) | planned (S1 Phase 3) |
 | Utility from the clean arm | S1 clean arm exact match | planned; whole word containment (D40) |
 | S3a stated rationale | S1 final messages, codebook | codebook unwritten; labelled in the same sitting as TR |
