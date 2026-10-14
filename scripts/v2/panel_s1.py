@@ -213,6 +213,9 @@ class Runner:
         for var in ("CONFIRM_HIGH_RISK", "ANTHROPIC_API_KEY"):
             if not os.environ.get(var):
                 self.blocked(f"{var} is not set", "environment", f"launch with {var} set")
+        if os.environ.get("ANTHROPIC_BASE_URL"):
+            self.blocked("ANTHROPIC_BASE_URL is set, so requests would not reach the Claude API",
+                         "environment", "unset ANTHROPIC_BASE_URL in the launching shell")
         if self.data == self.repo or self.repo in self.data.parents:
             self.blocked("the data dir is inside the repo", self.data, "use a data dir beside it")
         ok, why = repo_ok(self.repo, setup)

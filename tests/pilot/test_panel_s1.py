@@ -242,3 +242,12 @@ def test_main_refuses_a_job_without_its_allocation_row(env: dict[str, Any]) -> N
     with pytest.raises(SystemExit, match="BLOCKED"):
         runner(env, fake).main()
     assert fake.count("eval") == 0
+
+
+def test_preflight_refuses_a_redirected_api(env: dict[str, Any],
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:9")
+    fake = Fake()
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        runner(env, fake).smoke()
+    assert fake.count("eval") == 0

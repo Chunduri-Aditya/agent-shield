@@ -557,6 +557,11 @@ ROWS["s1-3h"] = (
     Row("s1-3h-12-no-log-model-api", "runs go without --log-model-api", RUN,
         '"--model-cost-config", str(s1_panel.INSPECT_COSTS), "--log-model-api",',
         '"--model-cost-config", str(s1_panel.INSPECT_COSTS),', (T3H,)),
+    Row("s1-3h-13-redirect-allowed", "a run starts with ANTHROPIC_BASE_URL set", RUN,
+        '        if os.environ.get("ANTHROPIC_BASE_URL"):\n', "        if False:\n", (T3H,)),
+    Row("s1-3h-14-model-config-dropped", "the pinned model args never reach Inspect", RUN,
+        '        cmd += ["--model-config", str(config)]\n', "        pass\n",
+        (T3H, "tests/pilot/test_s1_offline_e2e.py")),
 )
 
 def repo_files() -> list[str]:

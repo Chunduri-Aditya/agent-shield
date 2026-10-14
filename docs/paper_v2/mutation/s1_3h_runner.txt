@@ -1,6 +1,6 @@
-mutation rows, step s1-3h, HEAD ac5ec69a74e1d4826a93a41ba2ef92c674cecbef, python .venv/bin/python
+mutation rows, step s1-3h, HEAD f701e6dc4684a93bb27854f9ba90c4b18005034a, python .venv/bin/python
 
-control: rc=0 GREEN (17 passed in 1.52s)
+control: rc=0 GREEN (20 passed in 11.02s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
@@ -16,5 +16,7 @@ control: rc=0 GREEN (17 passed in 1.52s)
 | s1-3h-10-cost-limit | the per sample cost limit drifts from 3x | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_main_uses_the_allocation_cost_per_sample |
 | s1-3h-11-smoke-one-arm | the smoke skips the clean arm | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_smoke_plan_runs_retiring_models_first_then_cells |
 | s1-3h-12-no-log-model-api | runs go without --log-model-api | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_eval_command_shape |
+| s1-3h-13-redirect-allowed | a run starts with ANTHROPIC_BASE_URL set | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_preflight_refuses_a_redirected_api |
+| s1-3h-14-model-config-dropped | the pinned model args never reach Inspect | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_model_config_only_where_the_policy_pins_args, tests/pilot/test_s1_offline_e2e.py::test_runner_command_runs_offline_and_passes_the_post_gate[claude-sonnet-5-5] |
 
 result: ALL RED, control GREEN
