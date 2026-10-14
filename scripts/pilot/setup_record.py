@@ -31,8 +31,9 @@ import yaml  # type: ignore[import-untyped]  # PyYAML ships no stubs
 
 from scripts.pilot._common import SETUP_NAME, PilotError, load_prices, require_dir, sha256_file
 
-# The nine files that define an Inspect @scorer, plus the marker helper three of them
-# import for scoring (DATA/inventory.md section d).
+# The files that define an Inspect @scorer, plus the marker helper three of them import for
+# scoring (DATA/inventory.md section d), plus evals/tools_v12.py, the paper v1.2 TL-01 task
+# and its tools_event_v1 scorer (V1_2_PLAN step 2).
 SCORER_FILES: tuple[str, ...] = (
     "evals/_marker.py",
     "evals/auto_apply.py",
@@ -44,6 +45,7 @@ SCORER_FILES: tuple[str, ...] = (
     "evals/persona_fidelity.py",
     "evals/psych.py",
     "evals/tools.py",
+    "evals/tools_v12.py",
 )
 
 REQUIRED_KEYS: tuple[str, ...] = (
@@ -52,6 +54,7 @@ REQUIRED_KEYS: tuple[str, ...] = (
     "data_dir",
     "directive_sha256",
     "inspect_ai_version",
+    "openai_version",
     "prices_sha256",
     "pricing_retrieved",
     "scorer_sha256",
@@ -121,6 +124,7 @@ def build_record(
         "data_dir": str(data),
         "directive_sha256": sha256_file(directive),
         "inspect_ai_version": importlib.metadata.version("inspect_ai"),
+        "openai_version": importlib.metadata.version("openai"),
         "prices_sha256": sha256_file(prices),
         "pricing_retrieved": pricing_date,
         "scorer_sha256": scorer_sha256,
@@ -141,11 +145,12 @@ def write_record(data: Path, record: dict[str, Any]) -> Path:
     return path
 
 
-def _pilot_sample_ids(repo: Path) -> list[str]:
-    """Import the TL-01 pilot dataset from --repo, so the ids are the ones that will run."""
+def _tl01_sample_ids(repo: Path) -> list[str]:
+    """Import the v1.2 TL-01 task from --repo, so the ids are the ones that will run:
+    the anchored design (20) then the 10 prompt set."""
     sys.path.insert(0, str(repo))
-    module = importlib.import_module("evals.tools_pilot")
-    return [str(s.id) for s in module.PILOT_SAMPLES]
+    module = importlib.import_module("evals.tools_v12")
+    return [str(i) for i in module.all_sample_ids()]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -164,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
             args.prices,
             args.cost_config,
             args.pricing_date,
-            sample_ids=_pilot_sample_ids(repo),
+            sample_ids=_tl01_sample_ids(repo),
         )
         path = write_record(args.data, record)
     except PilotError as exc:

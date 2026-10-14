@@ -22,3 +22,11 @@ models:
     cache_write_5m: 5.00
     cache_write_1h: 8.00
     cache_read: 0.20
+  # Deprecated 2026-09-30, retiring 2026-11-30 (E27); V1_2_PLAN step 4 only. Its long context
+  # rates start above 200,000 tokens; scripts/pilot/gates.py post fails any request over 100,000.
+  claude-sonnet-4-5-20250929:
+    input: 3.00
+    output: 15.00
+    cache_write_5m: 3.75
+    cache_write_1h: 6.00
+    cache_read: 0.30

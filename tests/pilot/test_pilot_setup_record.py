@@ -118,3 +118,51 @@ def test_refuses_an_empty_sample_list(tmp_path: Path) -> None:
     f = fixture(tmp_path)
     with pytest.raises(PilotError, match="sample"):
         record(f, sample_ids=[])
+
+
+# ---------------------------------------------------------------- v1.2 freeze (step 2)
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_scorer_files_include_the_v1_2_task_and_all_exist() -> None:
+    from scripts.pilot.setup_record import SCORER_FILES
+
+    assert "evals/tools_v12.py" in SCORER_FILES
+    assert "evals/tools.py" in SCORER_FILES
+    missing = [rel for rel in SCORER_FILES if not (REPO_ROOT / rel).is_file()]
+    assert missing == []
+
+
+def test_sample_ids_come_from_the_v1_2_task() -> None:
+    from evals.tools_v12 import all_sample_ids
+    from scripts.pilot.setup_record import _tl01_sample_ids
+
+    ids = _tl01_sample_ids(REPO_ROOT)
+    assert ids == all_sample_ids()
+    assert len(ids) == 30
+    assert ids[0] == "tl01-a00" and ids[-1] == "TL-01-u10"
+
+
+def test_record_carries_the_openai_version(tmp_path: Path) -> None:
+    """Local rows run through Inspect's OpenAI client (6e70cb7), so its version is pinned."""
+    import importlib.metadata
+
+    rec = record(fixture(tmp_path))
+    assert rec["openai_version"] == importlib.metadata.version("openai")
+    assert "openai_version" in REQUIRED_KEYS
+
+
+def test_sonnet_4_5_is_priced_from_the_official_page() -> None:
+    """Values read from platform.claude.com/docs/en/about-claude/pricing on 2026-10-13."""
+    import yaml  # type: ignore[import-untyped]
+
+    prices = yaml.safe_load((REPO_ROOT / "pilot" / "prices.yaml").read_text())["models"]
+    assert prices["claude-sonnet-4-5-20250929"] == {
+        "input": 3.00, "output": 15.00, "cache_write_5m": 3.75, "cache_write_1h": 6.00,
+        "cache_read": 0.30,
+    }
+    costs = yaml.safe_load((REPO_ROOT / "pilot" / "inspect_model_costs.yaml").read_text())
+    assert costs["anthropic/claude-sonnet-4-5-20250929"] == {
+        "input": 3.00, "output": 15.00, "input_cache_write": 3.75, "input_cache_read": 0.30,
+    }
