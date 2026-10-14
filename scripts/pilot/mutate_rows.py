@@ -515,6 +515,50 @@ ROWS["s1-3f"] = (
         (T3F,)),
 )
 
+# v2 S1 plan step 3h: the panel runner (scripts/v2/panel_s1.py).
+T3H = "tests/pilot/test_panel_s1.py"
+RUN = "scripts/v2/panel_s1.py"
+
+ROWS["s1-3h"] = (
+    Row("s1-3h-01-failed-eval-continues", "a failed inspect eval with a log goes on", RUN,
+        "        if code != 0 or log is None:\n", "        if log is None:\n", (T3H,)),
+    Row("s1-3h-02-env-unstripped", "INSPECT_* and PYTHONPATH reach the child", RUN,
+        '    env = {k: v for k, v in environ.items() if k != "PYTHONPATH"'
+        ' and not k.startswith("INSPECT_")}\n', "    env = dict(environ)\n", (T3H,)),
+    Row("s1-3h-03-config-on-off-model", "a thinking off model gets a model config", RUN,
+        "    if not s1_panel.model_args(job.model):\n        return None\n", "", (T3H,)),
+    Row("s1-3h-04-allocation-row-optional", "a main job without its allocation row runs", RUN,
+        '            if not isinstance(row, dict) or "max_cost_per_sample" not in row:\n',
+        "            if False:\n", (T3H,)),
+    Row("s1-3h-05-unpriced-as-done", "an unpriced log counts as done", RUN,
+        "            if all(self._priced(log) for log in logs):\n", "            if True:\n",
+        (T3H,)),
+    Row("s1-3h-06-pre-ignored", "a red pre gate still spends", RUN,
+        '        if self._run(self._py("scripts/v2/gates_s1.py", *args), d / "pre.txt") != 0:\n',
+        "        if False:\n", (T3H,)),
+    Row("s1-3h-07-post-ignored", "a red post gate goes on", RUN,
+        '        if self._run(self._py("scripts/v2/gates_s1.py", *post), d / "post.txt") != 0:\n',
+        "        if False:\n", (T3H,)),
+    Row("s1-3h-08-env-preflight", "a run starts without CONFIRM_HIGH_RISK or the key", RUN,
+        '        for var in ("CONFIRM_HIGH_RISK", "ANTHROPIC_API_KEY"):\n',
+        "        for var in ():\n", (T3H,)),
+    Row("s1-3h-09-interim-look", "summary reads outcomes before every job passed", RUN,
+        '                self.blocked(f"{job.rel_dir} has no priced log'
+        ' with a passing post gate", d,\n',
+        '                continue\n'
+        '                self.blocked(f"{job.rel_dir} has no priced log'
+        ' with a passing post gate", d,\n',
+        (T3H,)),
+    Row("s1-3h-10-cost-limit", "the per sample cost limit drifts from 3x", RUN,
+        "COST_LIMIT_FACTOR = 3.0\n", "COST_LIMIT_FACTOR = 30.0\n", (T3H,)),
+    Row("s1-3h-11-smoke-one-arm", "the smoke skips the clean arm", RUN,
+        '            ids = tuple(f"{t}:{a}" for t in SMOKE_TASKS for a in ("P", "C"))\n',
+        '            ids = tuple(f"{t}:{a}" for t in SMOKE_TASKS for a in ("P",))\n', (T3H,)),
+    Row("s1-3h-12-no-log-model-api", "runs go without --log-model-api", RUN,
+        '"--model-cost-config", str(s1_panel.INSPECT_COSTS), "--log-model-api",',
+        '"--model-cost-config", str(s1_panel.INSPECT_COSTS),', (T3H,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

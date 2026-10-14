@@ -1,0 +1,4 @@
+# S1 thinking contrast cell haiku55_off on claude-haiku-5-5 (D39; scripts/v2/s1_panel.py CONTRAST_CELLS).
+extra_body:
+  thinking:
+    type: disabled

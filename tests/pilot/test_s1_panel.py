@@ -117,3 +117,10 @@ def test_request_diff_flags_any_other_body_change() -> None:
     args["extra_body"]["metadata"] = {"user_id": "s1"}
     row = request_diff.diff_one("main", "claude-sonnet-5-5", args)
     assert not row.ok and "other keys differ" in row.reason
+
+
+def test_pinned_contrast_cell_files_match_the_cells() -> None:
+    files = {p.stem: p for p in (s1_panel.MODEL_ARGS_DIR / "cells").glob("*.yaml")}
+    assert set(files) == set(s1_panel.CONTRAST_CELLS)
+    for name, path in files.items():
+        assert yaml.safe_load(path.read_text()) == s1_panel.CONTRAST_CELLS[name].model_args, name

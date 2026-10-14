@@ -1,0 +1,5 @@
+# S1 thinking contrast cell opus46_on on claude-opus-4-6 (D39; scripts/v2/s1_panel.py CONTRAST_CELLS).
+extra_body:
+  thinking:
+    type: adaptive
+    display: summarized

@@ -1,0 +1,20 @@
+mutation rows, step s1-3h, HEAD ac5ec69a74e1d4826a93a41ba2ef92c674cecbef, python .venv/bin/python
+
+control: rc=0 GREEN (17 passed in 1.52s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3h-01-failed-eval-continues | a failed inspect eval with a log goes on | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_failed_eval_is_never_retried |
+| s1-3h-02-env-unstripped | INSPECT_* and PYTHONPATH reach the child | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_child_env_strips_inspect_overrides |
+| s1-3h-03-config-on-off-model | a thinking off model gets a model config | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_model_config_only_where_the_policy_pins_args |
+| s1-3h-04-allocation-row-optional | a main job without its allocation row runs | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_main_refuses_a_job_without_its_allocation_row |
+| s1-3h-05-unpriced-as-done | an unpriced log counts as done | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_an_unpriced_log_blocks_instead_of_relaunching |
+| s1-3h-06-pre-ignored | a red pre gate still spends | yes | yes | 1 | RED | 3: tests/pilot/test_panel_s1.py::test_smoke_runs_every_job_through_every_gate, tests/pilot/test_panel_s1.py::test_red_pre_gate_spends_nothing, tests/pilot/test_panel_s1.py::test_main_uses_the_allocation_cost_per_sample |
+| s1-3h-07-post-ignored | a red post gate goes on | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_smoke_runs_every_job_through_every_gate, tests/pilot/test_panel_s1.py::test_first_red_post_gate_blocks_and_stops |
+| s1-3h-08-env-preflight | a run starts without CONFIRM_HIGH_RISK or the key | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_preflight_refuses_a_missing_variable[CONFIRM_HIGH_RISK], tests/pilot/test_panel_s1.py::test_preflight_refuses_a_missing_variable[ANTHROPIC_API_KEY] |
+| s1-3h-09-interim-look | summary reads outcomes before every job passed | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_summary_refuses_until_every_main_log_passed |
+| s1-3h-10-cost-limit | the per sample cost limit drifts from 3x | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_main_uses_the_allocation_cost_per_sample |
+| s1-3h-11-smoke-one-arm | the smoke skips the clean arm | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_smoke_plan_runs_retiring_models_first_then_cells |
+| s1-3h-12-no-log-model-api | runs go without --log-model-api | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_eval_command_shape |
+
+result: ALL RED, control GREEN
