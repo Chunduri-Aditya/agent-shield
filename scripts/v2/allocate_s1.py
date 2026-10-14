@@ -7,7 +7,8 @@ For every planned (cell, model) it prices the smoke logs under `D/<cell>/<model>
 with `scripts/pilot/cost.py`'s formula, takes the MAXIMUM cost per sample (never the
 mean), and sets cap = planned samples x max x SAFETY. A model whose smoke samples all
 cost nothing (every request declined before output, which is not billed) gets RR08's
-worst case unit cost instead, marked `rr08_floor`.
+worst case unit cost instead, marked `rr08_floor`. Declined samples never set the maximum:
+a classifier decline still reports input tokens, so it would price as a cheap answer.
 
 It refuses, writing nothing, when a planned smoke log is missing, when a smoke sample's
 usage is under another model (a fallback), or when the caps plus the judge budget exceed
@@ -31,16 +32,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.pilot._common import (
     PilotError,
+    ledger_path,
     ledger_totals,
     load_prices,
     load_setup,
     read_ledger,
+    read_log,
     require_dir,
     strip_provider,
 )
 from scripts.pilot.cost import price_log
 from scripts.pilot.gates import SAFETY
 from scripts.v2 import s1_panel
+from scripts.v2.gates_s1 import declined_before_output
 
 ALLOCATION_NAME = "allocation.json"
 MAIN_SAMPLES = 80 * 3 + 80 * 1
@@ -70,8 +74,11 @@ def smoke_logs(data_dir: Path, cell: str, model: str) -> list[Path]:
 
 
 def _spent(data_dir: Path, setup: dict[str, Any]) -> float:
-    dirs = [data_dir, *(Path(p) for p in setup.get("prior_ledgers", []))]
-    return sum(ledger_totals(read_ledger(d))[0] for d in dirs)
+    priors = [Path(p) for p in setup.get("prior_ledgers", [])]
+    absent = [str(d) for d in priors if not ledger_path(d).exists()]
+    if absent:
+        raise PilotError(f"prior ledgers listed in setup.json are missing: {absent}")
+    return sum(ledger_totals(read_ledger(d))[0] for d in [data_dir, *priors])
 
 
 def allocate(data_dir: Path, prices_path: Path, *, plan: dict[str, dict[str, int]] | None = None,
@@ -94,12 +101,15 @@ def allocate(data_dir: Path, prices_path: Path, *, plan: dict[str, dict[str, int
             costs: list[float] = []
             for log in logs:
                 rows, _ = price_log(log, prices)
-                for sample_id, _epoch, short, cost in rows:
+                declined = {(str(s.id), s.epoch) for s in read_log(log).samples or []
+                            if declined_before_output(s)}
+                for sample_id, epoch, short, cost in rows:
                     if strip_provider(short) != model:
                         raise PilotError(f"{log}: sample {sample_id} usage under another model"
                                          f" {short!r} (fallback), expected {model}")
-                    costs.append(cost)
-            top = max(costs)
+                    if (sample_id, epoch) not in declined:
+                        costs.append(cost)
+            top = max(costs, default=0.0)
             source = "smoke"
             if top <= 0.0:
                 top, source = RR08_UNIT_COST[model], "rr08_floor"

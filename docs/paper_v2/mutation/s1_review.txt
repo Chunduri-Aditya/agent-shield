@@ -1,0 +1,18 @@
+mutation rows, step s1-review, HEAD 97e5741e30b7baf0d183adabc9582c30593a08f8, python .venv/bin/python
+
+control: rc=0 GREEN (103 passed in 20.73s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-rv-S1-scores-printed | inspect prints the scorer sums mid grid | yes | yes | 1 | RED | 2: tests/pilot/test_s1_offline_e2e.py::test_runner_command_runs_offline_and_passes_the_post_gate[claude-opus-4-8], tests/pilot/test_s1_offline_e2e.py::test_runner_command_runs_offline_and_passes_the_post_gate[claude-sonnet-5-5] |
+| s1-rv-S2-declines-priced | declined smoke samples set the cost per sample | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_all_declined_smoke_uses_the_rr08_floor |
+| s1-rv-S3-invalid-exported | scorer invalid samples enter the gold draw | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_scorer_invalid_samples_are_left_out |
+| s1-rv-S4-late-decline | a decline after output counts as declined | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_a_late_decline_is_not_declined_before_output |
+| s1-rv-S5-utility-any-turn | utility reads any visible turn | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_utility_reads_only_the_final_turn |
+| s1-rv-S6-gate-prior-missing | a missing prior ledger passes the gate | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_refuses_a_listed_prior_ledger_that_is_missing |
+| s1-rv-S6-alloc-prior-missing | a missing prior ledger counts as $0 | yes | yes | 1 | RED | 1: tests/pilot/test_allocate_s1.py::test_a_missing_prior_ledger_refuses |
+| s1-rv-C1-post-unchecked | a priced job is skipped without a passing post gate | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_a_priced_job_without_a_passing_post_gate_blocks |
+| s1-rv-C2-thinking-count | the thinking info row miscounts summaries | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_reports_thinking_blocks_as_info |
+| s1-rv-N1-thinking-is-output | thinking alone counts as output in the gate | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_thinking_alone_is_not_output |
+
+result: ALL RED, control GREEN

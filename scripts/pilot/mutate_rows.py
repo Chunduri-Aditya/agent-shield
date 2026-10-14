@@ -421,8 +421,8 @@ ROWS["s1-3c"] = (
         '        Check("total_cap_le_180", 0 < cap <= MAX_TOTAL_CAP,\n',
         '        Check("total_cap_le_180", 0 < cap,\n', (T3C,)),
     Row("s1-3c-02-prior-ignored", "prior ledgers do not count against the credit", GS1,
-        "    total = ledger_totals(own)[0] + sum(ledger_totals(read_ledger(d))[0] for d in dirs)\n",
-        "    total = ledger_totals(own)[0]\n", (T3C,)),
+        "    total = ledger_totals(own)[0] + sum(\n",
+        "    total = ledger_totals(own)[0] + 0 * sum(\n", (T3C,)),
     Row("s1-3c-03-smoke-cap-ignored", "the smoke cap per model is ignored", GS1,
         '        model_cap = float(setup.get("smoke_cap_per_model", 0.0))\n',
         "        model_cap = 1e9\n", (T3C,)),
@@ -496,7 +496,8 @@ ALC = "scripts/v2/allocate_s1.py"
 
 ROWS["s1-3f"] = (
     Row("s1-3f-01-mean-not-max", "the cap uses the mean smoke cost", ALC,
-        "            top = max(costs)\n", "            top = sum(costs) / len(costs)\n", (T3F,)),
+        "            top = max(costs, default=0.0)\n",
+        "            top = sum(costs) / len(costs)\n", (T3F,)),
     Row("s1-3f-02-ledgers-ignored", "earlier spend does not shrink the budget", ALC,
         "    spent = _spent(data_dir, setup)\n", "    spent = 0.0\n", (T3F,)),
     Row("s1-3f-03-judge-not-reserved", "the judge budget is not reserved", ALC,
@@ -531,8 +532,8 @@ ROWS["s1-3h"] = (
         '            if not isinstance(row, dict) or "max_cost_per_sample" not in row:\n',
         "            if False:\n", (T3H,)),
     Row("s1-3h-05-unpriced-as-done", "an unpriced log counts as done", RUN,
-        "            if all(self._priced(log) for log in logs):\n", "            if True:\n",
-        (T3H,)),
+        "            if passed and all(self._priced(log) for log in logs):\n",
+        "            if passed:\n", (T3H,)),
     Row("s1-3h-06-pre-ignored", "a red pre gate still spends", RUN,
         '        if self._run(self._py("scripts/v2/gates_s1.py", *args), d / "pre.txt") != 0:\n',
         "        if False:\n", (T3H,)),
@@ -581,7 +582,8 @@ ROWS["s1-3i"] = (
     Row("s1-3i-04-key-in-repo", "the key may be written inside the public repo", BEX,
         "    if key_path == REPO or REPO in key_path.parents:\n", "    if False:\n", (T3I,)),
     Row("s1-3i-05-declined-exported", "declined samples are exported", BEX,
-        "            if not declined_before_output(sample):\n", "            if True:\n", (T3I,)),
+        "            if not score_sample(sample, log.eval.model).excluded:\n",
+        "            if True:\n", (T3I,)),
     Row("s1-3i-06-order-lost", "block order within a response is not kept", BEX,
         "        for block in content if isinstance(content, list) else []:\n",
         "        for block in (sorted(content, key=lambda b: str(b.get(\"type\")), reverse=True)"
@@ -625,6 +627,42 @@ ROWS["s1-4"] = (
     Row("s1-4-08-prereg-unhashed", "the preregistration is not frozen", SU1,
         '    "pilot/s1_inspect_model_costs.yaml", "docs/paper_v2/prereg/S1.md",\n',
         '    "pilot/s1_inspect_model_costs.yaml",\n', (T4,)),
+)
+
+# Fresh context review of the S1 harness (2026-10-14): one row per fix.
+ROWS["s1-review"] = (
+    Row("s1-rv-S1-scores-printed", "inspect prints the scorer sums mid grid", RUN,
+        '"--display", "none"]', '"--display", "plain"]',
+        (T3H, "tests/pilot/test_s1_offline_e2e.py")),
+    Row("s1-rv-S2-declines-priced", "declined smoke samples set the cost per sample", ALC,
+        "                    if (sample_id, epoch) not in declined:\n"
+        "                        costs.append(cost)\n",
+        "                    costs.append(cost)\n", (T3F,)),
+    Row("s1-rv-S3-invalid-exported", "scorer invalid samples enter the gold draw", BEX,
+        "            if not score_sample(sample, log.eval.model).excluded:\n",
+        '            if score_sample(sample, log.eval.model).outcome != "declined":\n', (T3I,)),
+    Row("s1-rv-S4-late-decline", "a decline after output counts as declined", GS1,
+        '        if response.get("stop_reason") == "refusal" and not seen:\n',
+        '        if response.get("stop_reason") == "refusal":\n', (T3C, T3I)),
+    Row("s1-rv-S5-utility-any-turn", "utility reads any visible turn", EV2,
+        "        final_text = raw.text\n", "        final_text += raw.text\n", (T3B,)),
+    Row("s1-rv-S6-gate-prior-missing", "a missing prior ledger passes the gate", GS1,
+        '    checks.append(Check("prior_ledgers", not absent,\n',
+        '    checks.append(Check("prior_ledgers", True,\n', (T3C,)),
+    Row("s1-rv-S6-alloc-prior-missing", "a missing prior ledger counts as $0", ALC,
+        "    if absent:\n", "    if False:\n", (T3F,)),
+    Row("s1-rv-C1-post-unchecked", "a priced job is skipped without a passing post gate", RUN,
+        '            passed = post_file.exists() and "gate s1 post: PASS"'
+        ' in post_file.read_text()\n',
+        "            passed = True\n", (T3H,)),
+    Row("s1-rv-C2-thinking-count", "the thinking info row miscounts summaries", GS1,
+        '                    with_text += int(bool(str(block.get("thinking", "")).strip()))\n',
+        "                    with_text += 1\n", (T3C,)),
+    Row("s1-rv-N1-thinking-is-output", "thinking alone counts as output in the gate", GS1,
+        '    """A visible text block or a tool call; thinking alone is not output'
+        ' (as in the scorer)."""\n',
+        '    """A visible text block or a tool call; thinking alone is not output'
+        ' (as in the scorer)."""\n    return bool(response.get("content"))\n', (T3C,)),
 )
 
 def repo_files() -> list[str]:

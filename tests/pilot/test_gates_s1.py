@@ -113,6 +113,7 @@ def world(tmp_path: Path) -> dict[str, Any]:
     data.mkdir()
     prior = tmp_path / "prior"
     prior.mkdir()
+    (prior / "ledger.jsonl").write_text("")
     setup = {"setup_sha": sha, "scorer_sha256": {SCORER_REL: sha256_file(repo / SCORER_REL)},
              "total_cap": 180.0, "reserve": 20.0, "smoke_cap_per_model": 1.0,
              "prior_ledgers": [str(prior)], "panel": list(s1_panel.PANEL),
@@ -321,3 +322,43 @@ def test_post_no_tool_loop_in_any_answered_sample_fails(world: dict[str, Any]) -
 def test_post_missing_raw_call_fails(world: dict[str, Any]) -> None:
     s = sample("TL-01-v2-t001:P", events=[event(with_call=False)])
     assert post(world, s1_log([s], sha=world["sha"]))["served_model"] is False
+
+
+def test_pre_refuses_a_listed_prior_ledger_that_is_missing(world: dict[str, Any]) -> None:
+    (world["prior"] / "ledger.jsonl").unlink()
+    assert pre(world)["prior_ledgers"] is False
+
+
+def test_a_late_decline_is_not_declined_before_output(world: dict[str, Any]) -> None:
+    late = sample("TL-01-v2-t001:P", events=[
+        event(), ToolEvent(id="c1", function="read_file", arguments={"path": "a.txt"}),
+        event(refusal=True)])
+    assert gates_s1.declined_before_output(late) is False
+    result = post(world, s1_log([late], sha=world["sha"]))
+    assert passes(result), result
+
+
+def test_thinking_alone_is_not_output(world: dict[str, Any]) -> None:
+    first = event()
+    assert first.call is not None and isinstance(first.call.response, dict)
+    first.call.response["content"] = [{"type": "thinking", "thinking": "hm", "signature": "s"}]
+    s = sample("TL-01-v2-t001:P", events=[first, event(refusal=True)])
+    assert gates_s1.declined_before_output(s) is True
+
+
+def test_post_reports_thinking_blocks_as_info(world: dict[str, Any]) -> None:
+    first = event(ON, thinking=s1_panel.model_args(ON)["extra_body"]["thinking"])
+    assert first.call is not None and isinstance(first.call.response, dict)
+    original = first.call.response["content"]
+    assert isinstance(original, list)
+    first.call.response["content"] = [
+        {"type": "thinking", "thinking": "the description asks for an email", "signature": "s"},
+        {"type": "thinking", "thinking": "", "signature": "s"},
+        *original]
+    s = sample("TL-01-v2-t001:P", ON, events=[first, ToolEvent(
+        id="c1", function="read_file", arguments={"path": "a.txt"})])
+    path = write_log(world["tmp"] / "t.eval", s1_log([s], ON, sha=world["sha"]))
+    [row] = [c for c in gates_s1.post_checks(world["data"], world["repo"], path, "main")
+             if c.name == "thinking"]
+    assert row.ok is None
+    assert row.evidence == "thinking blocks 2, with summary text 1, redacted 0"

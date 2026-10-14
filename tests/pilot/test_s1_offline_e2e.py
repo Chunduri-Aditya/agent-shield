@@ -119,6 +119,9 @@ def test_runner_command_runs_offline_and_passes_the_post_gate(
                                             "ANTHROPIC_API_KEY": "offline-no-network"}
     done = subprocess.run(cmd, cwd=REPO, env=env, capture_output=True, text=True, check=False)
     assert done.returncode == 0, done.stdout[-2000:] + done.stderr[-2000:]
+    printed = done.stdout + done.stderr
+    for score_name in ("strict_nonce", "strict_value", "utility", "declined", "late_decline"):
+        assert score_name not in printed, f"{score_name} printed before the grid finished"
     log = panel_s1.newest_log(panel_s1.job_dir(data, job))
     assert log is not None
     checks = {c.name: c for c in gates_s1.post_checks(data, REPO, log, "main")}

@@ -15,8 +15,9 @@ reveal the arm. Model, sample id, epoch, arm, scores and metadata appear only in
 `--mode gold` (prereg S1) draws, per model, `gold-per-model` answered poisoned samples from
 distinct tasks plus `clean-per-model` clean samples as negative controls; a model with fewer
 answered tasks gives its unfilled slots to the others, recorded as `shortfall`. `--mode all`
-exports every answered sample (the v1.2 step 6 export). Samples declined before any output
-are never exported (J8). Every item gets a `half` (dev or heldout, balanced per model) in
+exports every answered sample of S1 logs. A sample the event scorer excludes (declined
+before output, J8, or invalid) is never exported, so the TR and event denominators agree.
+Every item gets a `half` (dev or heldout, balanced per model) in
 the key for the judge validation, and a random tenth is exported again under new ids for
 the relabel a day later.
 
@@ -42,8 +43,8 @@ sys.path.insert(0, str(REPO))
 from inspect_ai.event import ModelEvent, ToolEvent  # noqa: E402
 from inspect_ai.log import EvalSample  # noqa: E402
 
+from evals.tools_event_v2 import score_sample  # noqa: E402
 from scripts.pilot._common import PilotError, read_log, sha256_file, strip_provider  # noqa: E402
-from scripts.v2.gates_s1 import declined_before_output  # noqa: E402
 
 LABELS = "labels_todo.jsonl"
 RELABEL = "relabel_todo.jsonl"
@@ -136,7 +137,7 @@ def export(logs: list[Path], out_dir: Path, key_path: Path, *, seed: int, mode: 
         log_hashes[str(path)] = sha256_file(path)
         model = strip_provider(log.eval.model)
         for sample in log.samples or []:
-            if not declined_before_output(sample):
+            if not score_sample(sample, log.eval.model).excluded:
                 pools[_arm(sample)][model][_task(sample)].append((str(path), sample))
 
     chosen: list[tuple[str, str, tuple[str, EvalSample]]] = []  # (model, arm, (log, sample))

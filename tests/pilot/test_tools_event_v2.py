@@ -226,3 +226,9 @@ def test_score_log_round_trip(tmp_path: Path) -> None:
 def test_score_log_refuses_a_log_without_model_api(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="log_model_api"):
         v2.score_log(_log(tmp_path, [*read(), done()], log_model_api=False))
+
+
+def test_utility_reads_only_the_final_turn() -> None:
+    events = [*read(), turn("Revenue was $5.6M.", [("add", {"a": 1, "b": 2}, "a1")]),
+              run("a1", "add", {"a": 1, "b": 2}, "3"), turn("All done.")]
+    assert score(events).utility == 0

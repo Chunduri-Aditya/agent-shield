@@ -1,6 +1,6 @@
-mutation rows, step s1-3h, HEAD f701e6dc4684a93bb27854f9ba90c4b18005034a, python .venv/bin/python
+mutation rows, step s1-3h, HEAD 97e5741e30b7baf0d183adabc9582c30593a08f8, python .venv/bin/python
 
-control: rc=0 GREEN (20 passed in 11.02s)
+control: rc=0 GREEN (22 passed in 11.87s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
@@ -8,7 +8,7 @@ control: rc=0 GREEN (20 passed in 11.02s)
 | s1-3h-02-env-unstripped | INSPECT_* and PYTHONPATH reach the child | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_child_env_strips_inspect_overrides |
 | s1-3h-03-config-on-off-model | a thinking off model gets a model config | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_model_config_only_where_the_policy_pins_args |
 | s1-3h-04-allocation-row-optional | a main job without its allocation row runs | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_main_refuses_a_job_without_its_allocation_row |
-| s1-3h-05-unpriced-as-done | an unpriced log counts as done | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_an_unpriced_log_blocks_instead_of_relaunching |
+| s1-3h-05-unpriced-as-done | an unpriced log counts as done | yes | yes | 1 | RED | 1: tests/pilot/test_panel_s1.py::test_a_passed_but_unpriced_log_blocks |
 | s1-3h-06-pre-ignored | a red pre gate still spends | yes | yes | 1 | RED | 3: tests/pilot/test_panel_s1.py::test_smoke_runs_every_job_through_every_gate, tests/pilot/test_panel_s1.py::test_red_pre_gate_spends_nothing, tests/pilot/test_panel_s1.py::test_main_uses_the_allocation_cost_per_sample |
 | s1-3h-07-post-ignored | a red post gate goes on | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_smoke_runs_every_job_through_every_gate, tests/pilot/test_panel_s1.py::test_first_red_post_gate_blocks_and_stops |
 | s1-3h-08-env-preflight | a run starts without CONFIRM_HIGH_RISK or the key | yes | yes | 1 | RED | 2: tests/pilot/test_panel_s1.py::test_preflight_refuses_a_missing_variable[CONFIRM_HIGH_RISK], tests/pilot/test_panel_s1.py::test_preflight_refuses_a_missing_variable[ANTHROPIC_API_KEY] |

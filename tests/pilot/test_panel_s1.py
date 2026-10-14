@@ -180,6 +180,7 @@ def test_a_priced_job_is_skipped(env: dict[str, Any]) -> None:
     log_dir.mkdir(parents=True)
     log = log_dir / "done.eval"
     log.write_text("log")
+    (log_dir / "post.txt").write_text("...\ngate s1 post: PASS\n")
     (env["data"] / "ledger.jsonl").write_text(json.dumps(
         {"model": first.model, "phase": "s1-smoke-main", "cost": 0.01, "samples": 6,
          "log_path": str(log.resolve()), "log_sha256": "h"}) + "\n")
@@ -247,6 +248,34 @@ def test_main_refuses_a_job_without_its_allocation_row(env: dict[str, Any]) -> N
 def test_preflight_refuses_a_redirected_api(env: dict[str, Any],
                                             monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://127.0.0.1:9")
+    fake = Fake()
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        runner(env, fake).smoke()
+    assert fake.count("eval") == 0
+
+
+def test_a_priced_job_without_a_passing_post_gate_blocks(env: dict[str, Any]) -> None:
+    first = panel_s1.plan_jobs("smoke")[0]
+    log_dir = panel_s1.job_dir(env["data"], first)
+    log_dir.mkdir(parents=True)
+    log = log_dir / "failed.eval"
+    log.write_text("log")
+    (log_dir / "post.txt").write_text("...\ngate s1 post: FAIL\n")
+    (env["data"] / "ledger.jsonl").write_text(json.dumps(
+        {"model": first.model, "phase": "s1-smoke-main", "cost": 0.01, "samples": 6,
+         "log_path": str(log.resolve()), "log_sha256": "h"}) + "\n")
+    fake = Fake()
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        runner(env, fake).smoke()
+    assert fake.count("eval") == 0
+
+
+def test_a_passed_but_unpriced_log_blocks(env: dict[str, Any]) -> None:
+    first = panel_s1.plan_jobs("smoke")[0]
+    log_dir = panel_s1.job_dir(env["data"], first)
+    log_dir.mkdir(parents=True)
+    (log_dir / "unpriced.eval").write_text("log")
+    (log_dir / "post.txt").write_text("...\ngate s1 post: PASS\n")
     fake = Fake()
     with pytest.raises(SystemExit, match="BLOCKED"):
         runner(env, fake).smoke()

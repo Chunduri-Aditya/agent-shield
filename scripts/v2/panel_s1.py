@@ -128,7 +128,7 @@ def eval_command(job: Job, repo: Path, cost_limit: float, data: Path | None = No
            "--max-connections", str(MAX_CONNECTIONS), "--message-limit", str(MESSAGE_LIMIT),
            "--token-limit", str(TOKEN_LIMIT), "--cost-limit", f"{cost_limit:.6g}",
            "--model-cost-config", str(s1_panel.INSPECT_COSTS), "--log-model-api",
-           "--log-dir", str((data or Path(".")) / job.rel_dir), "--display", "plain"]
+           "--log-dir", str((data or Path(".")) / job.rel_dir), "--display", "none"]
     if job.sample_ids:
         cmd += ["--sample-id", ",".join(job.sample_ids)]
     config = model_config(job)
@@ -239,12 +239,14 @@ class Runner:
         self.rows.append(row)
         logs = sorted(d.glob("*.eval")) if d.exists() else []
         if logs:
-            if all(self._priced(log) for log in logs):
-                row["status"] = "skipped: already priced"
-                self.say(f"skip {job.rel_dir}: every log is in the ledger")
+            post_file = d / "post.txt"
+            passed = post_file.exists() and "gate s1 post: PASS" in post_file.read_text()
+            if passed and all(self._priced(log) for log in logs):
+                row["status"] = "skipped: priced, post gate passed"
+                self.say(f"skip {job.rel_dir}: priced and its post gate passed")
                 return
-            self.blocked(f"{d} holds a log that is not in the ledger", d,
-                         "read that log; price it with cost.py or move it aside, then rerun")
+            self.blocked(f"{d} holds a log without a priced, passing run", d,
+                         "read the log and post.txt; move the folder aside to rerun the job")
         d.mkdir(parents=True, exist_ok=True)
         args = ["pre", "--data", str(self.data), "--repo", str(self.repo), "--model", job.model,
                 "--phase", job.phase, "--cell", job.cell, "--samples", str(job.samples),
@@ -258,7 +260,7 @@ class Runner:
         log = newest_log(d)
         if code != 0 or log is None:
             self.blocked(f"inspect eval exited {code} for {job.rel_dir}", d / "inspect_output.txt",
-                         "read the output; nothing is retried automatically")
+                         "read the error output (it carries no scores); nothing is retried")
         row["log"] = str(log)
         post = ["post", "--data", str(self.data), "--repo", str(self.repo), "--log", str(log),
                 "--cell", job.cell]

@@ -44,6 +44,7 @@ from evals.tools_v2 import CLEAN_DESCRIPTION
 from scripts.pilot import gates as g
 from scripts.pilot._common import (
     PilotError,
+    ledger_path,
     ledger_totals,
     load_setup,
     read_ledger,
@@ -99,7 +100,12 @@ def pre_checks(data_dir: Path, repo: Path, model: str, phase: str, cell: str, sa
     ]
     own = read_ledger(data_dir)
     dirs = [Path(p) for p in setup.get("prior_ledgers", [])]
-    total = ledger_totals(own)[0] + sum(ledger_totals(read_ledger(d))[0] for d in dirs)
+    absent = [str(d) for d in dirs if not ledger_path(d).exists()]
+    checks.append(Check("prior_ledgers", not absent,
+                        f"{len(dirs)} listed, missing: {absent}" if absent
+                        else f"{len(dirs)} listed, all present"))
+    total = ledger_totals(own)[0] + sum(
+        ledger_totals(read_ledger(d))[0] for d in dirs if ledger_path(d).exists())
     projected = samples * est * g.SAFETY
     checks.append(Check("total_cap", total + projected <= cap,
                         f"ledgers {total:.6f} (own + {len(dirs)} prior) + {projected:.6f}"
@@ -122,8 +128,20 @@ def pre_checks(data_dir: Path, repo: Path, model: str, phase: str, cell: str, sa
     return checks
 
 
+def _has_output(response: dict[str, Any]) -> bool:
+    """A visible text block or a tool call; thinking alone is not output (as in the scorer)."""
+    content = response.get("content")
+    for block in content if isinstance(content, list) else []:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "tool_use" or (
+                block.get("type") == "text" and str(block.get("text", "")).strip()):
+            return True
+    return False
+
+
 def declined_before_output(sample: EvalSample) -> bool:
-    """The provider declined before the sample produced any content."""
+    """The provider declined before the sample produced any visible text or tool call."""
     seen = False
     for event in g.model_events(sample):
         response = event.call.response if event.call is not None else None
@@ -131,7 +149,7 @@ def declined_before_output(sample: EvalSample) -> bool:
             continue
         if response.get("stop_reason") == "refusal" and not seen:
             return True
-        if response.get("content"):
+        if _has_output(response):
             seen = True
     return False
 
@@ -219,6 +237,25 @@ def check_thinking(sample: EvalSample, want_args: dict[str, Any]) -> str | None:
     return "; ".join(problems) or None
 
 
+def thinking_check(samples: list[EvalSample]) -> Check:
+    """Info: thinking blocks per log (Phase 5 settles the display policy from these)."""
+    blocks = with_text = redacted = 0
+    for sample in samples:
+        for event in g.model_events(sample):
+            response = event.call.response if event.call is not None else None
+            content = response.get("content") if isinstance(response, dict) else None
+            for block in content if isinstance(content, list) else []:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "thinking":
+                    blocks += 1
+                    with_text += int(bool(str(block.get("thinking", "")).strip()))
+                elif block.get("type") == "redacted_thinking":
+                    redacted += 1
+    return Check("thinking", None,
+                 f"thinking blocks {blocks}, with summary text {with_text}, redacted {redacted}")
+
+
 def _skip_declined(fn: Any) -> Any:
     return lambda s: None if declined_before_output(s) else fn(s)
 
@@ -288,6 +325,7 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, cell: str) -> list[C
               f"{len(limited)}/{len(samples)} samples hit a limit ({share:.1%})"),
         g.errors_check(samples, log.error),
         g.stop_reason_check(samples),
+        thinking_check(samples),
         Check("declines", None, f"{len(declined)}/{len(samples)} declined before output;"
                                 f" categories {dict(categories)}"),
         Check("dataset",
