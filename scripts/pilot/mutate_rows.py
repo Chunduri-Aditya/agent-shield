@@ -412,6 +412,72 @@ ROWS["s1-3d"] = (
         " input_cache_read: 0.01}\n", "", (T3D,)),
 )
 
+# v2 S1 plan step 3c: the S1 gates (scripts/v2/gates_s1.py).
+T3C = "tests/pilot/test_gates_s1.py"
+GS1 = "scripts/v2/gates_s1.py"
+
+ROWS["s1-3c"] = (
+    Row("s1-3c-01-cap-ceiling", "a total cap above $180 is accepted", GS1,
+        '        Check("total_cap_le_180", 0 < cap <= MAX_TOTAL_CAP,\n',
+        '        Check("total_cap_le_180", 0 < cap,\n', (T3C,)),
+    Row("s1-3c-02-prior-ignored", "prior ledgers do not count against the credit", GS1,
+        "    total = ledger_totals(own)[0] + sum(ledger_totals(read_ledger(d))[0] for d in dirs)\n",
+        "    total = ledger_totals(own)[0]\n", (T3C,)),
+    Row("s1-3c-03-smoke-cap-ignored", "the smoke cap per model is ignored", GS1,
+        '        model_cap = float(setup.get("smoke_cap_per_model", 0.0))\n',
+        "        model_cap = 1e9\n", (T3C,)),
+    Row("s1-3c-04-allocation-optional", "a main run without an allocation row passes", GS1,
+        '        checks.append(Check("allocation_row", isinstance(row, dict) and "cap" in row,\n',
+        '        checks.append(Check("allocation_row", True,\n', (T3C,)),
+    Row("s1-3c-05-clean-unchecked", "the clean arm's description is not checked", GS1,
+        "    return check_clean_delivery(sample, directive)\n", "    return None\n", (T3C,)),
+    Row("s1-3c-06-served-from-event", "the serving model is read from ModelEvent.model", GS1,
+        '        if response.get("model") != requested:\n',
+        '        if event.model.split("/")[-1] != requested:\n', (T3C,)),
+    Row("s1-3c-07-output-fallback", "Inspect's output.fallback is ignored", GS1,
+        '        if getattr(event.output, "fallback", None) is not None:\n', "        if False:\n",
+        (T3C,)),
+    Row("s1-3c-08-iterations-fallback", "a fallback usage iteration is ignored", GS1,
+        '            if isinstance(it, dict) and ("fallback" in str(it.get("type", ""))\n',
+        '            if False and ("fallback" in str(it.get("type", ""))\n', (T3C,)),
+    Row("s1-3c-09-usage-models", "usage under another model is ignored", GS1,
+        "    if extra_models:\n", "    if False:\n", (T3C,)),
+    Row("s1-3c-10-missing-raw", "a missing raw response passes the served check", GS1,
+        '            problems.append(f"ModelEvent[{i}] raw response missing")\n', "", (T3C,)),
+    Row("s1-3c-11-thinking-unchecked", "the thinking object is not compared to the policy", GS1,
+        "        if effective != want:\n", "        if False:\n", (T3C,)),
+    Row("s1-3c-12-effort-unchecked", "an effort in the request passes", GS1,
+        '        if "output_config" in request or "output_config" in extra:\n',
+        "        if False:\n",
+        (T3C,)),
+    Row("s1-3c-13-tool-choice-unchecked", "a forced tool_choice passes", GS1,
+        '        if event.tool_choice != "auto":\n', "        if False:\n", (T3C,)),
+    Row("s1-3c-14-model-args-unchecked", "model args are not compared to the policy", GS1,
+        '        Check("model_args", (log.eval.model_args or {}) == want_args,\n',
+        '        Check("model_args", True,\n', (T3C,)),
+    Row("s1-3c-15-declined-usage", "a declined sample fails the usage check", GS1,
+        '        g.per_sample("usage", samples, _skip_declined(g.check_usage),\n',
+        '        g.per_sample("usage", samples, g.check_usage,\n', (T3C,)),
+    Row("s1-3c-16-loop-always", "a run with no tool loop passes", GS1,
+        '        Check("loop", not answered or bool(looped),\n', '        Check("loop", True,\n',
+        (T3C,)),
+    Row("s1-3c-17-loop-all-declined", "an all declined run fails the loop", GS1,
+        '        Check("loop", not answered or bool(looped),\n',
+        '        Check("loop", bool(looped),\n',
+        (T3C,)),
+    Row("s1-3c-18-dataset-unchecked", "a log from another task set passes", GS1,
+        '              (log.eval.metadata or {}).get("dataset_sha256")'
+        ' == setup.get("dataset_sha256"),\n',
+        "              True,\n", (T3C,)),
+    Row("s1-3c-19-contrast-arm", "a contrast cell accepts clean samples", GS1,
+        '               or (cell != "main" and not str(s.id).endswith(":P"))]\n',
+        "               ]\n",
+        (T3C,)),
+    Row("s1-3c-20-log-api-unchecked", "a log without --log-model-api passes", GS1,
+        '        Check("log_model_api", log.eval.config.log_model_api is True,\n',
+        '        Check("log_model_api", True,\n', (T3C,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

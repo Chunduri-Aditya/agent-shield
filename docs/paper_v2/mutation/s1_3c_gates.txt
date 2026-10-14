@@ -1,0 +1,28 @@
+mutation rows, step s1-3c, HEAD 277aae95aacf4e8d3d6cb8899cc20dc9fee4b1ce, python .venv/bin/python
+
+control: rc=0 GREEN (31 passed in 3.99s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3c-01-cap-ceiling | a total cap above $180 is accepted | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_refuses_a_total_cap_above_180 |
+| s1-3c-02-prior-ignored | prior ledgers do not count against the credit | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_counts_prior_ledgers_against_the_total |
+| s1-3c-03-smoke-cap-ignored | the smoke cap per model is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_smoke_model_cap |
+| s1-3c-04-allocation-optional | a main run without an allocation row passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_main_needs_an_allocation_row |
+| s1-3c-05-clean-unchecked | the clean arm's description is not checked | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_clean_arm_must_not_carry_the_directive |
+| s1-3c-06-served-from-event | the serving model is read from ModelEvent.model | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_served_model_mismatch_fails |
+| s1-3c-07-output-fallback | Inspect's output.fallback is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_any_fallback_evidence_fails[kw1] |
+| s1-3c-08-iterations-fallback | a fallback usage iteration is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_any_fallback_evidence_fails[kw0] |
+| s1-3c-09-usage-models | usage under another model is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_usage_under_another_model_fails |
+| s1-3c-10-missing-raw | a missing raw response passes the served check | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_missing_raw_call_fails |
+| s1-3c-11-thinking-unchecked | the thinking object is not compared to the policy | yes | yes | 1 | RED | 2: tests/pilot/test_gates_s1.py::test_post_on_model_without_the_display_policy_fails, tests/pilot/test_gates_s1.py::test_post_thinking_on_an_off_model_fails |
+| s1-3c-12-effort-unchecked | an effort in the request passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_effort_in_the_request_fails |
+| s1-3c-13-tool-choice-unchecked | a forced tool_choice passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_forced_tool_choice_fails |
+| s1-3c-14-model-args-unchecked | model args are not compared to the policy | yes | yes | 1 | RED | 2: tests/pilot/test_gates_s1.py::test_post_model_args_must_equal_the_policy, tests/pilot/test_gates_s1.py::test_post_contrast_cell_policy |
+| s1-3c-15-declined-usage | a declined sample fails the usage check | yes | yes | 1 | RED | 2: tests/pilot/test_gates_s1.py::test_post_declined_samples_do_not_fail_the_loop_or_usage, tests/pilot/test_gates_s1.py::test_post_all_declined_passes_the_loop |
+| s1-3c-16-loop-always | a run with no tool loop passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_no_tool_loop_in_any_answered_sample_fails |
+| s1-3c-17-loop-all-declined | an all declined run fails the loop | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_all_declined_passes_the_loop |
+| s1-3c-18-dataset-unchecked | a log from another task set passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_dataset_hash_must_match |
+| s1-3c-19-contrast-arm | a contrast cell accepts clean samples | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_contrast_cell_refuses_clean_samples |
+| s1-3c-20-log-api-unchecked | a log without --log-model-api passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_needs_log_model_api |
+
+result: ALL RED, control GREEN

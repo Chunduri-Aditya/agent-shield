@@ -400,6 +400,24 @@ def local_model_check(log: EvalLog) -> Check:
     return Check("local_model", ok, f"model {model}, base url {shown}")
 
 
+def revision_check(log: EvalLog, setup: dict[str, Any]) -> Check:
+    """The log's commit is the setup sha and the tree was clean."""
+    revision = log.eval.revision
+    if revision is None:
+        return Check("revision", False, "log.eval.revision missing")
+    # Inspect writes `git rev-parse --short HEAD` (inspect_ai/_util/git.py:43), so the
+    # log carries an abbreviated SHA and setup_sha the full one: match on the prefix,
+    # never shorter than git's own seven character minimum.
+    commit = revision.commit
+    ok = len(commit) >= 7 and setup["setup_sha"].startswith(commit) and revision.dirty is False
+    return Check(
+        "revision",
+        ok,
+        f"commit {revision.commit[:12]} vs setup_sha {setup['setup_sha'][:12]},"
+        f" dirty={revision.dirty}",
+    )
+
+
 def post_checks(
     data_dir: Path,
     repo: Path,
@@ -506,27 +524,7 @@ def post_checks(
     checks.append(errors_check(samples, log.error))
     checks.append(stop_reason_check(samples))
 
-    revision = log.eval.revision
-    if revision is None:
-        checks.append(Check("revision", False, "log.eval.revision missing"))
-    else:
-        # Inspect writes `git rev-parse --short HEAD` (inspect_ai/_util/git.py:43), so the
-        # log carries an abbreviated SHA and setup_sha the full one: match on the prefix,
-        # never shorter than git's own seven character minimum.
-        commit = revision.commit
-        ok = (
-            len(commit) >= 7
-            and setup["setup_sha"].startswith(commit)
-            and revision.dirty is False
-        )
-        checks.append(
-            Check(
-                "revision",
-                ok,
-                f"commit {revision.commit[:12]} vs setup_sha {setup['setup_sha'][:12]},"
-                f" dirty={revision.dirty}",
-            )
-        )
+    checks.append(revision_check(log, setup))
 
     hashes_ok, mismatches = scorer_hashes_match(repo, setup)
     checks.append(
