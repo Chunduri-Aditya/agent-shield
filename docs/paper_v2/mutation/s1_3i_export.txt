@@ -1,0 +1,19 @@
+mutation rows, step s1-3i, HEAD 5d04a502c89b2d104829ad63b65ea54f08482657, python .venv/bin/python
+
+control: rc=0 GREEN (13 passed in 4.80s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-3i-01-thinking-exported | thinking text enters the transcript | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_transcript_keeps_raw_order_and_drops_thinking |
+| s1-3i-02-model-leaked | the model name reaches the labeller | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export.py::test_items_hide_every_identifier, tests/pilot/test_blind_export.py::test_transcript_keeps_raw_order_and_drops_thinking |
+| s1-3i-03-seed-ignored | the export is not a function of the seed | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_same_seed_same_export_and_another_seed_differs |
+| s1-3i-04-key-in-repo | the key may be written inside the public repo | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_key_inside_the_repo_is_refused |
+| s1-3i-05-declined-exported | declined samples are exported | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export.py::test_declined_samples_are_left_out, tests/pilot/test_blind_export.py::test_mode_all_exports_every_answered_sample |
+| s1-3i-06-order-lost | block order within a response is not kept | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_transcript_keeps_raw_order_and_drops_thinking |
+| s1-3i-07-no-clean-controls | the clean negative controls are dropped | yes | yes | 1 | RED | 3: tests/pilot/test_blind_export.py::test_gold_draw_follows_the_preregistration, tests/pilot/test_blind_export.py::test_clean_controls_are_mixed_in, tests/pilot/test_blind_export.py::test_relabel_is_a_tenth_with_new_ids |
+| s1-3i-08-relabel-same-ids | relabel items reuse the original ids | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_relabel_is_a_tenth_with_new_ids |
+| s1-3i-09-no-redistribution | a short model's slots are lost | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_a_short_model_gives_its_slots_to_the_others |
+| s1-3i-10-overwrite | an existing export is overwritten | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_existing_output_is_never_overwritten |
+| s1-3i-11-halves-unbalanced | every item lands in the dev half | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export.py::test_halves_are_balanced_per_model |
+
+result: ALL RED, control GREEN

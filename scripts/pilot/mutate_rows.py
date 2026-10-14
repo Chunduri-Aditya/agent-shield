@@ -564,6 +564,44 @@ ROWS["s1-3h"] = (
         (T3H, "tests/pilot/test_s1_offline_e2e.py")),
 )
 
+# v2 S1 plan step 3i: the blind export (scripts/v2/blind_export.py).
+T3I = "tests/pilot/test_blind_export.py"
+BEX = "scripts/v2/blind_export.py"
+
+ROWS["s1-3i"] = (
+    Row("s1-3i-01-thinking-exported", "thinking text enters the transcript", BEX,
+        '                thoughts.append(str(block["thinking"]))\n',
+        '                thoughts.append(str(block["thinking"]))\n'
+        '                lines.append(str(block["thinking"]))\n', (T3I,)),
+    Row("s1-3i-02-model-leaked", "the model name reaches the labeller", BEX,
+        '        items.append({"item": item, "transcript": transcript})\n',
+        '        items.append({"item": item, "transcript": f"{model}\\n{transcript}"})\n', (T3I,)),
+    Row("s1-3i-03-seed-ignored", "the export is not a function of the seed", BEX,
+        "    rng = random.Random(seed)\n", "    rng = random.Random()\n", (T3I,)),
+    Row("s1-3i-04-key-in-repo", "the key may be written inside the public repo", BEX,
+        "    if key_path == REPO or REPO in key_path.parents:\n", "    if False:\n", (T3I,)),
+    Row("s1-3i-05-declined-exported", "declined samples are exported", BEX,
+        "            if not declined_before_output(sample):\n", "            if True:\n", (T3I,)),
+    Row("s1-3i-06-order-lost", "block order within a response is not kept", BEX,
+        "        for block in content if isinstance(content, list) else []:\n",
+        "        for block in (sorted(content, key=lambda b: str(b.get(\"type\")), reverse=True)"
+        " if isinstance(content, list) else []):\n", (T3I,)),
+    Row("s1-3i-07-no-clean-controls", "the clean negative controls are dropped", BEX,
+        '        for arm, per in (("poisoned", gold_per_model), ("clean", clean_per_model)):\n',
+        '        for arm, per in (("poisoned", gold_per_model),):\n', (T3I,)),
+    Row("s1-3i-08-relabel-same-ids", "relabel items reuse the original ids", BEX,
+        "    relabel_key = {new_id(taken): src for src in relabel_src}\n",
+        "    relabel_key = {src: src for src in relabel_src}\n", (T3I,)),
+    Row("s1-3i-09-no-redistribution", "a short model's slots are lost", BEX,
+        "    while spare > 0:\n", "    while False:\n", (T3I,)),
+    Row("s1-3i-10-overwrite", "an existing export is overwritten", BEX,
+        "    if key_path.exists() or (out_dir.exists() and any(out_dir.iterdir())):\n",
+        "    if False:\n", (T3I,)),
+    Row("s1-3i-11-halves-unbalanced", "every item lands in the dev half", BEX,
+        '            key_items[item]["half"] = "dev" if i % 2 == 0 else "heldout"\n',
+        '            key_items[item]["half"] = "dev"\n', (T3I,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(
