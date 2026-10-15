@@ -1,0 +1,11 @@
+mutation rows, step s1-a1, HEAD 1f2b90332a51d33cf72b69dc74bec62bc40af910, python .venv/bin/python
+
+control: rc=0 GREEN (1 passed, 1 skipped in 0.05s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-A1-01-tool-changed | the labelling tool changes after A1 | yes | yes | 1 | RED | 1: tests/pilot/test_s1_amendments.py::test_the_quoted_hashes_match_the_files |
+| s1-A1-02-codebook-changed | the codebook changes after A1 | yes | yes | 1 | RED | 1: tests/pilot/test_s1_amendments.py::test_the_quoted_hashes_match_the_files |
+| s1-A1-03-prereg-changed | prereg/S1.md changes | yes | yes | 1 | RED | 1: tests/pilot/test_s1_amendments.py::test_the_preregistration_stays_byte_identical |
+
+result: ALL RED, control GREEN

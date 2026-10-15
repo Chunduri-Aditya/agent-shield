@@ -907,6 +907,19 @@ ROWS["s1-label"] = (
         "RELABEL_EVERY = 4", "RELABEL_EVERY = 10**9", (TL,)),
 )
 
+# Amendment A1 (docs/paper_v2/prereg/S1_AMENDMENTS.md) pins the codebook and the tool by hash.
+TA1 = "tests/pilot/test_s1_amendments.py"
+
+ROWS["s1-a1"] = (
+    Row("s1-A1-01-tool-changed", "the labelling tool changes after A1", LBL,
+        "RELABEL_EVERY = 4", "RELABEL_EVERY = 4  # edited", (TA1,)),
+    Row("s1-A1-02-codebook-changed", "the codebook changes after A1",
+        "docs/paper_v2/prereg/S1_CODEBOOK.md", "## Labels you give", "## Labels to give",
+        (TA1,)),
+    Row("s1-A1-03-prereg-changed", "prereg/S1.md changes", "docs/paper_v2/prereg/S1.md",
+        "## Stopping rule", "## Stopping rules", (TA1,)),
+)
+
 
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
