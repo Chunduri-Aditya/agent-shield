@@ -118,7 +118,7 @@ Answer to "do the planned runs cover paper v2": **not yet** at the check; gaps c
 | Headline TR classes on the 13 model Claude panel | S1 logs, blind export, gold labels, judge at κ ≥ 0.8 (D10) | runs planned; S1 preregistered (`prereg/S1.md`, D40); gold set sized at 286 labels by `scripts/v2/gold_size.py` (held out half ≥ 140); fallback if κ < 0.8 decided (D38); codebook wording from RR02 before labelling |
 | Event attack success, any call count, per model | `tools_event_v2` on S1 logs (D36) | planned (S1 Phase 3) |
 | Utility from the clean arm | S1 clean arm exact match | planned; whole word containment (D40) |
-| S3a stated rationale | S1 final messages, codebook | codebook unwritten; labelled in the same sitting as TR |
+| S3a stated rationale | S1 final messages, codebook | codebook unwritten; its own pass after research prompt 04, not in the S1 labelling sitting (D53) |
 | S5 classifier declines | `stop_details.category` per call in S1 logs | planned |
 | Recognition without disclosure (D33) | summarized thinking on default thinking models | planned as a one sided indicator |
 | S2 boundary contracts (ASR, UUA, TR per arm) | new task and declaration tool | plan written in `POST_S1_PLAN.md`, runs after S1 (D34): forced `tool_choice` is rejected on Sonnet 5.5, Opus 5.5 and Fable 5.1; no reasoning field in the declaration schema; a preregistered "contract poisoned" outcome; `MAPPINGS.md` rows for any variant |
