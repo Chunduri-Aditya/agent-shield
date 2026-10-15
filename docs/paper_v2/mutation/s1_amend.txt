@@ -1,0 +1,22 @@
+mutation rows, step s1-amend, HEAD 8795f4191a0c2686ccb174a6ec254ae262143f60, python .venv/bin/python3
+
+control: rc=0 GREEN (87 passed in 9.16s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-amend-01-fields | an amendment may change a design field | yes | yes | 1 | RED | 3: tests/pilot/test_setup_s1.py::test_amend_refuses_a_changed_design_field[kw0], tests/pilot/test_setup_s1.py::test_amend_refuses_a_changed_design_field[kw1], tests/pilot/test_setup_s1.py::test_amend_refuses_a_changed_design_field[kw2] |
+| s1-amend-02-file-set | an amendment may change the hashed file set | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_refuses_a_changed_hashed_file_set |
+| s1-amend-03-outside | an amendment may change any file | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_refuses_a_change_outside_the_gate_and_scorer |
+| s1-amend-04-overwrite | a kept record can be overwritten | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_never_overwrites_a_kept_record |
+| s1-amend-05-no-reason | an amendment needs no reason | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_needs_a_record_and_a_reason |
+| s1-amend-06-no-change | an amendment with nothing changed is written | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_refuses_when_nothing_changed |
+| s1-amend-07-history | earlier amendments are dropped | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_carries_earlier_amendments |
+| s1-amend-08-widened | the task file becomes amendable | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amendable_files_are_checking_code_only |
+| s1-amend-09-revision-ignores | a log at the amended freeze fails revision | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_accepts_a_log_written_at_an_amended_freeze |
+| s1-amend-10-revision-any | any amendment passes every log | yes | yes | 1 | RED | 3: tests/pilot/test_gates_s1.py::test_post_refuses_a_log_at_a_sha_no_amendment_lists, tests/pilot/test_gates_s1.py::test_post_refuses_a_dirty_log_at_an_amended_freeze, tests/pilot/test_gates_s1.py::test_post_refuses_an_old_sha_log_written_after_the_amendment |
+| s1-amend-11-any-time | an old sha log written after the amendment passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_refuses_an_old_sha_log_written_after_the_amendment |
+| s1-amend-12-runner | the runner's grid and limits become amendable | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amendable_files_are_checking_code_only |
+| s1-amend-13-not-atomic | the old record moves before the new one is written | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_amend_never_leaves_the_data_dir_without_a_record |
+| s1-amend-14-field-dropped | a recorded field may change on amend | yes | yes | 1 | RED | 1: tests/pilot/test_setup_s1.py::test_every_recorded_field_but_the_freeze_itself_must_hold |
+
+result: ALL RED, control GREEN

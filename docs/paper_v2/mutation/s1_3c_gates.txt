@@ -1,6 +1,6 @@
-mutation rows, step s1-3c, HEAD 97e5741e30b7baf0d183adabc9582c30593a08f8, python .venv/bin/python
+mutation rows, step s1-3c, HEAD 8795f4191a0c2686ccb174a6ec254ae262143f60, python .venv/bin/python3
 
-control: rc=0 GREEN (35 passed in 4.77s)
+control: rc=0 GREEN (66 passed in 6.71s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
@@ -9,7 +9,7 @@ control: rc=0 GREEN (35 passed in 4.77s)
 | s1-3c-03-smoke-cap-ignored | the smoke cap per model is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_smoke_model_cap |
 | s1-3c-04-allocation-optional | a main run without an allocation row passes | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_pre_main_needs_an_allocation_row |
 | s1-3c-05-clean-unchecked | the clean arm's description is not checked | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_clean_arm_must_not_carry_the_directive |
-| s1-3c-06-served-from-event | the serving model is read from ModelEvent.model | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_served_model_mismatch_fails |
+| s1-3c-06-served-from-event | the serving model is read from ModelEvent.model | yes | yes | 1 | RED | 3: tests/pilot/test_gates_s1.py::test_post_served_model_mismatch_fails, tests/pilot/test_gates_s1.py::test_post_reads_only_the_error_and_the_last_traceback_line[httpx2.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)\n\nDuring handling ...\nValueError: bad json], tests/pilot/test_gates_s1.py::test_post_reads_only_the_error_and_the_last_traceback_line[  File "x.py", line 3, in f\n    raise ValueError()  # HTTP 503\nValueError: bad json] |
 | s1-3c-07-output-fallback | Inspect's output.fallback is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_any_fallback_evidence_fails[kw1] |
 | s1-3c-08-iterations-fallback | a fallback usage iteration is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_any_fallback_evidence_fails[kw0] |
 | s1-3c-09-usage-models | usage under another model is ignored | yes | yes | 1 | RED | 1: tests/pilot/test_gates_s1.py::test_post_usage_under_another_model_fails |

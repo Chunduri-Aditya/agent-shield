@@ -23,6 +23,13 @@ A sample declined by the provider's classifier before any output has no tool loo
 may carry zero usage; the loop, usage and size checks skip it and a `declines` row
 counts it (J8: a decline is an outcome, not a broken run).
 
+Inspect logs a failed attempt it retried as its own ModelEvent (error set, no usage, no
+served model). The checks that read model output (served model, size, errors, loop,
+declines, stop reasons, thinking) skip exactly the attempts the scorer drops
+(`evals.tools_event_v2.retried_attempts`: a transport drop or an HTTP 5xx retried into a
+success with the same request); a `transport_retries` row lists each one (D43, the S1 main
+run on claude-opus-5, 2026-10-14).
+
 Exit 0 only when every check passes. Nothing is written anywhere.
 """
 
@@ -32,6 +39,7 @@ import argparse
 import json
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from inspect_ai.event import ModelEvent, ToolEvent
 from inspect_ai.log import EvalLog, EvalSample
 
+from evals.tools_event_v2 import retried_attempts
 from evals.tools_v2 import CLEAN_DESCRIPTION
 from scripts.pilot import gates as g
 from scripts.pilot._common import (
@@ -256,6 +265,44 @@ def thinking_check(samples: list[EvalSample]) -> Check:
                  f"thinking blocks {blocks}, with summary text {with_text}, redacted {redacted}")
 
 
+def without_retried(sample: EvalSample) -> EvalSample:
+    """A copy of the sample without the failed attempts Inspect retried (the scorer's rule)."""
+    drop = {i for i, _ in retried_attempts(sample.events)}
+    if not drop:
+        return sample
+    return sample.model_copy(
+        update={"events": [e for i, e in enumerate(sample.events) if i not in drop]})
+
+
+def transport_retries_check(samples: list[EvalSample]) -> Check:
+    found: list[str] = []
+    for s in samples:
+        index = {id(e): n for n, e in enumerate(g.model_events(s))}
+        found += [f"{g.sample_label(s)} ModelEvent[{index[id(s.events[i])]}] {kind}"
+                  for i, kind in retried_attempts(s.events)]
+    shown = "; ".join(found[:5]) + (f" (+{len(found) - 5} more)" if len(found) > 5 else "")
+    return Check("transport_retries", None,
+                 f"{len(found)} failed attempt(s) retried with the same request"
+                 + (f": {shown}" if found else ""))
+
+
+def revision_check(log: EvalLog, setup: dict[str, Any]) -> Check:
+    """The v1.2 revision check, also passing a clean log written at a freeze that a dated
+    amendment replaced (`setup.json` `amends`, written by `setup_s1.py --amend`, D43), and
+    only when the log was written before that amendment."""
+    check = g.revision_check(log, setup)
+    if check.ok:
+        return check
+    created = datetime.fromisoformat(log.eval.created)
+    for amend in setup.get("amends", []):
+        earlier = g.revision_check(log, {"setup_sha": str(amend.get("setup_sha", ""))})
+        written = datetime.fromisoformat(str(amend.get("written", "")))
+        if earlier.ok and created <= written:
+            return Check("revision", True, f"{earlier.evidence}, written {log.eval.created}"
+                                           f" before the amendment of {written.isoformat()}")
+    return check
+
+
 def _skip_declined(fn: Any) -> Any:
     return lambda s: None if declined_before_output(s) else fn(s)
 
@@ -272,8 +319,9 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, cell: str) -> list[C
     ids = set(setup.get("s1_sample_ids", []))
     bad_ids = [str(s.id) for s in samples if str(s.id) not in ids
                or (cell != "main" and not str(s.id).endswith(":P"))]
-    declined = [s for s in samples if declined_before_output(s)]
-    answered = [s for s in samples if s not in declined]
+    kept = [without_retried(s) for s in samples]
+    declined = [s for s in kept if declined_before_output(s)]
+    answered = [s for s in kept if s not in declined]
     looped = [s for s in answered if any(isinstance(e, ToolEvent) for e in s.events)]
     categories: Counter[str] = Counter()
     for s in declined:
@@ -311,11 +359,11 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, cell: str) -> list[C
               f"log {log.eval.model_args!r} vs policy {want_args!r}"),
         g.per_sample("thinking_request", samples, lambda s: check_thinking(s, want_args),
                      "every raw request matches the thinking policy, no effort, tool_choice auto"),
-        g.per_sample("served_model", samples, lambda s: check_served(s, requested, log.eval.model),
+        g.per_sample("served_model", kept, lambda s: check_served(s, requested, log.eval.model),
                      f"every raw response served by {requested}, no fallback"),
         g.per_sample("usage", samples, _skip_declined(g.check_usage),
                      "model_usage with total_tokens > 0 (declined samples skipped)"),
-        g.per_sample("size", samples, _skip_declined(g.check_size),
+        g.per_sample("size", kept, _skip_declined(g.check_size),
                      f"input <= {g.SIZE_CAP} per call (declined samples skipped)"),
     ]
     limited = [s for s in samples if s.limit is not None]
@@ -323,16 +371,17 @@ def post_checks(data_dir: Path, repo: Path, log_path: Path, cell: str) -> list[C
     checks += [
         Check("truncation", bool(samples) and share <= g.TRUNCATION_MAX,
               f"{len(limited)}/{len(samples)} samples hit a limit ({share:.1%})"),
-        g.errors_check(samples, log.error),
-        g.stop_reason_check(samples),
-        thinking_check(samples),
+        g.errors_check(kept, log.error),
+        transport_retries_check(samples),
+        g.stop_reason_check(kept),
+        thinking_check(kept),
         Check("declines", None, f"{len(declined)}/{len(samples)} declined before output;"
                                 f" categories {dict(categories)}"),
         Check("dataset",
               (log.eval.metadata or {}).get("dataset_sha256") == setup.get("dataset_sha256"),
               f"log {(log.eval.metadata or {}).get('dataset_sha256')!r}"
               f" vs setup {setup.get('dataset_sha256')!r}"),
-        g.revision_check(log, setup),
+        revision_check(log, setup),
     ]
     ok, mismatches = scorer_hashes_match(repo, setup)
     checks.append(Check("scorer_hashes", ok, f"{len(setup['scorer_sha256'])} file(s) match"

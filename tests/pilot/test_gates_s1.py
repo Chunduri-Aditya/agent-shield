@@ -362,3 +362,223 @@ def test_post_reports_thinking_blocks_as_info(world: dict[str, Any]) -> None:
              if c.name == "thinking"]
     assert row.ok is None
     assert row.evidence == "thinking blocks 2, with summary text 1, redacted 0"
+
+
+# ---- retried attempts (S1 main, claude-opus-5 poisoned, 2026-10-14; D43) ----
+# Inspect logs a failed attempt it retried as its own ModelEvent: the error, the exception on
+# the traceback's last line, call.error, a response of {"body": <message>}, no usage, never
+# completed. The retry carries the same request with a new x-irid and is stamped earlier.
+
+DROP_BODY = "peer closed connection without sending complete message body (incomplete chunked read)"
+DROP = f"RemoteProtocolError('{DROP_BODY}')"
+DROP_TB = f"Traceback (most recent call last):\n  ...\nhttpx2.RemoteProtocolError: {DROP_BODY}\n"
+OVERLOADED = "Error code: 529 - {'type': 'error', 'error': {'type': 'overloaded_error'}}"
+
+
+def dropped(model: str = OFF, *, error: str = DROP, traceback: str = DROP_TB, irid: str = "a",
+            response: dict[str, Any] | None = None, with_usage: bool = False,
+            call_error: bool | None = True, completed: bool = False) -> ModelEvent:
+    """A failed attempt shaped as Inspect 0.3.278 logged the two dropped Opus 5 streams."""
+    e = event(model, request_extra={"extra_headers": {"x-irid": irid}})
+    assert e.call is not None
+    e.call = ModelCall(request=e.call.request,
+                       response={"body": DROP_BODY} if response is None else response,
+                       error=call_error)
+    e.output.usage = usage() if with_usage else None
+    e.error, e.traceback = error, traceback
+    if completed:
+        e.completed = e.timestamp
+    return e
+
+
+def overloaded(irid: str = "a") -> ModelEvent:
+    return dropped(error=OVERLOADED, irid=irid,
+                   traceback=f"Traceback ...\nanthropic.InternalServerError: {OVERLOADED}\n",
+                   response={"type": "error", "error": {"type": "overloaded_error"}})
+
+
+def retry(model: str = OFF, *, irid: str = "b", **extra: Any) -> ModelEvent:
+    return event(model, request_extra={"extra_headers": {"x-irid": irid}} | extra)
+
+
+def read() -> ToolEvent:
+    return ToolEvent(id="c1", function="read_file", arguments={"path": "a.txt"})
+
+
+def run_events(world: dict[str, Any], events: list[Any]) -> dict[str, bool | None]:
+    models = [e for e in events if isinstance(e, ModelEvent)]
+    first = models[0].timestamp
+    for n, e in enumerate(models[1:], 1):  # the retry stamped before the attempt it replaced
+        e.timestamp = first.replace(microsecond=(first.microsecond + 1000 * (len(models) - n))
+                                    % 1_000_000)
+    s = sample("TL-01-v2-t001:P", events=events)
+    return post(world, s1_log([s, sample("TL-01-v2-t001:C")], sha=world["sha"]))
+
+
+def retried(world: dict[str, Any], *, failed: ModelEvent | None = None,
+            then: ModelEvent | None = None) -> dict[str, bool | None]:
+    return run_events(world, [event(), read(), failed or dropped(), then or retry()])
+
+
+def test_post_excuses_a_dropped_stream_retried_with_the_same_request(
+        world: dict[str, Any]) -> None:
+    result = retried(world)
+    assert passes(result), result
+    assert result["transport_retries"] is None
+
+
+def test_post_names_each_excused_attempt(world: dict[str, Any]) -> None:
+    s = sample("TL-01-v2-t001:P", events=[event(), read(), dropped(), retry()])
+    path = write_log(world["tmp"] / "r.eval", s1_log([s], sha=world["sha"]))
+    row = {c.name: c for c in gates_s1.post_checks(world["data"], world["repo"], path, "main")}
+    assert "1 failed attempt" in row["transport_retries"].evidence
+    assert "TL-01-v2-t001:P#1 ModelEvent[1] RemoteProtocolError" in (
+        row["transport_retries"].evidence)
+
+
+def test_post_a_clean_log_reports_no_retried_attempts(world: dict[str, Any]) -> None:
+    result = post(world, good_log(world))
+    assert passes(result) and result["transport_retries"] is None
+
+
+def test_post_excuses_a_retried_server_error(world: dict[str, Any]) -> None:
+    assert passes(retried(world, failed=overloaded()))
+
+
+def test_post_excuses_two_drops_in_a_row_then_a_success(world: dict[str, Any]) -> None:
+    result = run_events(world, [event(), read(), dropped(), overloaded(irid="b"),
+                                retry(irid="c")])
+    assert passes(result), result
+
+
+def test_post_three_drops_in_a_row_are_not_excused(world: dict[str, Any]) -> None:
+    events = [event(), read(), dropped(), dropped(irid="b"), dropped(irid="c"), retry(irid="d")]
+    assert run_events(world, events)["errors"] is False
+
+
+def test_post_a_retry_that_also_failed_is_not_excused(world: dict[str, Any]) -> None:
+    assert retried(world, then=dropped(irid="b"))["errors"] is False
+
+
+def test_post_a_failed_last_call_is_not_excused(world: dict[str, Any]) -> None:
+    assert run_events(world, [event(), read(), dropped()])["errors"] is False
+
+
+def test_post_a_tool_event_between_attempt_and_retry_is_not_excused(
+        world: dict[str, Any]) -> None:
+    assert run_events(world, [event(), dropped(), read(), retry()])["errors"] is False
+
+
+@pytest.mark.parametrize("then", [
+    {"messages": [{"role": "user", "content": "something else"}]},
+    {"max_tokens": 2048},
+])
+def test_post_a_retry_with_a_different_request_is_not_excused(
+        world: dict[str, Any], then: dict[str, Any]) -> None:
+    assert retried(world, then=retry(**then))["errors"] is False
+
+
+def test_post_only_the_request_id_header_may_differ(world: dict[str, Any]) -> None:
+    then = event(request_extra={"extra_headers": {"x-irid": "b", "x-other": "1"}})
+    assert retried(world, then=then)["errors"] is False
+
+
+@pytest.mark.parametrize("error,traceback", [
+    ("BadRequestError(\"Error code: 400 - {'type': 'invalid_request_error'}\")",
+     "anthropic.BadRequestError: Error code: 400"),
+    ("RateLimitError(\"Error code: 429 - {'type': 'rate_limit_error'}\")",
+     "anthropic.RateLimitError: Error code: 429"),
+    ("Connection error.", "httpx2.LocalProtocolError: bad request line"),
+    ("ValueError('could not parse the response')", "ValueError: could not parse the response"),
+])
+def test_post_a_client_or_unknown_error_is_not_excused(world: dict[str, Any], error: str,
+                                                      traceback: str) -> None:
+    failed = dropped(error=error, traceback=f"Traceback ...\n{traceback}\n")
+    assert retried(world, failed=failed)["errors"] is False
+
+
+def test_post_an_sdk_wrapped_connection_error_is_excused(world: dict[str, Any]) -> None:
+    failed = dropped(error="Connection error.", response={"body": None},  # APIError.body
+                     traceback="Traceback ...\nanthropic.APIConnectionError: Connection error.\n")
+    assert passes(retried(world, failed=failed))
+
+
+def test_post_excuses_an_overloaded_event_mid_stream(world: dict[str, Any]) -> None:
+    # An SSE error event on a 200 stream: bare APIStatusError, no status digits anywhere.
+    failed = dropped(error="Overloaded", traceback="anthropic.APIStatusError: Overloaded",
+                     response={"type": "error", "error": {"type": "overloaded_error",
+                                                          "message": "Overloaded"}})
+    assert passes(retried(world, failed=failed))
+
+
+@pytest.mark.parametrize("traceback", [
+    # the cause was a drop, the error that surfaced was not
+    f"httpx2.RemoteProtocolError: {DROP_BODY}\n\nDuring handling ...\nValueError: bad json",
+    # a status in a frame's source line is not the error's status
+    '  File "x.py", line 3, in f\n    raise ValueError()  # HTTP 503\nValueError: bad json',
+])
+def test_post_reads_only_the_error_and_the_last_traceback_line(world: dict[str, Any],
+                                                              traceback: str) -> None:
+    failed = dropped(error="ValueError('bad json')", traceback=traceback)
+    result = retried(world, failed=failed)  # not excused: size and served model see it
+    assert result["size"] is False and result["served_model"] is False
+
+
+def test_post_a_client_error_envelope_mid_stream_is_not_excused(
+        world: dict[str, Any]) -> None:
+    failed = dropped(error="bad request", traceback="anthropic.APIStatusError: bad request",
+                     response={"type": "error", "error": {"type": "invalid_request_error"}})
+    assert retried(world, failed=failed)["errors"] is False
+
+
+@pytest.mark.parametrize("kw", [
+    {"response": {"model": OFF, "stop_reason": "end_turn", "content": []}},
+    {"response": {"type": "error", "error": {}}},
+    {"with_usage": True},
+    {"call_error": None},
+    {"completed": True},
+    {"error": OVERLOADED, "traceback": f"anthropic.InternalServerError: {OVERLOADED}",
+     "response": {"type": "error", "model": OFF}},
+])
+def test_post_an_errored_call_that_got_a_response_is_not_excused(
+        world: dict[str, Any], kw: dict[str, Any]) -> None:
+    # Not excused, so the attempt stays in every check (a 5xx alone passes `errors`).
+    result = retried(world, failed=dropped(**kw))
+    assert not passes(result), result
+
+
+# ---- amended freeze (D43): a log written before a dated amendment of the setup record ----
+
+def amend_setup(world: dict[str, Any], old_sha: str,
+                written: str = "2026-10-14T21:00:00+00:00") -> None:
+    path = world["data"] / "setup.json"
+    setup = json.loads(path.read_text())
+    setup["amends"] = [{"setup_sha": old_sha, "file": f"setup.{old_sha[:12]}.json",
+                        "written": written}]
+    path.write_text(json.dumps(setup))
+
+
+def amended_log(world: dict[str, Any], sha: str, dirty: bool = False) -> EvalLog:
+    return s1_log([sample("TL-01-v2-t001:P"), sample("TL-01-v2-t001:C")], sha=sha, dirty=dirty)
+
+
+def test_post_accepts_a_log_written_at_an_amended_freeze(world: dict[str, Any]) -> None:
+    amend_setup(world, "a" * 40)
+    result = post(world, amended_log(world, "a" * 40))
+    assert passes(result), result
+
+
+def test_post_refuses_a_log_at_a_sha_no_amendment_lists(world: dict[str, Any]) -> None:
+    amend_setup(world, "a" * 40)
+    assert post(world, amended_log(world, "b" * 40))["revision"] is False
+    assert post(world, amended_log(world, world["sha"]))["revision"] is True
+
+
+def test_post_refuses_a_dirty_log_at_an_amended_freeze(world: dict[str, Any]) -> None:
+    amend_setup(world, "a" * 40)
+    assert post(world, amended_log(world, "a" * 40, dirty=True))["revision"] is False
+
+
+def test_post_refuses_an_old_sha_log_written_after_the_amendment(world: dict[str, Any]) -> None:
+    amend_setup(world, "a" * 40, written="2026-10-13T00:00:00+00:00")  # the log is 10-14
+    assert post(world, amended_log(world, "a" * 40))["revision"] is False

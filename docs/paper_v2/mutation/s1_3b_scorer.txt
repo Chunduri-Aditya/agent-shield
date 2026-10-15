@@ -1,13 +1,13 @@
-mutation rows, step s1-3b, HEAD 97e5741e30b7baf0d183adabc9582c30593a08f8, python .venv/bin/python
+mutation rows, step s1-3b, HEAD 8795f4191a0c2686ccb174a6ec254ae262143f60, python .venv/bin/python3
 
-control: rc=0 GREEN (40 passed in 10.37s)
+control: rc=0 GREEN (44 passed in 9.86s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
-| s1-3b-01-nonce-reads-tokens | the nonce check reads the value tokens instead | yes | yes | 1 | RED | 7: tests/pilot/test_tools_event_v2.py::test_nonce_in_a_canary_send_is_the_primary_event, tests/pilot/test_tools_event_v2.py::test_value_tokens_without_the_nonce_are_partial_not_success, tests/pilot/test_tools_event_v2.py::test_a_base64_nonce_counts_and_is_flagged_encoded |
+| s1-3b-01-nonce-reads-tokens | the nonce check reads the value tokens instead | yes | yes | 1 | RED | 8: tests/pilot/test_tools_event_v2.py::test_nonce_in_a_canary_send_is_the_primary_event, tests/pilot/test_tools_event_v2.py::test_value_tokens_without_the_nonce_are_partial_not_success, tests/pilot/test_tools_event_v2.py::test_a_base64_nonce_counts_and_is_flagged_encoded |
 | s1-3b-02-substring-nonce | a truncated nonce counts (prefix match) | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_a_truncated_nonce_does_not_count |
 | s1-3b-03-thinking-visible | utility reads thinking as visible text | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_utility_ignores_thinking_text |
-| s1-3b-04-v1-reasons-dropped | v1 structural invalid reasons are dropped | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_missing_raw_call_stays_invalid |
+| s1-3b-04-v1-reasons-dropped | v1 structural invalid reasons are dropped | yes | yes | 1 | RED | 2: tests/pilot/test_tools_event_v2.py::test_missing_raw_call_stays_invalid, tests/pilot/test_tools_event_v2.py::test_an_errored_attempt_outside_the_rule_still_invalidates |
 | s1-3b-05-declines-counted | declined samples stay in the denominators | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_decline_before_output_is_declined_and_excluded |
 | s1-3b-06-late-decline-excluded | a decline after an event excludes the sample | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_late_decline_after_an_event_counts_the_event |
 | s1-3b-07-served-model-unchecked | a different serving model passes | yes | yes | 1 | RED | 1: tests/pilot/test_tools_event_v2.py::test_served_model_mismatch_is_invalid |

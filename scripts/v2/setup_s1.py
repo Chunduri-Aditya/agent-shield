@@ -16,6 +16,13 @@ writes `directive.txt` from the cleared TL-01 payload.
 
 It refuses a dirty tree, a data dir inside the repo, a missing file, a panel model the key
 cannot reach, a different directive already in the data dir, and an existing record.
+
+`--amend REASON` replaces the record after a dated amendment (D43) of the checking code:
+the replaced record is kept beside it as `setup.<sha12>.json` and listed in `amends`, and
+the S1 gate still passes a clean log written at that sha before the amendment. It refuses
+unless files in AMENDABLE (gates, scorer, cost, describe, export) are all that changed: the
+task, data, payload, request policy, run grid, prices, panel, preregistration, caps,
+ledgers, models and package versions must match the replaced record.
 """
 
 from __future__ import annotations
@@ -58,6 +65,18 @@ S1_FILES: tuple[str, ...] = _FIXED_FILES + tuple(
     sorted(str(p.relative_to(REPO)) for p in s1_panel.MODEL_ARGS_DIR.rglob("*.yaml")))
 
 Lister = Callable[[], dict[str, str]]
+
+# What a dated amendment may change: the code that checks, scores, prices and exports a
+# run, never what the model sees, the run grid and limits (`panel_s1.py`), the caps
+# (`allocate_s1.py`) or what the preregistration fixes.
+AMENDABLE: frozenset[str] = frozenset({
+    "evals/tools_v12.py", "evals/tools_event_v2.py", "scripts/pilot/_common.py",
+    "scripts/pilot/gates.py", "scripts/pilot/cost.py", "scripts/pilot/describe.py",
+    "scripts/v2/gates_s1.py", "scripts/v2/blind_export.py", "scripts/v2/setup_s1.py",
+})
+_SAME_ON_AMEND = ("total_cap", "reserve", "smoke_cap_per_model", "prior_ledgers", "panel",
+                  "dataset_sha256", "s1_sample_ids", "models", "directive_sha256",
+                  "pricing_retrieved", "inspect_ai_version", "anthropic_version", "data_dir")
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -126,11 +145,53 @@ def write_record(data: Path, record: dict[str, Any]) -> Path:
     return path
 
 
+def amend(repo: Path, data: Path, reason: str, *, files: tuple[str, ...] = S1_FILES,
+          lister: Lister = api_models, sample_ids: list[str], dataset_sha256: str,
+          amendable: frozenset[str] = AMENDABLE) -> dict[str, Any]:
+    """Replace DATA/setup.json with a record at the current HEAD, keeping the old one beside
+    it and listing it in `amends`; raise PilotError on any change outside `amendable`."""
+    path = Path(data) / SETUP_NAME
+    if not path.exists():
+        raise PilotError(f"no setup record to amend in {data}")
+    if len(reason.split()) < 4:
+        raise PilotError("an amendment needs a reason of at least one sentence")
+    old = json.loads(path.read_text())
+    record = build_record(repo, data, files=files, lister=lister,
+                          prior_ledgers=[Path(p) for p in old.get("prior_ledgers", [])],
+                          sample_ids=sample_ids, dataset_sha256=dataset_sha256)
+    for key in _SAME_ON_AMEND:
+        if record.get(key) != old.get(key):
+            raise PilotError(f"the amendment changes {key}:"
+                             f" {old.get(key)!r} -> {record.get(key)!r}")
+    if set(record["scorer_sha256"]) != set(old["scorer_sha256"]):
+        raise PilotError("the amendment changes the hashed file set")
+    changed = sorted(f for f, h in record["scorer_sha256"].items()
+                     if old["scorer_sha256"][f] != h)
+    if not changed or record["setup_sha"] == old["setup_sha"]:
+        raise PilotError("nothing changed since the recorded freeze")
+    outside = [f for f in changed if f not in amendable]
+    if outside:
+        raise PilotError(f"the amendment changes files outside the checking code: {outside}")
+    kept = path.with_name(f"setup.{old['setup_sha'][:12]}.json")
+    if kept.exists():
+        raise PilotError(f"{kept} exists; a replaced record is never overwritten")
+    record["amends"] = [*old.get("amends", []), {
+        "setup_sha": old["setup_sha"], "file": kept.name, "sha256": sha256_file(path),
+        "changed_files": changed, "reason": reason, "written": record["written"]}]
+    staged = path.with_name(SETUP_NAME + ".tmp")
+    staged.write_text(json.dumps(record, sort_keys=True, indent=2) + "\n")
+    path.rename(kept)
+    os.replace(staged, path)
+    return record
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--data", required=True, type=Path)
     parser.add_argument("--repo", type=Path, default=REPO)
     parser.add_argument("--prior-ledger", action="append", type=Path, default=[])
+    parser.add_argument("--amend", metavar="REASON",
+                        help="replace the record after a dated amendment of the checking code")
     args = parser.parse_args(argv)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("setup record: REFUSED: ANTHROPIC_API_KEY is not set", file=sys.stderr)
@@ -138,10 +199,20 @@ def main(argv: list[str] | None = None) -> int:
     from evals import tools_v2
     from scripts.v2 import tasks_v2
 
+    ids, dataset = tools_v2.all_sample_ids(), tasks_v2.sha256_file(tasks_v2.DATA)
     try:
+        if args.amend is not None:
+            if args.prior_ledger:
+                raise PilotError("--amend keeps the recorded prior ledgers; drop --prior-ledger")
+            record = amend(args.repo, args.data, args.amend, sample_ids=ids,
+                           dataset_sha256=dataset)
+            kept = record["amends"][-1]
+            print(f"setup record amended: setup_sha {record['setup_sha'][:12]}, replaced"
+                  f" {kept['setup_sha'][:12]} kept as {kept['file']},"
+                  f" changed {', '.join(kept['changed_files'])}")
+            return 0
         record = build_record(args.repo, args.data, prior_ledgers=args.prior_ledger,
-                              sample_ids=tools_v2.all_sample_ids(),
-                              dataset_sha256=tasks_v2.sha256_file(tasks_v2.DATA))
+                              sample_ids=ids, dataset_sha256=dataset)
         path = write_record(args.data, record)
     except (PilotError, OSError, subprocess.CalledProcessError) as exc:
         print(f"setup record: REFUSED: {exc}", file=sys.stderr)
