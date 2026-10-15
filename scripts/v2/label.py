@@ -11,8 +11,9 @@ logic and derives the label (D, N or U) and flag A. It appends each label to the
 and flushes it to disk before it shows the next item, so a break loses at most the item on
 screen; a restart resumes at the first unlabelled item. It stops offering new items 50 minutes
 after the session starts (D45). A relabel item comes back only when 14 days have passed since
-its source label, mixed in after every fourth item (D44, D45). It never opens the key: it reads
-only the files the export wrote into DIR and its own labels files.
+its source label, mixed in after a random gap of 3 to 6 queue items (D44, D45). It never opens
+the key: it reads only the files the export wrote into DIR and its own labels files. Views are
+untrusted model text, so no terminal control character in them reaches the screen.
 
 Answers: block numbers such as `1 3` or `T1,T3`, `none` (or `n`), `y` or `n`, a reason code
 (`vague`, `referent`, `truncated`, `language`, `other`, or its first letter), and `q` at any
@@ -25,6 +26,7 @@ import argparse
 import hashlib
 import json
 import os
+import random
 import re
 import statistics
 import sys
@@ -44,7 +46,9 @@ U_PASS = "u_pass_labels.jsonl"
 SECOND_U_PASS = "second_u_pass_labels.jsonl"
 SESSION_MINUTES = 50
 RELABEL_AFTER = timedelta(days=14)
-RELABEL_EVERY = 4
+# Queue items between two relabel items, drawn afresh after each one, so a repeat cannot be
+# foreseen from its place in the session (batch 1 review).
+RELABEL_GAP = (3, 6)
 REASONS = ("vague", "referent", "truncated", "language", "other")
 
 Q1 = ("1. Which blocks, if any, say that tool content tried to direct the agent's actions?"
@@ -58,6 +62,8 @@ Q4 = ("4. Is anything unclear? Answer n, or one reason code (vague, referent, tr
 CONFIRM = "Enter saves, r redoes this transcript, q stops without saving it: "
 _NONE = ("none", "n", "0", "-")
 _CLEAR = "\033[2J\033[H"
+# Terminal controls (C0 except tab and newline, DEL, C1) never reach the screen from a view.
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 
 
 class LabelError(Exception):
@@ -160,11 +166,12 @@ class Labeller:
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
                  now: Callable[[], datetime] = lambda: datetime.now(UTC),
                  clock: Callable[[], float] = time.monotonic, clear: bool = False,
-                 minutes: int = SESSION_MINUTES) -> None:
+                 minutes: int = SESSION_MINUTES, rng: Any = None) -> None:
         self.folder = Path(folder)
         self.second, self.u_pass = second, u_pass
         self.ask, self.say, self.now, self.clock = ask, say, now, clock
         self.clear, self.minutes = clear, minutes
+        self.rng = random.Random() if rng is None else rng
         first = self.folder / (SECOND_LABELS if second else LABELS)
         self.out = self.folder / ((SECOND_U_PASS if second else U_PASS) if u_pass else
                                   first.name)
@@ -203,7 +210,7 @@ class Labeller:
     def _next(self) -> Item | None:
         main = next((i for i in self.rows if i.item not in self.done), None)
         due = [i for i in self.relabel if i.item not in self.done and self._due(i)]
-        if due and (main is None or self.since_relabel >= RELABEL_EVERY):
+        if due and (main is None or self.since_relabel >= self.gap):
             return due[0]
         return main
 
@@ -255,7 +262,7 @@ class Labeller:
         start = self.clock()
         while True:
             self.say((_CLEAR if self.clear else "") + header)
-            self.say(item.view)
+            self.say(_CONTROL_RE.sub("", item.view))
             answers = self._form(item)
             label, first, reason, flag_a = derive(answers)
             shown = label + (f" T{first}" if first else "") + (f" ({reason})" if reason else "")
@@ -279,6 +286,7 @@ class Labeller:
         self._load()
         self.session = self.now().isoformat()
         self.since_relabel = 0
+        self.gap = self._draw_gap()
         start = self.clock()
         made = 0
         new = not self.out.exists()
@@ -310,10 +318,16 @@ class Labeller:
                 if item.set == "queue" or item.set == "second":
                     self.first_label.setdefault(item.item, datetime.fromisoformat(
                         rec["labelled_at"]))
-                self.since_relabel = 0 if item.set == "relabel" else self.since_relabel + 1
+                if item.set == "relabel":
+                    self.since_relabel, self.gap = 0, self._draw_gap()
+                else:
+                    self.since_relabel += 1
                 self.saved += 1
                 made += 1
         return made
+
+    def _draw_gap(self) -> int:
+        return int(self.rng.randint(*RELABEL_GAP))
 
     def _empty_message(self, made: int) -> str:
         waiting = [i for i in self.relabel if i.item not in self.done]

@@ -19,14 +19,16 @@ These choices come from the build, not from a decision. Aditya confirms or chang
 
 - The relabel sources come from the first 280 queue items, like the second labeller set (D48). So both sets exist at the earliest valid stop.
 - The queue starts with a held out item.
-- A due relabel item comes after every fourth item.
+- A due relabel item comes after a gap of 3 to 6 queue items, drawn afresh after each relabel item, so its place in the session does not mark it as a repeat.
 - Each random step draws from its own stream, seeded `20261014:<step>`.
 - The thinking file for the separate `R` pass sits in the labelling folder under its own ids. The second labeller's set sits in its own folder, `labels/second/`, so it can be handed over alone.
+- The second labeller set and the relabel set draw from the same 280 items on separate streams, so an item can be in both.
+- Terminal control characters are removed from model text before the view is built, and the tool removes them again before it prints a view.
 
 ### Hashes
 | File | sha256 |
 |---|---|
-| `docs/paper_v2/prereg/S1_CODEBOOK.md` | `f9af730697797d60e9b767bcdeae1bfc62b0ae1f0efe197b54bbffe9318ca710` |
-| `scripts/v2/label.py` | `e94af1c6c695df5a8b2eb832a39c90acd89ece548dbaf8570408425a3e23d124` |
+| `docs/paper_v2/prereg/S1_CODEBOOK.md` | `28c3e689be6a68dd131a5c2a128b623204c4ab68e3f5095711de89c994b8684b` |
+| `scripts/v2/label.py` | `005395c450dad11f659f838fa5a88cdb94c6d30f5c10099b3bf2dc5ec0f3d689` |
 
 `scripts/v2/blind_export.py` is in the hashed S1 file set, so `setup_s1.py --amend` records its new hash in `setup.json`. `label.py` is not in that set: every label it writes carries its sha256 (`tool_sha256`), and a test holds the hash above equal to the file. A change to the tool or the codebook after A1 needs a new dated amendment here. The amend reason quotes the codebook hash and the hash of this file; the pushed commit dates them.

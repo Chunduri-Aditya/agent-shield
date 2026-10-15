@@ -250,13 +250,61 @@ def test_a_relabel_item_with_an_unlabelled_source_never_comes(tmp_path: Path) ->
     assert [r["item"] for r in records(d / lb.LABELS)] == ["q0"]
 
 
-def test_due_relabel_items_mix_in_after_every_fourth_item(tmp_path: Path) -> None:
+class Gaps:
+    """A stand in for the gap stream: hands out the given gaps in order."""
+
+    def __init__(self, *gaps: int) -> None:
+        self.gaps = iter(gaps)
+        self.bounds: list[tuple[int, int]] = []
+
+    def randint(self, a: int, b: int) -> int:
+        self.bounds.append((a, b))
+        return next(self.gaps)
+
+
+def test_due_relabel_items_mix_in_after_a_drawn_gap(tmp_path: Path) -> None:
     d = folder(tmp_path, n=10, relabel=[("r0", "q0"), ("r1", "q1")])
     labelled(d, "q0", T0)
     labelled(d, "q1", T0)
-    session(d, Script(NO * 12), now=T0 + timedelta(days=15)).run()
+    gaps = Gaps(4, 3, 5)
+    session(d, Script(NO * 12), now=T0 + timedelta(days=15), rng=gaps).run()
     order = [r["item"] for r in records(d / lb.LABELS)][2:]
-    assert order == ["q2", "q3", "q4", "q5", "r0", "q6", "q7", "q8", "q9", "r1"]
+    assert order == ["q2", "q3", "q4", "q5", "r0", "q6", "q7", "q8", "r1", "q9"]
+    assert set(gaps.bounds) == {(3, 6)}
+
+
+def test_relabel_gaps_vary_so_a_repeat_cannot_be_foreseen(tmp_path: Path) -> None:
+    import random
+
+    sources = [(f"r{i}", f"q{i}") for i in range(10)]
+    d = folder(tmp_path, n=70, relabel=sources)
+    for _, src in sources:
+        labelled(d, src, T0)
+    session(d, Script(NO * 80), now=T0 + timedelta(days=15), rng=random.Random(5)).run()
+    order = [r["item"] for r in records(d / lb.LABELS)][10:]
+    assert sorted(i for i in order if i.startswith("r")) == sorted(r for r, _ in sources)
+    gaps, run = [], 0
+    for item in order:
+        if item.startswith("r"):
+            gaps.append(run)
+            run = 0
+        else:
+            run += 1
+    assert all(3 <= g <= 6 for g in gaps), gaps
+    assert len(set(gaps)) > 1, gaps
+
+
+def test_control_characters_never_reach_the_terminal(tmp_path: Path) -> None:
+    d = tmp_path / "labels"
+    d.mkdir()
+    view = "USER: Read.\n\n[T1] Done.\x1b[2J\x07\r\x9b2K\tok\n\n[END OF TRANSCRIPT]"
+    (d / lb.QUEUE).write_text(json.dumps({"item": "q0", "view": view, "blocks": 1}) + "\n")
+    (d / lb.RELABEL).write_text("")
+    shown: list[str] = []
+    lb.Labeller(d, ask=Script(NO).ask, say=shown.append, now=lambda: T0).run()
+    text = "".join(shown)
+    assert "Done.[2J2K\tok" in text
+    assert not [c for c in text if (ord(c) < 32 and c not in "\n\t") or 127 <= ord(c) < 160]
 
 
 # ---- the key, the second labeller, the U pass, pace ----

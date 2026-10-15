@@ -832,8 +832,8 @@ ROWS["s1-queue"] = (
         "_CANARY_RE = re.compile(re.escape(CANARY_RECIPIENT), re.IGNORECASE)",
         "_CANARY_RE = re.compile(re.escape(CANARY_RECIPIENT))", (TQ,)),
     Row("s1-L-05-thinking-in-view", "thinking text reaches the view", BEX,
-        '                thoughts.append(redact(str(block["thinking"])))\n',
-        '                thoughts.append(redact(str(block["thinking"])))\n'
+        '                thoughts.append(redact(clean(str(block["thinking"]))))\n',
+        '                thoughts.append(redact(clean(str(block["thinking"]))))\n'
         '                parts.append(str(block["thinking"]))\n', (TQ,)),
     Row("s1-L-06-retried-kept", "a retried attempt is rendered as a response", BEX,
         "        if i in retried or not isinstance(event, ModelEvent):\n",
@@ -874,6 +874,13 @@ ROWS["s1-queue"] = (
     Row("s1-L-18-dry-run-writes", "the dry run writes the folder and the key", BEX,
         "    if dry_run:\n        return summary\n", "    if False:\n        return summary\n",
         (TQ,)),
+    # rows added after the batch 1 review
+    Row("s1-L-19-control-chars-kept", "terminal controls in model text reach the view", BEX,
+        '    return _CONTROL_RE.sub("", text.replace("\\r\\n", "\\n"))\n', "    return text\n",
+        (TQ,)),
+    Row("s1-L-33-half-population-wrong", "the held out population counts every task", BEX,
+        "                                                 if halves[t] == h) for s in STRATA}\n",
+        "                                                 if True) for s in STRATA}\n", (TQ,)),
 )
 
 ROWS["s1-label"] = (
@@ -904,7 +911,13 @@ ROWS["s1-label"] = (
     Row("s1-L-29-torn-tail-kept", "a torn last line stays and breaks the next label", LBL,
         "        _set_aside_torn_tail(self.out)\n", "", (TL,)),
     Row("s1-L-30-relabel-not-mixed", "due relabel items wait until the queue ends", LBL,
-        "RELABEL_EVERY = 4", "RELABEL_EVERY = 10**9", (TL,)),
+        "RELABEL_GAP = (3, 6)", "RELABEL_GAP = (10**9, 10**9)", (TL,)),
+    # rows added after the batch 1 review
+    Row("s1-L-31-relabel-gap-fixed", "every relabel gap is the same, so repeats are foreseen",
+        LBL, "        return int(self.rng.randint(*RELABEL_GAP))\n", "        return 4\n", (TL,)),
+    Row("s1-L-32-control-chars-shown", "terminal controls in a view reach the screen", LBL,
+        '            self.say(_CONTROL_RE.sub("", item.view))\n',
+        "            self.say(item.view)\n", (TL,)),
 )
 
 # Amendment A1 (docs/paper_v2/prereg/S1_AMENDMENTS.md) pins the codebook and the tool by hash.
@@ -912,7 +925,7 @@ TA1 = "tests/pilot/test_s1_amendments.py"
 
 ROWS["s1-a1"] = (
     Row("s1-A1-01-tool-changed", "the labelling tool changes after A1", LBL,
-        "RELABEL_EVERY = 4", "RELABEL_EVERY = 4  # edited", (TA1,)),
+        "RELABEL_GAP = (3, 6)", "RELABEL_GAP = (3, 6)  # edited", (TA1,)),
     Row("s1-A1-02-codebook-changed", "the codebook changes after A1",
         "docs/paper_v2/prereg/S1_CODEBOOK.md", "## Labels you give", "## Labels to give",
         (TA1,)),

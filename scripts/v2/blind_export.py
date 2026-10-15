@@ -89,6 +89,8 @@ _ATTACHMENT = "attachment://"
 # Case blind on the address itself: every spelling normalise_recipient maps to the canary
 # (a display name, padding inside angle brackets, any case) holds it as a substring.
 _CANARY_RE = re.compile(re.escape(CANARY_RECIPIENT), re.IGNORECASE)
+# Terminal controls in model text (C0 except tab and newline, DEL, C1): never shown.
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 
 
 def _input_text(sample: EvalSample) -> str:
@@ -123,6 +125,11 @@ def render(sample: EvalSample) -> tuple[str, str]:
     return "\n".join(lines), "\n\n".join(thoughts)
 
 
+def clean(text: str) -> str:
+    """Model text without terminal control characters (CRLF becomes a newline)."""
+    return _CONTROL_RE.sub("", text.replace("\r\n", "\n"))
+
+
 def redact(text: str) -> str:
     """Every spelling of the canary address as `[CANARY_ADDRESS]`; fail closed on a survivor
     (a code point whose case fold reaches the address but the pattern misses)."""
@@ -151,7 +158,7 @@ def render_view(sample: EvalSample) -> View:
     (retried attempts dropped as the scorer drops them, D43); `turn` counts those responses.
     """
     retried = {i for i, _ in retried_attempts(sample.events)}
-    parts = [f"USER: {redact(_input_text(sample))}"]
+    parts = [f"USER: {redact(clean(_input_text(sample)))}"]
     thoughts: list[str] = []
     blocks: list[dict[str, int]] = []
     first_send: int | None = None
@@ -174,17 +181,18 @@ def render_view(sample: EvalSample) -> View:
             if not isinstance(block, dict):
                 continue
             kind = block.get("type")
-            if kind == "text" and str(block.get("text", "")).strip():
+            body = clean(str(block.get("text", ""))) if kind == "text" else ""
+            if body.strip():
                 blocks.append({"t": len(blocks) + 1, "pos": pos, "turn": turn, "index": index})
-                parts.append(f"[T{len(blocks)}] {redact(str(block['text']))}")
+                parts.append(f"[T{len(blocks)}] {redact(body)}")
             elif kind == "tool_use" and block.get("name") == "send_message":
                 args = block.get("input")
                 to = str(args.get("to", "")) if isinstance(args, dict) else ""
                 first_send = pos if first_send is None else first_send
                 if first_canary is None and normalise_recipient(to) == CANARY_RECIPIENT:
                     first_canary = pos
-            elif kind == "thinking" and str(block.get("thinking", "")).strip():
-                thoughts.append(redact(str(block["thinking"])))
+            elif kind == "thinking" and clean(str(block.get("thinking", ""))).strip():
+                thoughts.append(redact(clean(str(block["thinking"]))))
     parts.append(END)
     # Every part went through `redact`, and the blank lines between parts cannot join two
     # of them into the address, so the view needs no second check.
@@ -525,6 +533,9 @@ def export_queue(logs: list[Path], out_dir: Path, key_path: Path, *, seed: int,
               "prefix": prefix, "second_n": second_n, "relabel_n": relabel_n}
     key = {"seed": seed, "mode": "queue", "logs": log_hashes, "params": params,
            "halves": halves, "population": population, "draw": draw,
+           "population_by_half": {h: {m: {s: sum(len(v) for t, v in pools[s][m].items()
+                                                 if halves[t] == h) for s in STRATA}
+                                      for m in models} for h in ("dev", "heldout")},
            "shortfall": shortfall["not_acted"], "shortfall_clean": shortfall["clean"],
            "queue": queue, "items": key_items, "second": second_key, "relabel": relabel_key,
            "thinking": thinking_key}

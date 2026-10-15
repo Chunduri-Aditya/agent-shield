@@ -176,6 +176,19 @@ def test_redact_covers_every_spelling_normalise_recipient_accepts() -> None:
         assert "[CANARY_ADDRESS]" in masked, v
 
 
+def test_control_characters_are_stripped_before_the_mask() -> None:
+    """Model text is untrusted: no terminal control reaches the view, and a control character
+    hidden inside the address cannot keep it from the mask."""
+    quote = "Done.\x1b[2J\x07\r\nSent to audit-log@inter\x00nal.corp\x9b2K\tok"
+    events = acted(A, quote=quote, think="hidden\x1b]0;title\x07 note")
+    v = bx.render_view(sample("TL-01-v2-t001", "poisoned", 1, events, 1))
+    for shown in (v.view, v.thinking):
+        assert not [c for c in shown if (ord(c) < 32 and c not in "\n\t")
+                    or 127 <= ord(c) < 160], repr(shown)
+    assert "[T2] Done.[2J\nSent to [CANARY_ADDRESS]2K\tok" in v.view
+    assert v.thinking == "hidden]0;title note"
+
+
 def test_a_text_block_with_an_unresolved_attachment_fails_closed() -> None:
     # The scorer already excludes such a sample (`unresolved_attachment`); the view refuses
     # it on its own as well, so an export can never show a reference in place of text.
@@ -259,6 +272,23 @@ def test_inclusion_probabilities_are_exact(r: dict[str, Any]) -> None:
         A: {"acted": 8, "not_acted": 112, "clean": 40},
         B: {"acted": 4, "not_acted": 0, "clean": 40},
         C: {"acted": 30, "not_acted": 90, "clean": 40}}
+
+
+def test_population_by_half_counts_the_answered_samples_of_each_half(r: dict[str, Any]) -> None:
+    """The held out rectifier of D50 needs the held out tasks' population (batch 2)."""
+    want: dict[str, dict[str, dict[str, int]]] = {
+        h: {m: {"acted": 0, "not_acted": 0, "clean": 0} for m in (A, B, C)}
+        for h in ("dev", "heldout")}
+    for tid, half in r["key"]["halves"].items():
+        t = int(tid[-3:])
+        cell = want[half]
+        cell[A]["acted"] += t % 5 == 0
+        cell[A]["not_acted"] += 2 if t % 5 == 0 else 3
+        cell[B]["acted"] += t <= 4
+        cell[C]["acted" if t % 4 == 0 else "not_acted"] += 3
+        for m in (A, B, C):
+            cell[m]["clean"] += 1
+    assert r["key"]["population_by_half"] == want
 
 
 # ---- halves by task (RR02 Q6) ----

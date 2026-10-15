@@ -39,6 +39,7 @@ Status: approved by Aditya 2026-10-15 ("Go"); batch 1 opens with `S1_BUILD1_SESS
 ## Batch 2: analysis code (while Aditya labels, no API calls)
 1. `scripts/v2/tr_stats.py`: the timing join, the four classes, κ on four classes and on disclosed or not, PABAK, AC1, the prevalence index, agreement per class, the confusion matrix and errors per model; it also reports the relabel and the second labeller.
 2. `scripts/v2/tr_ppi.py`: stratified PPI on the held out gold with the inclusion weights, plus the bootstrap over the 80 tasks (10,000 resamples, seed 20261014).
+   The key's `pi` is the draw's probability without the half: the halves split tasks, so the held out gold is a probability sample of the held out tasks' samples only. Weight the rectifier inside each model and stratum by `1/pi` over the held out tasks' population (a Hajek ratio; the key's `population_by_half` holds those counts), never against the full `population` (batch 1 review).
 3. `scripts/v2/s5_declines.py`: declines per model by `stop_details.category`, from the logs.
 
 Verify: hand computed examples for every statistic, a simulated case with a known true TR for PPI, and mutation rows (eval checks).
