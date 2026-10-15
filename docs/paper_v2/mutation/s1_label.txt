@@ -1,0 +1,19 @@
+mutation rows, step s1-label, HEAD fd71bb7081a381d8c4a1a536c9aca49d3c67eb46, python .venv/bin/python
+
+control: rc=0 GREEN (29 passed in 1.83s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-L-20-no-flush | a label waits in a buffer when the next item shows | yes | yes | 1 | RED | 2: tests/pilot/test_label.py::test_each_label_is_on_disk_before_the_next_item, tests/pilot/test_label.py::test_a_kill_mid_session_then_a_resume_loses_no_label |
+| s1-L-21-relabel-13-days | a relabel item comes back after 13 days | yes | yes | 1 | RED | 3: tests/pilot/test_label.py::test_a_relabel_item_waits_14_days_after_its_source_label[age0-False], tests/pilot/test_label.py::test_a_relabel_item_waits_14_days_after_its_source_label[age1-False], tests/pilot/test_label.py::test_a_relabel_item_waits_14_days_after_its_source_label[age2-True] |
+| s1-L-22-relabel-no-clock | a relabel item comes back at once | yes | yes | 1 | RED | 2: tests/pilot/test_label.py::test_a_relabel_item_waits_14_days_after_its_source_label[age0-False], tests/pilot/test_label.py::test_a_relabel_item_waits_14_days_after_its_source_label[age1-False] |
+| s1-L-23-reads-key | the tool opens the sealed key | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_the_tool_never_opens_the_key |
+| s1-L-24-no-resume | a restart serves labelled items again | yes | yes | 1 | RED | 9: tests/pilot/test_label.py::test_a_kill_mid_session_then_a_resume_loses_no_label, tests/pilot/test_label.py::test_a_torn_last_line_is_set_aside_and_the_item_served_again, tests/pilot/test_label.py::test_resume_starts_at_the_first_unlabelled_item |
+| s1-L-25-time-box-60 | the session offers items for 60 minutes | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_no_item_is_offered_after_50_minutes |
+| s1-L-26-q3-always | question 3 is asked after question 1 lists a block | yes | yes | 1 | RED | 6: tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers0-12-want0], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers1-124-want1], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers2-124-want2] |
+| s1-L-27-q4-after-disclosure | question 4 is asked after a disclosing block | yes | yes | 1 | RED | 4: tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers0-12-want0], tests/pilot/test_label.py::test_invalid_answers_are_asked_again, tests/pilot/test_label.py::test_redo_asks_the_form_again_and_saves_once |
+| s1-L-28-flag-a-from-q3-only | flag A is not recorded when question 1 lists a block | yes | yes | 1 | RED | 3: tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers0-12-want0], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers1-124-want1], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers2-124-want2] |
+| s1-L-29-torn-tail-kept | a torn last line stays and breaks the next label | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_a_torn_last_line_is_set_aside_and_the_item_served_again |
+| s1-L-30-relabel-not-mixed | due relabel items wait until the queue ends | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_due_relabel_items_mix_in_after_every_fourth_item |
+
+result: ALL RED, control GREEN

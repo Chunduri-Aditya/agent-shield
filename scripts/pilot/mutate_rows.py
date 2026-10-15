@@ -809,6 +809,104 @@ ROWS["s1-amend"] = (
         '_SAME_ON_AMEND = ("total_cap", "reserve",', '_SAME_ON_AMEND = ("reserve",', (T4,)),
 )
 
+# S1 labels build batch 1 (docs/paper_v2/S1_LABELS_BUILD_PLAN.md): the queue export and the
+# labelling tool, one row or more per contract failure mode.
+TQ = "tests/pilot/test_blind_export_queue.py"
+TL = "tests/pilot/test_label.py"
+LBL = "scripts/v2/label.py"
+
+ROWS["s1-queue"] = (
+    Row("s1-L-01-tool-call-in-view", "a tool call reaches the view", BEX,
+        '            elif kind == "tool_use" and block.get("name") == "send_message":\n',
+        "            elif kind == \"tool_use\" and parts.append(f\"[ACTION {block.get('name')}]\")"
+        ' is None and block.get("name") == "send_message":\n', (TQ,)),
+    Row("s1-L-02-tool-result-in-view", "a tool result reaches the view", BEX,
+        "        if i in retried or not isinstance(event, ModelEvent):\n",
+        "        if isinstance(event, ToolEvent):\n            parts.append(str(event.result))\n"
+        "        if i in retried or not isinstance(event, ModelEvent):\n", (TQ,)),
+    Row("s1-L-03-canary-unmasked", "the canary address reaches the view (mask and guard off)",
+        BEX, "    masked = _CANARY_RE.sub(CANARY_MASK, text)\n"
+        "    if CANARY_RECIPIENT in masked.casefold():\n",
+        "    masked = text\n    if False:\n", (TQ,)),
+    Row("s1-L-04-canary-case-sensitive", "a capitalised canary spelling escapes the mask", BEX,
+        "_CANARY_RE = re.compile(re.escape(CANARY_RECIPIENT), re.IGNORECASE)",
+        "_CANARY_RE = re.compile(re.escape(CANARY_RECIPIENT))", (TQ,)),
+    Row("s1-L-05-thinking-in-view", "thinking text reaches the view", BEX,
+        '                thoughts.append(redact(str(block["thinking"])))\n',
+        '                thoughts.append(redact(str(block["thinking"])))\n'
+        '                parts.append(str(block["thinking"]))\n', (TQ,)),
+    Row("s1-L-06-retried-kept", "a retried attempt is rendered as a response", BEX,
+        "        if i in retried or not isinstance(event, ModelEvent):\n",
+        "        if not isinstance(event, ModelEvent):\n", (TQ,)),
+    Row("s1-L-07-task-in-both-halves", "halves split items, so one task lands in both", BEX,
+        '            "half": halves[a.task], "pi": pi,',
+        '            "half": ("dev", "heldout")[len(key_items) % 2], "pi": pi,', (TQ,)),
+    Row("s1-L-08-prefix-unstratified", "each half lists its cells one after another", BEX,
+        '        lines[half] = interleave(cells, rng["queue"])\n',
+        "        lines[half] = [i for k in sorted(cells) for i in cells[k]]\n", (TQ,)),
+    Row("s1-L-09-halves-not-alternating", "the held out half comes first, then dev", BEX,
+        "    for n in range(max(len(v) for v in lines.values())):\n"
+        '        queue += [lines[h][n] for h in ("heldout", "dev") if n < len(lines[h])]\n',
+        '    queue = lines["heldout"] + lines["dev"]\n', (TQ,)),
+    Row("s1-L-10-pi-no-task-share", "pi leaves out the share of a task's samples", BEX,
+        "                share = Fraction(len(picks[m]), len(pool[m])) / len(options)\n",
+        "                share = Fraction(len(picks[m]), len(pool[m]))\n", (TQ,)),
+    Row("s1-L-11-pi-acted-wrong", "the acted census gets a pi below 1", BEX,
+        '        (a, 1.0) for m in models for t in sorted(pools["acted"][m])',
+        '        (a, 0.5) for m in models for t in sorted(pools["acted"][m])', (TQ,)),
+    Row("s1-L-12-key-in-labels-folder", "the key may sit in the labelling folder", BEX,
+        "    if key_path == out_dir or out_dir in key_path.parents:\n", "    if False:\n",
+        (TQ,)),
+    Row("s1-L-13-labels-in-repo", "the labelling folder may sit in the public repo", BEX,
+        '    for path, what in ((key_path, "the key"), (out_dir, "the labelling folder")):\n',
+        '    for path, what in ((key_path, "the key"),):\n', (TQ,)),
+    Row("s1-L-14-copies-from-whole-queue", "second and relabel sets ignore the prefix", BEX,
+        "    head = queue[:prefix]\n", "    head = queue\n", (TQ,)),
+    Row("s1-L-15-copies-same-ids", "second and relabel copies reuse the queue ids", BEX,
+        "        return {new_id(): src for src in interleave(cells, stream)[:n]}\n",
+        "        return {src: src for src in interleave(cells, stream)[:n]}\n", (TQ,)),
+    Row("s1-L-16-first-send-any-recipient", "the first canary send is any first send", BEX,
+        "                if first_canary is None and normalise_recipient(to) == CANARY_RECIPIENT:",
+        "                if first_canary is None:", (TQ,)),
+    Row("s1-L-17-positions-text-only", "raw positions count only text blocks", BEX,
+        "            pos += 1\n",
+        '            pos += int(isinstance(block, dict) and block.get("type") == "text")\n', (TQ,)),
+    Row("s1-L-18-dry-run-writes", "the dry run writes the folder and the key", BEX,
+        "    if dry_run:\n        return summary\n", "    if False:\n        return summary\n",
+        (TQ,)),
+)
+
+ROWS["s1-label"] = (
+    Row("s1-L-20-no-flush", "a label waits in a buffer when the next item shows", LBL,
+        "                out.flush()\n                os.fsync(out.fileno())\n", "", (TL,)),
+    Row("s1-L-21-relabel-13-days", "a relabel item comes back after 13 days", LBL,
+        "RELABEL_AFTER = timedelta(days=14)", "RELABEL_AFTER = timedelta(days=13)", (TL,)),
+    Row("s1-L-22-relabel-no-clock", "a relabel item comes back at once", LBL,
+        "        return src is not None and self.now() - src >= RELABEL_AFTER\n",
+        "        return src is not None\n", (TL,)),
+    Row("s1-L-23-reads-key", "the tool opens the sealed key", LBL,
+        "        main = _rows(self.folder / (SECOND if self.second else QUEUE),\n",
+        '        _ = [p.read_text() for p in self.folder.parent.glob("sealed/*.json")]\n'
+        "        main = _rows(self.folder / (SECOND if self.second else QUEUE),\n", (TL,)),
+    Row("s1-L-24-no-resume", "a restart serves labelled items again", LBL,
+        '        self.done = {str(r["item"]) for r in done}\n', "        self.done = set()\n",
+        (TL,)),
+    Row("s1-L-25-time-box-60", "the session offers items for 60 minutes", LBL,
+        "SESSION_MINUTES = 50", "SESSION_MINUTES = 60", (TL,)),
+    Row("s1-L-26-q3-always", "question 3 is asked after question 1 lists a block", LBL,
+        '        else:\n            answers["q3"] = "no" if not allowed else None\n',
+        '        if True:\n            answers["q3"] = "no" if not allowed else None\n', (TL,)),
+    Row("s1-L-27-q4-after-disclosure", "question 4 is asked after a disclosing block", LBL,
+        '        if not isinstance(answers["q2"], int):\n', "        if True:\n", (TL,)),
+    Row("s1-L-28-flag-a-from-q3-only", "flag A is not recorded when question 1 lists a block",
+        LBL, '    flag_a = bool(answers["q1"]) or answers["q3"] == "yes"\n',
+        '    flag_a = answers["q3"] == "yes"\n', (TL,)),
+    Row("s1-L-29-torn-tail-kept", "a torn last line stays and breaks the next label", LBL,
+        "        _set_aside_torn_tail(self.out)\n", "", (TL,)),
+    Row("s1-L-30-relabel-not-mixed", "due relabel items wait until the queue ends", LBL,
+        "RELABEL_EVERY = 4", "RELABEL_EVERY = 10**9", (TL,)),
+)
+
 
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""

@@ -1,0 +1,26 @@
+mutation rows, step s1-queue, HEAD fd71bb7081a381d8c4a1a536c9aca49d3c67eb46, python .venv/bin/python
+
+control: rc=0 GREEN (22 passed in 4.96s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-L-01-tool-call-in-view | a tool call reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
+| s1-L-02-tool-result-in-view | a tool result reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
+| s1-L-03-canary-unmasked | the canary address reaches the view (mask and guard off) | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_every_canary_spelling_in_the_view_is_masked, tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts |
+| s1-L-04-canary-case-sensitive | a capitalised canary spelling escapes the mask | yes | yes | 1 | RED | 16: tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts, tests/pilot/test_blind_export_queue.py::test_existing_output_is_never_overwritten, tests/pilot/test_blind_export_queue.py::test_same_seed_same_export_and_another_seed_differs |
+| s1-L-05-thinking-in-view | thinking text reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
+| s1-L-06-retried-kept | a retried attempt is rendered as a response | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_a_retried_attempt_changes_neither_the_view_nor_the_positions |
+| s1-L-07-task-in-both-halves | halves split items, so one task lands in both | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_halves_split_tasks_not_items |
+| s1-L-08-prefix-unstratified | each half lists its cells one after another | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_every_queue_prefix_stays_stratified |
+| s1-L-09-halves-not-alternating | the held out half comes first, then dev | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_queue_alternates_halves_starting_with_held_out |
+| s1-L-10-pi-no-task-share | pi leaves out the share of a task's samples | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_inclusion_probabilities_are_exact |
+| s1-L-11-pi-acted-wrong | the acted census gets a pi below 1 | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_inclusion_probabilities_are_exact |
+| s1-L-12-key-in-labels-folder | the key may sit in the labelling folder | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_key_outside_the_repo_and_outside_the_labelling_folder |
+| s1-L-13-labels-in-repo | the labelling folder may sit in the public repo | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_key_outside_the_repo_and_outside_the_labelling_folder |
+| s1-L-14-copies-from-whole-queue | second and relabel sets ignore the prefix | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_copies_come_from_the_queue_prefix_under_new_ids[second], tests/pilot/test_blind_export_queue.py::test_copies_come_from_the_queue_prefix_under_new_ids[relabel] |
+| s1-L-15-copies-same-ids | second and relabel copies reuse the queue ids | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_copies_come_from_the_queue_prefix_under_new_ids[second], tests/pilot/test_blind_export_queue.py::test_copies_come_from_the_queue_prefix_under_new_ids[relabel] |
+| s1-L-16-first-send-any-recipient | the first canary send is any first send | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_key_keeps_raw_block_positions_and_the_first_canary_send |
+| s1-L-17-positions-text-only | raw positions count only text blocks | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_key_keeps_raw_block_positions_and_the_first_canary_send, tests/pilot/test_blind_export_queue.py::test_a_retried_attempt_changes_neither_the_view_nor_the_positions |
+| s1-L-18-dry-run-writes | the dry run writes the folder and the key | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_dry_run_writes_nothing_and_prints_counts_per_model |
+
+result: ALL RED, control GREEN
