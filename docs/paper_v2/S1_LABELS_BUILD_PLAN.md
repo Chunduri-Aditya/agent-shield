@@ -1,6 +1,6 @@
 # S1 labels build plan
 
-Status: draft 2026-10-15, waiting for Aditya's approval. It builds what D44 to D53 decided. Opus builds in the main loop, and the Fable `debugger` gets every red check. Each batch is one bounded session that ends at a commit (D44 limits).
+Status: approved by Aditya 2026-10-15 ("Go"); batch 1 opens with `S1_BUILD1_SESSION_PROMPT.md`. It builds what D44 to D53 decided. Opus builds in the main loop, and the Fable `debugger` gets every red check. Each batch is one bounded session that ends at a commit (D44 limits).
 
 ## Contract
 | Field | Content |
