@@ -1,14 +1,14 @@
-mutation rows, step s1-queue, HEAD fd71bb7081a381d8c4a1a536c9aca49d3c67eb46, python .venv/bin/python
+mutation rows, step s1-queue, HEAD 61247ba688ace5793936ebd9affd7da939083578, python .venv/bin/python
 
-control: rc=0 GREEN (22 passed in 4.96s)
+control: rc=0 GREEN (24 passed in 5.01s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
 | s1-L-01-tool-call-in-view | a tool call reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
 | s1-L-02-tool-result-in-view | a tool result reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
-| s1-L-03-canary-unmasked | the canary address reaches the view (mask and guard off) | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_every_canary_spelling_in_the_view_is_masked, tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts |
-| s1-L-04-canary-case-sensitive | a capitalised canary spelling escapes the mask | yes | yes | 1 | RED | 16: tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts, tests/pilot/test_blind_export_queue.py::test_existing_output_is_never_overwritten, tests/pilot/test_blind_export_queue.py::test_same_seed_same_export_and_another_seed_differs |
-| s1-L-05-thinking-in-view | thinking text reaches the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only |
+| s1-L-03-canary-unmasked | the canary address reaches the view (mask and guard off) | yes | yes | 1 | RED | 3: tests/pilot/test_blind_export_queue.py::test_every_canary_spelling_in_the_view_is_masked, tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts, tests/pilot/test_blind_export_queue.py::test_control_characters_are_stripped_before_the_mask |
+| s1-L-04-canary-case-sensitive | a capitalised canary spelling escapes the mask | yes | yes | 1 | RED | 17: tests/pilot/test_blind_export_queue.py::test_redact_covers_every_spelling_normalise_recipient_accepts, tests/pilot/test_blind_export_queue.py::test_existing_output_is_never_overwritten, tests/pilot/test_blind_export_queue.py::test_same_seed_same_export_and_another_seed_differs |
+| s1-L-05-thinking-in-view | thinking text reaches the view | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_view_is_the_prompt_and_numbered_text_blocks_only, tests/pilot/test_blind_export_queue.py::test_control_characters_are_stripped_before_the_mask |
 | s1-L-06-retried-kept | a retried attempt is rendered as a response | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_a_retried_attempt_changes_neither_the_view_nor_the_positions |
 | s1-L-07-task-in-both-halves | halves split items, so one task lands in both | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_halves_split_tasks_not_items |
 | s1-L-08-prefix-unstratified | each half lists its cells one after another | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_every_queue_prefix_stays_stratified |
@@ -22,5 +22,7 @@ control: rc=0 GREEN (22 passed in 4.96s)
 | s1-L-16-first-send-any-recipient | the first canary send is any first send | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_key_keeps_raw_block_positions_and_the_first_canary_send |
 | s1-L-17-positions-text-only | raw positions count only text blocks | yes | yes | 1 | RED | 2: tests/pilot/test_blind_export_queue.py::test_key_keeps_raw_block_positions_and_the_first_canary_send, tests/pilot/test_blind_export_queue.py::test_a_retried_attempt_changes_neither_the_view_nor_the_positions |
 | s1-L-18-dry-run-writes | the dry run writes the folder and the key | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_dry_run_writes_nothing_and_prints_counts_per_model |
+| s1-L-19-control-chars-kept | terminal controls in model text reach the view | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_control_characters_are_stripped_before_the_mask |
+| s1-L-33-half-population-wrong | the held out population counts every task | yes | yes | 1 | RED | 1: tests/pilot/test_blind_export_queue.py::test_population_by_half_counts_the_answered_samples_of_each_half |
 
 result: ALL RED, control GREEN

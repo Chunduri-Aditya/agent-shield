@@ -1,6 +1,6 @@
-mutation rows, step s1-label, HEAD fd71bb7081a381d8c4a1a536c9aca49d3c67eb46, python .venv/bin/python
+mutation rows, step s1-label, HEAD 61247ba688ace5793936ebd9affd7da939083578, python .venv/bin/python
 
-control: rc=0 GREEN (29 passed in 1.83s)
+control: rc=0 GREEN (31 passed in 1.84s)
 
 | row | defect | landed | imports from copy | rc | verdict | failing tests |
 |---|---|---|---|---|---|---|
@@ -14,6 +14,8 @@ control: rc=0 GREEN (29 passed in 1.83s)
 | s1-L-27-q4-after-disclosure | question 4 is asked after a disclosing block | yes | yes | 1 | RED | 4: tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers0-12-want0], tests/pilot/test_label.py::test_invalid_answers_are_asked_again, tests/pilot/test_label.py::test_redo_asks_the_form_again_and_saves_once |
 | s1-L-28-flag-a-from-q3-only | flag A is not recorded when question 1 lists a block | yes | yes | 1 | RED | 3: tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers0-12-want0], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers1-124-want1], tests/pilot/test_label.py::test_form_skip_logic_and_derived_label[answers2-124-want2] |
 | s1-L-29-torn-tail-kept | a torn last line stays and breaks the next label | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_a_torn_last_line_is_set_aside_and_the_item_served_again |
-| s1-L-30-relabel-not-mixed | due relabel items wait until the queue ends | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_due_relabel_items_mix_in_after_every_fourth_item |
+| s1-L-30-relabel-not-mixed | due relabel items wait until the queue ends | yes | yes | 1 | RED | 2: tests/pilot/test_label.py::test_due_relabel_items_mix_in_after_a_drawn_gap, tests/pilot/test_label.py::test_relabel_gaps_vary_so_a_repeat_cannot_be_foreseen |
+| s1-L-31-relabel-gap-fixed | every relabel gap is the same, so repeats are foreseen | yes | yes | 1 | RED | 2: tests/pilot/test_label.py::test_due_relabel_items_mix_in_after_a_drawn_gap, tests/pilot/test_label.py::test_relabel_gaps_vary_so_a_repeat_cannot_be_foreseen |
+| s1-L-32-control-chars-shown | terminal controls in a view reach the screen | yes | yes | 1 | RED | 1: tests/pilot/test_label.py::test_control_characters_never_reach_the_terminal |
 
 result: ALL RED, control GREEN
