@@ -5,10 +5,10 @@ import math
 from scripts.v2.gold_size import (
     accept_probability,
     agreement_for_kappa,
-    batch_plan,
     cohen_kappa,
     expected_kappa,
     read_counts,
+    session_plan,
     stratified_allocation,
     wilson_half_width,
 )
@@ -97,16 +97,8 @@ def test_stratified_allocation_caps_not_acted_at_distinct_tasks() -> None:
     assert rows == {"m-a": (0, 80, 2)}
 
 
-def test_batch_plan_splits_evenly_and_accumulates_held_out() -> None:
-    plan = batch_plan(456, 12)
-    assert [size for size, _, _ in plan] == [38] * 12
-    # cumulative items and held out after each batch; each batch holds half held out
-    assert plan[0] == (38, 38, 19)
-    assert plan[-1] == (38, 456, 228)
-
-
-def test_batch_plan_spreads_the_remainder() -> None:
-    plan = batch_plan(50, 4)
-    assert [size for size, _, _ in plan] == [13, 13, 12, 12]
-    # an odd batch counts its floor half as held out: 6 + 6 + 6 + 6
-    assert plan[-1] == (12, 50, 24)
+def test_session_plan_counts_whole_sessions() -> None:
+    # 50 minutes at 60 s: 50 items; 280 to the stop is 6 sessions; 556 labels is 12
+    assert session_plan(456, 100, 280, work_minutes=50, seconds_per_item=60) == (50, 6, 12)
+    # at 90 s a session holds 33; a part session still counts: 280 / 33 = 8.5 -> 9
+    assert session_plan(456, 100, 280, work_minutes=50, seconds_per_item=90) == (33, 9, 17)
