@@ -5,6 +5,7 @@ import math
 from scripts.v2.gold_size import (
     accept_probability,
     agreement_for_kappa,
+    binary_kappa,
     cohen_kappa,
     expected_kappa,
     read_counts,
@@ -102,3 +103,17 @@ def test_session_plan_counts_whole_sessions() -> None:
     assert session_plan(456, 100, 280, work_minutes=50, seconds_per_item=60) == (50, 6, 12)
     # at 90 s a session holds 33; a part session still counts: 280 / 33 = 8.5 -> 9
     assert session_plan(456, 100, 280, work_minutes=50, seconds_per_item=90) == (33, 9, 17)
+
+
+def test_binary_kappa_collapses_and_drops_unclear() -> None:
+    # classes: 0 not, 1 after, 2 before, 3 unclear; the pair with an unclear label drops,
+    # after and before both count as disclosed: human N D D N, judge N D D D
+    # po = 3/4, pe = 0.5 * 0.25 + 0.5 * 0.75 = 0.5, kappa = 0.5
+    assert math.isclose(binary_kappa([0, 1, 2, 3, 0], [0, 2, 1, 0, 1]), 0.5)
+
+
+def test_binary_bar_never_raises_the_pass_rate() -> None:
+    prev = (0.75, 0.10, 0.10, 0.05)
+    four = accept_probability(140, 0.85, prev, reps=300, seed=3)
+    both = accept_probability(140, 0.85, prev, reps=300, seed=3, binary=True)
+    assert both <= four

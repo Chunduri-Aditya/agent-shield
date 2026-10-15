@@ -15,10 +15,13 @@ This script answers two sizing questions with stdlib code only:
    can occur) is labelled, plus a fixed number of not acted samples per model from
    distinct tasks and clean controls per model; a model short of not acted samples passes
    its slots to the others, as `blind_export.py` does.
+With `--binary-bar` (D49) a pass also needs kappa >= 0.8 on the disclosed or not collapse,
+and the size verdict uses both bars; without it the output matches `prereg/S1_gold_size.txt`.
+
 4. With `--pace` (D45), the one hour labelling sessions: items per session, sessions to the
    earliest valid stop and sessions for every label, per pace in seconds per transcript.
    The labelling queue alternates dev and held out items, so the held out half reaches
-   the size the simulation needs at twice that size in gold items.
+   the held out floor at twice that floor in gold items.
 
 Usage: `uv run python scripts/v2/gold_size.py [--counts S1_COUNTS.md]` (prints tables;
 seed fixed).
@@ -44,6 +47,9 @@ SCENARIOS: dict[str, tuple[float, ...]] = {
     "mostly_silent": (0.75, 0.10, 0.10, 0.05),
     "balanced": (0.40, 0.25, 0.25, 0.10),
 }
+DISCLOSED = (1, 2)  # after acting, before acting, in the scenario class order
+UNCLEAR = 3
+PREREG_HELD_OUT = 140  # prereg S1: the held out half never falls below this (D49)
 HELD_OUT_GRID = tuple(range(40, 401, 20))
 PER_MODEL_GRID = (10, 20, 30, 40, 60)
 TASKS = 80  # S1 tasks; a not acted draw takes one sample per distinct task
@@ -60,6 +66,14 @@ def cohen_kappa(a: Sequence[int], b: Sequence[int], k: int) -> float:
     if pe == 1.0:
         return 1.0 if po == 1.0 else 0.0
     return (po - pe) / (1.0 - pe)
+
+
+def binary_kappa(a: Sequence[int], b: Sequence[int]) -> float:
+    """Kappa on the disclosed or not collapse (D49): after and before acting count as
+    disclosed, and a pair where either label is unclear drops out."""
+    pairs = [(int(x in DISCLOSED), int(y in DISCLOSED)) for x, y in zip(a, b, strict=True)
+             if UNCLEAR not in (x, y)]
+    return cohen_kappa([x for x, _ in pairs], [y for _, y in pairs], 2)
 
 
 def expected_kappa(q: float, prev: Sequence[float]) -> float:
@@ -83,8 +97,9 @@ def agreement_for_kappa(target: float, prev: Sequence[float]) -> float:
 
 
 def accept_probability(n: int, true_kappa: float, prev: Sequence[float], *,
-                       reps: int = REPS, seed: int = SEED) -> float:
-    """Share of simulated held out halves of size n whose kappa reaches the 0.8 bar."""
+                       reps: int = REPS, seed: int = SEED, binary: bool = False) -> float:
+    """Share of simulated held out halves of size n whose kappa reaches the 0.8 bar; with
+    `binary`, the disclosed or not collapse must reach it too (D49)."""
     rng = random.Random(seed)
     k = len(prev)
     q = agreement_for_kappa(true_kappa, prev)
@@ -94,7 +109,8 @@ def accept_probability(n: int, true_kappa: float, prev: Sequence[float], *,
         human = rng.choices(classes, weights=prev, k=n)
         judge = [h if rng.random() < q else rng.choice([c for c in classes if c != h])
                  for h in human]
-        if cohen_kappa(human, judge, k) >= KAPPA_BAR:
+        if cohen_kappa(human, judge, k) >= KAPPA_BAR and (
+                not binary or binary_kappa(human, judge) >= KAPPA_BAR):
             hits += 1
     return hits / reps
 
@@ -179,7 +195,7 @@ def print_allocation(counts: dict[str, dict[str, int]], *, not_acted_per_model: 
     verdict = "meets" if held_out >= held_out_needed else "misses"
     print(f"gold set {gold} ({poisoned} poisoned, of them "
           f"{sum(a for a, _, _ in rows.values())} acted; {clean} clean); held out half "
-          f"{held_out}, {verdict} the {held_out_needed} the simulation needs")
+          f"{held_out}, {verdict} the held out floor of {held_out_needed}")
     print(f"relabel max({relabel_min}, 10%) = {relabel}; labels in total {gold + relabel}")
     if paces:
         stop = 2 * held_out_needed
@@ -194,6 +210,8 @@ def print_allocation(counts: dict[str, dict[str, int]], *, not_acted_per_model: 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Size the S1 gold label set")
+    parser.add_argument("--binary-bar", action="store_true",
+                        help="add the disclosed or not bar to the pass rule (D49)")
     parser.add_argument("--counts", type=Path, help="S1_COUNTS.md for the stratified design")
     parser.add_argument("--not-acted-per-model", type=int, default=20)
     parser.add_argument("--clean-per-model", type=int, default=5)
@@ -205,16 +223,25 @@ def main(argv: list[str] | None = None) -> int:
     print(f"seed {SEED}, reps {REPS}, bar kappa >= {KAPPA_BAR}; "
           f"weak judge {WEAK_KAPPA} must pass <= {MAX_FALSE_ACCEPT:.0%}, "
           f"good judge {GOOD_KAPPA} must pass >= {MIN_POWER:.0%}")
+    if args.binary_bar:
+        print("binary bar (D49): a pass also needs kappa >= 0.8 on disclosed or not (unclear "
+              "pairs left out); the verdict uses the both bars columns")
     needed: dict[str, int | None] = {}
     for name, prev in SCENARIOS.items():
         print(f"\nscenario {name} prevalences (not, after, before, unclear) {prev}")
-        print("held_out_n  P(pass | kappa 0.70)  P(pass | kappa 0.90)")
+        print("held_out_n  P(pass | kappa 0.70)  P(pass | kappa 0.90)"
+              + ("  both bars | 0.70  both bars | 0.90" if args.binary_bar else ""))
         needed[name] = None
         for n in HELD_OUT_GRID:
             weak = accept_probability(n, WEAK_KAPPA, prev)
             good = accept_probability(n, GOOD_KAPPA, prev)
+            cols = f"{n:>10}  {weak:>20.3f}  {good:>20.3f}"
+            if args.binary_bar:
+                weak = accept_probability(n, WEAK_KAPPA, prev, binary=True)
+                good = accept_probability(n, GOOD_KAPPA, prev, binary=True)
+                cols += f"  {weak:>16.3f}  {good:>16.3f}"
             ok = weak <= MAX_FALSE_ACCEPT and good >= MIN_POWER
-            print(f"{n:>10}  {weak:>20.3f}  {good:>20.3f}{'  meets both' if ok else ''}")
+            print(f"{cols}{'  meets both' if ok else ''}")
             if ok and needed[name] is None:
                 needed[name] = n
     print("\nsmallest held out half meeting both:", needed)
@@ -222,7 +249,10 @@ def main(argv: list[str] | None = None) -> int:
     for n in PER_MODEL_GRID:
         print(f"  {n:>3} poisoned gold labels per model: +/- {wilson_half_width(n // 2, n):.3f}")
     if args.counts:
-        held_out_needed = max(n for n in needed.values() if n is not None)
+        simulated = max(n for n in needed.values() if n is not None)
+        held_out_needed = max(simulated, PREREG_HELD_OUT)
+        print(f"\nheld out floor {held_out_needed}: the larger of the simulation's {simulated} "
+              f"and the preregistered {PREREG_HELD_OUT}")
         print_allocation(read_counts(args.counts), not_acted_per_model=args.not_acted_per_model,
                          clean_per_model=args.clean_per_model, relabel_min=args.relabel_min,
                          held_out_needed=held_out_needed, paces=args.pace,
