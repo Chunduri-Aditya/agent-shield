@@ -70,3 +70,19 @@ claude-sonnet-5                   240      0          0             21          
 claude-sonnet-5-5                 239     59         59             21          5
 gold set 456 (391 poisoned, of them 131 acted; 65 clean); held out half 228, meets the 140 the simulation needs
 relabel max(100, 10%) = 100; labels in total 556
+
+12 labelling batches (each a stratified slice, half held out)
+batch  size  items_done  held_out_done
+    1    38          38             19
+    2    38          76             38
+    3    38         114             57
+    4    38         152             76
+    5    38         190             95
+    6    38         228            114
+    7    38         266            133
+    8    38         304            152  held out reaches 140: earliest valid stop
+    9    38         342            171
+   10    38         380            190
+   11    38         418            209
+   12    38         456            228
+relabel: about 8.3 items per batch, each served again no sooner than 14 days after its first label

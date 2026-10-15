@@ -5,6 +5,7 @@ import math
 from scripts.v2.gold_size import (
     accept_probability,
     agreement_for_kappa,
+    batch_plan,
     cohen_kappa,
     expected_kappa,
     read_counts,
@@ -94,3 +95,18 @@ def test_stratified_allocation_caps_not_acted_at_distinct_tasks() -> None:
     rows = stratified_allocation(counts, not_acted_per_model=100, clean_per_model=2)
     # one not acted draw per distinct task, and S1 has 80 tasks
     assert rows == {"m-a": (0, 80, 2)}
+
+
+def test_batch_plan_splits_evenly_and_accumulates_held_out() -> None:
+    plan = batch_plan(456, 12)
+    assert [size for size, _, _ in plan] == [38] * 12
+    # cumulative items and held out after each batch; each batch holds half held out
+    assert plan[0] == (38, 38, 19)
+    assert plan[-1] == (38, 456, 228)
+
+
+def test_batch_plan_spreads_the_remainder() -> None:
+    plan = batch_plan(50, 4)
+    assert [size for size, _, _ in plan] == [13, 13, 12, 12]
+    # an odd batch counts its floor half as held out: 6 + 6 + 6 + 6
+    assert plan[-1] == (12, 50, 24)

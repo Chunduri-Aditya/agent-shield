@@ -15,6 +15,10 @@ This script answers two sizing questions with stdlib code only:
    can occur) is labelled, plus a fixed number of not acted samples per model from
    distinct tasks and clean controls per model; a model short of not acted samples passes
    its slots to the others, as `blind_export.py` does.
+4. With `--batches` (D44), how the gold set splits into labelling batches. Each batch is a
+   stratified slice of the whole design, half dev and half held out, so the finished
+   batches are always a smaller version of the same design; the table shows after which
+   batch the held out half first reaches the size the simulation needs.
 
 Judge model: the judge copies the human label with probability q, else picks one of
 the other classes uniformly. q is solved so the expected kappa equals the target.
@@ -149,8 +153,25 @@ def stratified_allocation(counts: dict[str, dict[str, int]], *, not_acted_per_mo
             for m in sorted(counts)}
 
 
+def batch_plan(gold: int, batches: int) -> list[tuple[int, int, int]]:
+    """Per batch (size, cumulative items, cumulative held out): sizes differ by at most one,
+    the larger first; a batch's held out share is its floor half (the conservative case)."""
+    if gold < 1 or not 1 <= batches <= gold:
+        raise ValueError("need at least one item per batch")
+    base, extra = divmod(gold, batches)
+    plan: list[tuple[int, int, int]] = []
+    items = held_out = 0
+    for b in range(batches):
+        size = base + (1 if b < extra else 0)
+        items += size
+        held_out += size // 2
+        plan.append((size, items, held_out))
+    return plan
+
+
 def print_allocation(counts: dict[str, dict[str, int]], *, not_acted_per_model: int,
-                     clean_per_model: int, relabel_min: int, held_out_needed: int) -> None:
+                     clean_per_model: int, relabel_min: int, held_out_needed: int,
+                     batches: int = 0) -> None:
     rows = stratified_allocation(counts, not_acted_per_model=not_acted_per_model,
                                  clean_per_model=clean_per_model)
     print(f"\nstratified gold set (RR02 Q6): acted stratum in full, {not_acted_per_model} not "
@@ -170,6 +191,18 @@ def print_allocation(counts: dict[str, dict[str, int]], *, not_acted_per_model: 
           f"{sum(a for a, _, _ in rows.values())} acted; {clean} clean); held out half "
           f"{held_out}, {verdict} the {held_out_needed} the simulation needs")
     print(f"relabel max({relabel_min}, 10%) = {relabel}; labels in total {gold + relabel}")
+    if batches:
+        print(f"\n{batches} labelling batches (each a stratified slice, half held out)")
+        print("batch  size  items_done  held_out_done")
+        first_ok = None
+        for b, (size, items, held) in enumerate(batch_plan(gold, batches), start=1):
+            mark = ""
+            if first_ok is None and held >= held_out_needed:
+                first_ok = b
+                mark = f"  held out reaches {held_out_needed}: earliest valid stop"
+            print(f"{b:>5}  {size:>4}  {items:>10}  {held:>13}{mark}")
+        print(f"relabel: about {relabel / batches:.1f} items per batch, each served again no "
+              "sooner than 14 days after its first label")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -178,6 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--not-acted-per-model", type=int, default=20)
     parser.add_argument("--clean-per-model", type=int, default=5)
     parser.add_argument("--relabel-min", type=int, default=100)
+    parser.add_argument("--batches", type=int, default=0, help="labelling batches (D44)")
     args = parser.parse_args(argv)
     print(f"seed {SEED}, reps {REPS}, bar kappa >= {KAPPA_BAR}; "
           f"weak judge {WEAK_KAPPA} must pass <= {MAX_FALSE_ACCEPT:.0%}, "
@@ -202,7 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         held_out_needed = max(n for n in needed.values() if n is not None)
         print_allocation(read_counts(args.counts), not_acted_per_model=args.not_acted_per_model,
                          clean_per_model=args.clean_per_model, relabel_min=args.relabel_min,
-                         held_out_needed=held_out_needed)
+                         held_out_needed=held_out_needed, batches=args.batches)
     return 0
 
 
