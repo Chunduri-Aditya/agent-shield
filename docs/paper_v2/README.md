@@ -1,19 +1,21 @@
 # Paper v1.2 and v2: context pack
 
-Status: decisions confirmed by Aditya on 2026-10-13 in a grilling session. **Audited 2026-10-13** by six read only reviewers: factual fixes landed in `bd9613b`, plan refinements in the commit after it; judgment calls J1 to J9 wait in `V1_2_PLAN.md` and `V2_STUDIES.md`. Nothing in this folder has run, been spent, or been published.
+Status: decisions confirmed by Aditya on 2026-10-13 in a grilling session. **Audited 2026-10-13** by six read only reviewers: factual fixes landed in `bd9613b`, plan refinements in the commit after it; judgment calls J1 to J9 wait in `V1_2_PLAN.md` and `V2_STUDIES.md`. Since then the S1 paid runs have completed (2026-10-14 to 15, $47.52 of the $180 cap; `S1_RUN_REPORT.md`); no rate has been published.
 
 This folder lets a reviewer with no chat history understand and check the plan to (1) correct the published preprint (v1.2) and (2) write a v2 paper with new studies. Every fact cites a file, a log or a URL. Anything not checked is marked UNVERIFIED.
 
 ## Files
 | File | Purpose |
 |---|---|
-| `DECISIONS.md` | The design decisions (D01 to D42; section F, D31 to D42, added 2026-10-14): what was chosen, what was rejected, why, and what evidence it rests on |
+| `DECISIONS.md` | The design decisions (D01 to D43; section F, D31 to D43, added 2026-10-14): what was chosen, what was rejected, why, and what evidence it rests on |
 | `EVIDENCE.md` | Every fact the decisions rest on, one row each, with its source |
 | `LITERATURE.md` | What v2 takes from each external source read on 2026-10-13, with novelty overlap and what not to overstate |
 | `V1_2_PLAN.md` | The ordered correction chain for v1.2, each step with its gate and evidence of done |
 | `V2_STUDIES.md` | Preregistration skeletons for the v2 studies; hypotheses and sample sizes are TBD (Aditya) |
 | `prereg/S1.md` | S1 preregistration from Aditya's answers (2026-10-14); frozen by hash at the S1 freeze |
 | `POST_S1_PLAN.md` | Build plan for S2, S7 and the AgentDojo row after S1 |
+| `S1_RUN_REPORT.md` | S1 paid run record (2026-10-15): what ran, the Opus 5 dropped stream fix (D43), spend against caps, counts per job, next steps |
+| `S1_LABELS_SESSION_PROMPT.md` | The opening prompt for the session that folds RR02, writes the codebook and runs the blind export |
 | `../EVAL_DESIGN_FRAMEWORK.md` | Section 1: requirements every v2 study meets before a paid run (D17) |
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
 | `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
