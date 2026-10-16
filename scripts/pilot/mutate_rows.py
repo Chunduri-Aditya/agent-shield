@@ -934,6 +934,78 @@ ROWS["s1-a1"] = (
 )
 
 
+# S1 judge (labels build plan batch 3 item 1, moved ahead by D54).
+SJ, JS, VF = "evals/s1_judge.py", "scripts/v2/judge_s1.py", "scripts/v2/verify.py"
+TSJ, TJS, TVF = ("tests/pilot/test_s1_judge.py", "tests/pilot/test_judge_s1.py",
+                 "tests/pilot/test_verify.py")
+
+ROWS["s1-judge"] = (
+    Row("s1-J-01-token-unchecked", "a verdict with another item's token is scored", SJ,
+        '    if found["TOKEN"] != token:\n', "    if False:\n", (TSJ,)),
+    Row("s1-J-02-q2-outside-q1", "question 2 may name a block question 1 did not list", SJ,
+        'lb._blocks(q2, a["q1"])', "lb._blocks(q2, allowed)", (TSJ,)),
+    Row("s1-J-03-q1-out-of-range", "question 1 may name a block the transcript lacks", SJ,
+        '.replace("]", " "), allowed)', '.replace("]", " "), list(range(100)))', (TSJ,)),
+    Row("s1-J-04-q4-after-disclosure", "question 4 is read after a disclosing block", SJ,
+        '    if isinstance(a["q2"], int):\n        if q4 not in _SKIP:\n',
+        "    if False:\n        if q4 not in _SKIP:\n", (TSJ,)),
+    Row("s1-J-05-q3-defaults-no", "a missing question 3 answer becomes no", SJ,
+        '"no": "no"}.get(q3)', '"no": "no"}.get(q3, "no")', (TSJ,)),
+    Row("s1-J-06-codebook-dropped", "the prompt holds no codebook", SJ,
+        "<codebook>\n{codebook}\n</codebook>", "<codebook>\n</codebook>", (TSJ,)),
+    Row("s1-J-07-reasoning-field", "the form asks for a reasoning line", SJ,
+        "Q4: <no, or one reason code", "REASONING: <your reasoning>\nQ4: <no, or one reason code",
+        (TSJ,)),
+    Row("s1-J-08-void-scored-valid", "a void form scores as valid", SJ,
+        "return Score(value=0, answer=INVALID", "return Score(value=1, answer=INVALID", (TSJ,)),
+    Row("s1-J-09-items-in-repo", "judge items inside the public repo are accepted", SJ,
+        "    if path == _REPO_ROOT or _REPO_ROOT in path.parents:\n"
+        '        raise ValueError(f"{path}: judge',
+        '    if False:\n        raise ValueError(f"{path}: judge', (TSJ,)),
+    Row("s1-J-10-queue-id-not-reused", "a queue item gets a new id in the judge run", JS,
+        "                iid = qid\n", '                iid = f"{rng_ids.getrandbits(48):012x}"\n',
+        (TJS,)),
+    Row("s1-J-11-view-differs", "an item file holds a view other than the queue view", JS,
+        '"view": views[i][0],', '"view": views[i][0] + " ",', (TJS,)),
+    Row("s1-J-12-clean-dropped", "main clean samples outside the queue are never judged", JS,
+        "            if qid is None:\n                groups[",
+        '            if qid is None and arm != "clean":\n                groups[', (TJS,)),
+    Row("s1-J-13-drift-not-heldout", "the drift rerun repeats the dev half", JS,
+        "batches[DRIFT] = list(batches[HELDOUT])", "batches[DRIFT] = list(batches[DEV])",
+        (TJS,)),
+    Row("s1-J-14-timing-swapped", "a block after the send is timed before acting", JS,
+        'return "before" if canary is None or pos < canary else "after"',
+        'return "before" if canary is None or pos > canary else "after"', (TJS,)),
+    Row("s1-J-15-verify-holds-heldout", "the verification folder shows held out answers", JS,
+        '        if half == "dev" and qkey["items"][row["item"]]["half"] != "dev":\n',
+        "        if False:\n", (TJS,)),
+    Row("s1-J-16-heldout-folder-holds-dev", "the blind held out folder holds dev items", JS,
+        'held = {k for k, v in qkey["items"].items() if v["half"] == "heldout"}',
+        'held = {k for k, v in qkey["items"].items() if True}', (TJS,)),
+    Row("s1-J-17-u-in-h1", "U labels enter the H1 denominator", JS,
+        'v["D_before"] + v["D_after"] + v["N"]', 'v["D_before"] + v["D_after"] + v["N"] + v["U"]',
+        (TJS,)),
+    Row("s1-J-18-status-shows-labels", "the run status prints label counts", JS,
+        '        tokens = sum(1 for r in sc if any("token" in x',
+        '        served.update(str(r["label"]) for r in sc)\n'
+        '        tokens = sum(1 for r in sc if any("token" in x', (TJS,)),
+    Row("s1-J-19-dirty-tree-runs", "the judge launches from a dirty tree", JS,
+        '    if _git(worktree, "status", "--porcelain"):\n', "    if False:\n", (TJS,)),
+    Row("s1-J-20-usage-retries-at-once", "a usage limit retries at once and burns retries", JS,
+        '            if state and state["usage"]:\n', "            if False:\n", (TJS,)),
+    Row("s1-J-21-errors-count-as-done", "a batch with errored items counts as done", JS,
+        '            if state and state["status"] == "success" and state["errors"] == 0 and \\\n',
+        '            if state and state["status"] == "success" and \\\n', (TJS,)),
+    Row("s1-J-22-verify-no-flush", "a verification waits in a buffer when the next item shows",
+        VF, "                out.flush()\n                os.fsync(out.fileno())\n", "", (TVF,)),
+    Row("s1-J-23-verify-agree-loses-answers", "an agreement saves other answers than the judge's",
+        VF, '                answers = judge["answers"]\n',
+        '                answers = {"q1": [], "q2": None, "q3": "no", "q4": "no"}\n', (TVF,)),
+    Row("s1-J-24-verify-no-resume", "a restart serves verified items again", VF,
+        '                if row["item"] in self.done:\n                    continue\n',
+        "                if False:\n                    continue\n", (TVF,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(

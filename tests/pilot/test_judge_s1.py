@@ -173,3 +173,122 @@ def test_summary_counts_classes_per_model_and_drift(data: Path,
     h1 = next(ln for ln in text.splitlines() if ln.startswith(f"| {C} |"))
     assert h1.split("|")[2:5] == [" 15 ", " 118 ", " no "]
     assert "same label: " in text
+
+
+def test_status_shows_operational_counts_and_no_label(data: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    key = json.loads((data / "sealed" / "judge_key.json").read_text())
+    monkeypatch.setattr(js, "_scores", _fake_scores({i: ("D", 1) for i in key["items"]}))
+    text = js.status(data)
+    assert "| 01_heldout |" in text and js.JUDGE in text
+    for leak in ("'D'", "'N'", "'U'", "D_before", "disclosed"):
+        assert leak not in text
+
+
+class _Sample:
+    def __init__(self, err: str | None, scored: bool = False) -> None:
+        self.error = None if err is None else type("E", (), {"message": err})()
+        self.scores = None if err and not scored else {js.SCORER: object()}
+
+
+class _Log:
+    def __init__(self, status: str, errs: list[str | None], scored: bool = False) -> None:
+        self.status, self.samples = status, [_Sample(e, scored) for e in errs]
+
+
+def _git_repo(root: Path) -> Path:
+    import subprocess
+    root.mkdir()
+    for args in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(["git", "-C", str(root), *args], check=True)
+    (root / "f.txt").write_text("x")
+    for rel in ("docs/paper_v2/prereg/S1_CODEBOOK.md", "evals/s1_judge.py"):
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_text("stand in\n")
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@e.invalid",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "c"], check=True)
+    return root
+
+
+def _run_data(tmp: Path, name: str = "b1", size: int = 2) -> Path:
+    data = tmp / "data"
+    (data / "judge" / "items").mkdir(parents=True)
+    (data / "judge" / "items" / f"{name}.jsonl").write_text("x\n")
+    from scripts.pilot._common import sha256_file
+    manifest = {"order": [name], "batches": {name: size},
+                "sha256": {name: sha256_file(data / "judge" / "items" / f"{name}.jsonl")}}
+    (data / "judge" / "judge_manifest.json").write_text(json.dumps(manifest))
+    return data
+
+
+def test_run_refuses_a_dirty_tree_and_a_commit_other_than_the_frozen_one(tmp_path: Path) -> None:
+    repo = _git_repo(tmp_path / "wt")
+    data = _run_data(tmp_path)
+    (repo / "dirty.txt").write_text("y")
+    with pytest.raises(PilotError, match="dirty"):
+        js.run(data, repo)
+    (repo / "dirty.txt").unlink()
+    (data / "judge" / "judge_setup.json").write_text(json.dumps({"commit": "0" * 40,
+                                                                 "model": js.MODEL}))
+    with pytest.raises(PilotError, match="frozen"):
+        js.run(data, repo)
+
+
+def test_a_usage_limit_waits_for_its_reset_then_retries_until_every_item_scored(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = _git_repo(tmp_path / "wt")
+    data = _run_data(tmp_path)
+    reset = 2_000_000_000
+    states = iter([_Log("success", [None, f"Claude AI usage limit reached|{reset}"]),
+                   _Log("success", [None, None]), _Log("success", [None, None])])
+    current: list[Any] = []
+    calls: list[list[str]] = []
+    sleeps: list[float] = []
+
+    def fake_run(cmd: list[str], **_: Any) -> Any:
+        if cmd[0] == "claude":
+            return type("R", (), {"stdout": "claude 0", "returncode": 0})()
+        calls.append(cmd)
+        current.append(next(states))
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr("scripts.v2.judge_s1.subprocess.run", fake_run)
+    monkeypatch.setattr(js, "_git", lambda wt, *a: "c" * 40 if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(js, "_batch_log", lambda p, n: (tmp_path / "x.eval") if current else None)
+    monkeypatch.setattr(js, "read_eval_log", lambda path: current[-1])
+    monkeypatch.setattr("scripts.v2.judge_s1.time.time", lambda: reset - 600)
+    js.run(data, repo, say=lambda _: None, sleep=sleeps.append)
+    assert [c[1] for c in calls] == ["eval", "eval-retry"]
+    assert sleeps and sleeps[0] >= 600
+
+
+def test_a_batch_with_an_unscored_item_is_not_done(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    assert js.log_state(_Log("success", [None, "boom"]))["errors"] == 1  # type: ignore[arg-type]
+    state = js.log_state(_Log("success", [None]))  # type: ignore[arg-type]
+    assert state["scored"] == 1 and state["errors"] == 0
+
+
+def test_a_scored_item_that_also_errored_is_retried(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = _git_repo(tmp_path / "wt")
+    data = _run_data(tmp_path)
+    states = iter([_Log("success", [None, "scorer failed"], scored=True),
+                   _Log("success", [None, None]), _Log("success", [None, None])])
+    current: list[Any] = []
+    calls: list[str] = []
+
+    def fake_run(cmd: list[str], **_: Any) -> Any:
+        if cmd[0] == "claude":
+            return type("R", (), {"stdout": "claude 0", "returncode": 0})()
+        calls.append(cmd[1])
+        current.append(next(states))
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr("scripts.v2.judge_s1.subprocess.run", fake_run)
+    monkeypatch.setattr(js, "_git", lambda wt, *a: "c" * 40 if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(js, "_batch_log", lambda p, n: (tmp_path / "x.eval") if current else None)
+    monkeypatch.setattr(js, "read_eval_log", lambda path: current[-1])
+    js.run(data, repo, say=lambda _: None, sleep=lambda _: None)
+    assert calls == ["eval", "eval-retry"]
