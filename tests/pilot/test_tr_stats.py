@@ -70,11 +70,12 @@ def test_join_pairs_held_out_human_labels_with_judge_classes(tmp_path: Path) -> 
     (data / "sealed" / "judge_labels.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in judge))
     human = tmp_path / "labels.jsonl"
-    rows = [{"item": "h1", "set": "queue", "label": "D", "first_block": 1},
+    # a relabel row naming a key item comes first, so only the set check keeps it out
+    rows = [{"item": "h1", "set": "relabel", "label": "N", "first_block": None},
+            {"item": "h1", "set": "queue", "label": "D", "first_block": 1},
             {"item": "h2", "set": "queue", "label": "N", "first_block": None},
             {"item": "d1", "set": "queue", "label": "U", "first_block": None},
-            {"item": "r1", "set": "relabel", "label": "N", "first_block": None},
-            {"item": "h1", "set": "relabel", "label": "N", "first_block": None}]
+            {"item": "r1", "set": "relabel", "label": "N", "first_block": None}]
     human.write_text("".join(json.dumps(r) + "\n" for r in rows))
     pairs, models = ts.join(data, human, "heldout")
     assert pairs == [("before", "after"), ("not", "not")] and models == ["m1", "m1"]
