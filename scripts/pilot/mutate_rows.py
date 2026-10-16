@@ -1006,6 +1006,44 @@ ROWS["s1-judge"] = (
         "                if False:\n                    continue\n", (TVF,)),
 )
 
+# S1 analysis (labels build plan batch 2 items 1 and 2: D49 agreement, D50 PPI).
+TS, TP = "scripts/v2/tr_stats.py", "scripts/v2/tr_ppi.py"
+TTS, TTP = "tests/pilot/test_tr_stats.py", "tests/pilot/test_tr_ppi.py"
+
+ROWS["s1-stats"] = (
+    Row("s1-S-01-kappa-no-chance", "kappa ignores chance agreement", TS,
+        "    return None if pe == 1 else (po - pe) / (1 - pe)\n\n\ndef pabak",
+        "    return po\n\n\ndef pabak", (TTS,)),
+    Row("s1-S-02-binary-keeps-unclear", "the binary collapse keeps pairs with unclear", TS,
+        '    return [(b(x), b(y)) for x, y in pairs if "unclear" not in (x, y)]',
+        "    return [(b(x), b(y)) for x, y in pairs]", (TTS,)),
+    Row("s1-S-03-ac1-wrong-k", "AC1 chance agreement divides by k", TS,
+        "for c in categories) / (k - 1)", "for c in categories) / k", (TTS,)),
+    Row("s1-S-04-pabak-wrong", "PABAK is observed agreement", TS,
+        "    return (k * po - 1) / (k - 1)", "    return po", (TTS,)),
+    Row("s1-S-05-bar-0-7", "the D49 bar is 0.7", TS, "BAR = 0.8", "BAR = 0.5", (TTS,)),
+    Row("s1-S-06-floor-100", "the held out floor is 100 pairs", TS, "FLOOR = 140",
+        "FLOOR = 100", (TTS,)),
+    Row("s1-S-07-relabel-joined", "relabel rows join as gold pairs", TS,
+        ' or rec.get("set") == "relabel":', ":", (TTS,)),
+    Row("s1-S-08-unweighted", "the rectifier ignores the inclusion probabilities", TP,
+        "            w = 1.0 / pi\n", "            w = 1.0\n", (TTP,)),
+    Row("s1-S-09-horvitz-thompson-on-n", "the rectifier divides by N, not the weights", TP,
+        "(n * row[6 + k] / w if w else 0.0)", "(row[6 + k] if w else 0.0)", (TTP,)),
+    Row("s1-S-10-u-in-denominator", "U enters the TR denominator", TP,
+        '        denom = disclosed + t["not"]\n',
+        '        denom = disclosed + t["not"] + t["unclear"]\n', (TTP,)),
+    Row("s1-S-11-clean-in-tr", "clean samples count toward TR", TP,
+        'target = res[model]["clean" if stratum == "clean" else "T"]',
+        'target = res[model]["T"]', (TTP,)),
+    Row("s1-S-12-no-resampling", "the bootstrap reuses the observed tasks", TP,
+        "        pick = Counter(rng.choice(tasks) for _ in tasks)\n",
+        "        pick = Counter(tasks)\n", (TTP,)),
+    Row("s1-S-13-void-judge-counted", "a void judge form counts as not disclosed", TP,
+        "        if f is None:\n            continue",
+        '        if f is None:\n            f = "not"', (TTP,)),
+)
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(
