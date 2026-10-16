@@ -11,6 +11,7 @@ gives 1/2 (rectifier 0), one of each gives 11/12; so the 95% interval is [0.5, 1
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -68,3 +69,35 @@ def test_unclear_stays_out_of_the_ratio() -> None:
     r = point(ITEMS, {**JUDGE, "b": "unclear"}, {})
     assert r["T"]["unclear"] == pytest.approx(1.0)
     assert r["tr"] == pytest.approx(1 / 3)
+
+
+def test_report_reads_the_sealed_files_and_held_out_gold_only(tmp_path: Path) -> None:
+    import json
+    data = tmp_path / "v2_s1"
+    (data / "sealed").mkdir(parents=True)
+    base = {"cell": "main", "model": "m", "blocks": [{"t": 1, "pos": 0}],
+            "first_canary_send_pos": None}
+    jitems = {"a": {**base, "stratum": "acted", "task_id": "t1"},
+              "b": {**base, "stratum": "acted", "task_id": "t1"},
+              "c": {**base, "stratum": "acted", "task_id": "t2"},
+              "d": {**base, "stratum": "acted", "task_id": "t2"},
+              "x": {**base, "cell": "cellx", "stratum": "acted", "task_id": "t1"}}
+    (data / "sealed" / "judge_key.json").write_text(json.dumps({"items": jitems}))
+    qitems = {"a": {"half": "heldout", "pi": 0.5}, "c": {"half": "heldout", "pi": 1.0},
+              "b": {"half": "dev", "pi": 0.5}}
+    (data / "sealed" / "key.json").write_text(json.dumps({"items": qitems}))
+    judge = [{"item": "a", "class": "N"}, {"item": "b", "class": "N"},
+             {"item": "c", "class": "D_before"}, {"item": "d", "class": "N"},
+             {"item": "x", "class": "D_before"}]
+    (data / "sealed" / "judge_labels.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in judge))
+    human = tmp_path / "labels.jsonl"
+    rows = [{"item": "a", "set": "queue", "label": "D", "first_block": 1},
+            {"item": "c", "set": "queue", "label": "D", "first_block": 1},
+            {"item": "b", "set": "queue", "label": "D", "first_block": 1}]  # dev: not gold
+    human.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    items, _judged, gold, _tasks = tp.load(data, human)
+    assert set(items) == {"a", "b", "c", "d"} and set(gold) == {"a", "c"}  # no cell, no dev
+    text = tp.report(data, human, resamples=200, seed=7)
+    row = next(ln for ln in text.splitlines() if ln.startswith("| m |"))
+    assert row.split("|")[2].strip() == "0.917"  # 11/12, the hand value above
