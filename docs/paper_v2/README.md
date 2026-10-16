@@ -18,6 +18,7 @@ This folder lets a reviewer with no chat history understand and check the plan t
 | `S1_LABELS_BUILD_PLAN.md` | Build plan for the labels (three batches): the queue export and `scripts/v2/label.py`, the analysis code, the judges |
 | `POST_S1_PLAN.md` | Build plan for S2, S7 and the AgentDojo row after S1 |
 | `S1_RUN_REPORT.md` | S1 paid run record (2026-10-15): what ran, the Opus 5 dropped stream fix (D43), spend against caps, counts per job, next steps |
+| `S1_JUDGE_RUN.md` | S1 judge run record (2026-10-16, D54): Fable 5.1 through the CLI labels every answered S1 sample; operational counts only, the defaults taken for the D54 open points, Aditya's morning steps (`scripts/v2/judge_s1.py`, `verify.py`, `tr_stats.py`, `tr_ppi.py`, `s5_declines.py`) |
 | `S1_LABELS_SESSION_PROMPT.md` | The opening prompt for the session that folds RR02, writes the codebook and runs the blind export |
 | `../EVAL_DESIGN_FRAMEWORK.md` | Section 1: requirements every v2 study meets before a paid run (D17) |
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
