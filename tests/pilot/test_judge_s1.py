@@ -18,6 +18,7 @@ from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalSample, EvalSpe
 from scripts.pilot._common import PilotError
 from scripts.v2 import blind_export as bx
 from scripts.v2 import judge_s1 as js
+from scripts.v2 import tr_stats
 from tests.pilot import test_blind_export_queue as tq
 
 A, B, C = tq.A, tq.B, tq.C
@@ -74,9 +75,11 @@ def test_every_answered_sample_is_judged_once_and_queue_items_keep_their_ids(dat
     assert batches[js.HELDOUT] == [k for k in sorted(qkey["items"], key=lambda k: qkey[
         "items"][k]["queue_pos"]) if qkey["items"][k]["half"] == "heldout"]
     assert batches[js.DRIFT] == batches[js.HELDOUT]
-    assert {key["items"][i]["cell"] for i in batches["04_cells_a"]} == {"cellx"}
-    assert all(key["items"][i]["arm"] == "clean" for b in batches if b.startswith("05")
-               for i in batches[b])
+    rest = [b for b in batches if b.startswith(js.REST + "_")]
+    assert {i for b in rest for i in batches[b]} == set(key["items"]) - set(qkey["items"])
+    # a batch name says nothing about arm or cell: chunks mix them (review finding 3)
+    assert all(not any(w in b for w in ("poison", "clean", "cell")) for b in batches)
+    assert {key["items"][i]["arm"] for i in batches[rest[0]]} == {"poisoned", "clean"}
 
 
 def test_judge_views_equal_the_queue_views_and_rows_hold_nothing_else(data: Path) -> None:
@@ -113,7 +116,7 @@ def test_timing_compares_the_first_disclosing_block_with_the_first_canary_send(
         pos: int, canary: int | None, want: str) -> None:
     item = {"blocks": [{"t": 1, "pos": 0}, {"t": 2, "pos": pos}],
             "first_canary_send_pos": canary}
-    assert js.timing(item, 2) == want
+    assert tr_stats.timing(item, 2) == want
 
 
 def _fake_scores(labels: dict[str, tuple[str, int | None]]) -> Any:
@@ -171,8 +174,8 @@ def test_summary_counts_classes_per_model_and_drift(data: Path,
     cells = [c.strip() for c in row.strip("|").split("|")]
     assert cells[3:11] == ["120", "5", "10", "103", "2", "15", "0", "0"]
     h1 = next(ln for ln in text.splitlines() if ln.startswith(f"| {C} |"))
-    assert h1.split("|")[2:5] == [" 15 ", " 118 ", " no "]
-    assert "same label: " in text
+    assert [c.strip() for c in h1.split("|")[2:8]] == ["15", "118", "2", "0", "120", "no"]
+    assert "same class (before, after, not, unclear): " in text
 
 
 def test_status_shows_operational_counts_and_no_label(data: Path,
@@ -292,3 +295,66 @@ def test_a_scored_item_that_also_errored_is_retried(tmp_path: Path,
     monkeypatch.setattr(js, "read_eval_log", lambda path: current[-1])
     js.run(data, repo, say=lambda _: None, sleep=lambda _: None)
     assert calls == ["eval", "eval-retry"]
+
+
+def test_drift_compares_classes_not_bare_labels(data: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    key = json.loads((data / "sealed" / "judge_key.json").read_text())
+    acted = [i for i in key["batches"][js.HELDOUT] if key["items"][i]["stratum"] == "acted"]
+    assert acted, "the fixture needs a held out acted item"
+    first = _fake_scores({i: ("D", 1) for i in acted})
+    second = _fake_scores({i: ("D", 2) for i in acted})  # same label D, block after the send
+
+    def scores(p: dict[str, Path], name: str) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = (second if name == js.DRIFT else first)(p, name)
+        return rows
+
+    monkeypatch.setattr(js, "_scores", scores)
+    text = js.summary(data)
+    n = len(key["batches"][js.HELDOUT])
+    assert f"Both valid: {n}; same class (before, after, not, unclear): {n - len(acted)};" in text
+
+
+def test_verify_all_is_refused_before_the_held_out_floor(data: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(js, "_scores", _fake_scores({}))
+    with pytest.raises(PilotError, match="unblind"):
+        js.verify_export(data, half="all")
+    assert not (data / "verify" / "all").exists()
+
+
+def test_a_torn_log_is_moved_aside_and_counts_as_no_state(tmp_path: Path) -> None:
+    torn = tmp_path / "2026-10-16T00-00-00_s1-judge.eval"
+    torn.write_bytes(b"PK\x03\x04 not a whole zip")
+    said: list[str] = []
+    assert js._read_state(torn, said.append) is None
+    assert not torn.exists() and (tmp_path / (torn.name + ".unreadable")).exists()
+    assert said and "unreadable" in said[0]
+
+
+def test_usage_waits_spend_no_retry_and_stop_at_the_wall_clock_bound(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = _git_repo(tmp_path / "wt")
+    data = _run_data(tmp_path)
+    limited = _Log("success", [None, "Claude AI usage limit reached"])
+    current: list[Any] = []
+    calls: list[str] = []
+    sleeps: list[float] = []
+
+    def fake_run(cmd: list[str], **_: Any) -> Any:
+        if cmd[0] == "claude":
+            return type("R", (), {"stdout": "claude 0", "returncode": 0})()
+        calls.append(cmd[1])
+        current.append(limited)
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr("scripts.v2.judge_s1.subprocess.run", fake_run)
+    monkeypatch.setattr(js, "_git", lambda wt, *a: "c" * 40 if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(js, "_batch_log", lambda p, n: (tmp_path / "x.eval") if current else None)
+    monkeypatch.setattr(js, "read_eval_log", lambda path: current[-1])
+    states = js.run(data, repo, say=lambda _: None, sleep=sleeps.append, max_retries=1,
+                    max_wait_h=3.0)
+    # 20 + 40 + 60 + 60 minutes = 3 h; the next wait would pass the bound, so the run stops
+    assert sleeps == [1200, 2400, 3600, 3600]
+    assert len(calls) == 5 and calls[0] == "eval"  # more launches than max_retries=1 allows
+    assert states["b1"]["usage"] == 1

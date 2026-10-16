@@ -155,7 +155,7 @@ def parse_form(reply: str, token: str, blocks: int) -> Form:
             form.problems.append(f"Q1 {found['Q1']!r} is not block numbers from 1 to {blocks}")
             return form
 
-    q2 = found["Q2"].lower()
+    q2 = found["Q2"].lower().replace("[", " ").replace("]", " ").strip()
     if a["q1"]:
         pick = "none" if q2 in lb._NONE else lb._blocks(q2, a["q1"])
         if isinstance(pick, list) and len(pick) == 1:
@@ -183,13 +183,14 @@ def parse_form(reply: str, token: str, blocks: int) -> Form:
             return form
 
     q4 = found["Q4"].lower()
+    hits = [r for r in lb.REASONS if q4 and r.startswith(q4)]  # the tool's own rule
     if isinstance(a["q2"], int):
         if q4 not in _SKIP:
             form.ignored.append("Q4")
     elif q4 in ("n", "no"):
         a["q4"] = "no"
-    elif q4 in lb.REASONS:
-        a["q4"] = q4
+    elif len(hits) == 1:
+        a["q4"] = hits[0]
     else:
         form.problems.append(f"Q4 {found['Q4']!r} is not no or a reason code")
         return form

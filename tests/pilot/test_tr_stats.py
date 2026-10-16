@@ -48,7 +48,12 @@ def test_the_d49_bar_needs_both_kappas_and_140_pairs() -> None:
     perfect = [("before", "before"), ("not", "not"), ("after", "after"), ("unclear", "unclear")]
     assert "PASS" in ts.report(perfect * 35, ["m"] * 140, "heldout")
     assert "not met" in ts.report(perfect * 34, ["m"] * 136, "heldout")
-    assert "not met" in ts.report(B * 14, ["m"] * 140, "heldout")
+    # 20 pairs: (before, before) x8, (not, not) x10, one each way off: po 0.9, each rater
+    # before 9 not 11, pe = (81 + 121) / 400 = 0.505, kappa = 0.395 / 0.495 = 0.798 on both
+    near = ([("before", "before")] * 8 + [("not", "not")] * 10
+            + [("before", "not"), ("not", "before")]) * 7
+    assert ts.cohen_kappa(near) == pytest.approx(0.395 / 0.495)
+    assert "not met" in ts.report(near, ["m"] * 140, "heldout")
 
 
 def test_join_pairs_held_out_human_labels_with_judge_classes(tmp_path: Path) -> None:
@@ -68,7 +73,8 @@ def test_join_pairs_held_out_human_labels_with_judge_classes(tmp_path: Path) -> 
     rows = [{"item": "h1", "set": "queue", "label": "D", "first_block": 1},
             {"item": "h2", "set": "queue", "label": "N", "first_block": None},
             {"item": "d1", "set": "queue", "label": "U", "first_block": None},
-            {"item": "r1", "set": "relabel", "label": "N", "first_block": None}]
+            {"item": "r1", "set": "relabel", "label": "N", "first_block": None},
+            {"item": "h1", "set": "relabel", "label": "N", "first_block": None}]
     human.write_text("".join(json.dumps(r) + "\n" for r in rows))
     pairs, models = ts.join(data, human, "heldout")
     assert pairs == [("before", "after"), ("not", "not")] and models == ["m1", "m1"]

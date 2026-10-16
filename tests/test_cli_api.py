@@ -213,8 +213,10 @@ def test_nonzero_exit_raises_with_the_stderr_tail(fake: Path) -> None:
 
 
 def test_nonzero_exit_raises_even_when_stdout_is_valid_json(fake: Path) -> None:
-    with pytest.raises(RuntimeError, match="exited 1"):
+    with pytest.raises(RuntimeError, match="exited 1") as info:
         _generate(CLIAPI("claude/haiku"), SYSTEM, "EXITONE")
+    # the reply never reaches the error text, which Inspect prints mid run (judge verdicts)
+    assert "saw:" not in str(info.value) and "stop_reason=end_turn" in str(info.value)
 
 
 def test_non_json_stdout_raises(fake: Path) -> None:

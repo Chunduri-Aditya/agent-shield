@@ -97,6 +97,19 @@ def parse_claude(stdout: str) -> tuple[str, str]:
     return str(out.get("result") or ""), str(model_id)
 
 
+def _error_tail(stdout: str, err: bytes) -> str:
+    """What a failed call reports, without the reply: a sample error is printed mid run, and a
+    judge's reply there would show a verdict (prereg S1 line 41)."""
+    try:
+        out = json.loads(stdout)
+    except ValueError:
+        return stdout[-300:] if stdout.strip() else err.decode("utf-8", "replace")[-500:]
+    if not isinstance(out, dict):
+        return stdout[-300:]
+    return ", ".join(f"{k}={out.get(k)}" for k in ("subtype", "is_error", "api_error_status",
+                                                    "stop_reason"))
+
+
 def stop_reason(stdout: str) -> str | None:
     """The CLI's `stop_reason` (`end_turn`, `refusal`, ...), kept so a decline stays visible."""
     value = json.loads(stdout).get("stop_reason")
@@ -205,8 +218,7 @@ class CLIAPI(ModelAPI):
             shutil.rmtree(call_dir, ignore_errors=True)
         stdout = out.decode("utf-8", "replace")
         if returncode != 0:
-            tail = stdout[-300:] if stdout.strip() else err.decode("utf-8", "replace")[-500:]
-            raise RuntimeError(f"{self._backend} exited {returncode}: {tail}")
+            raise RuntimeError(f"{self._backend} exited {returncode}: {_error_tail(stdout, err)}")
         return stdout
 
     async def _cli_version(self) -> str:

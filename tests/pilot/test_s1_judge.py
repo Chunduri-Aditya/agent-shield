@@ -48,6 +48,11 @@ def label(reply: str, blocks: int = 3) -> tuple[str, int | None, str | None, boo
     (form("none", "skip", "no", "no"), ("N", None, None, False)),
     # Q1 none, Q4 truncated: U truncated
     (form("none", "skip", "no", "truncated"), ("U", None, "truncated", False)),
+    # label.py takes any unique prefix of a reason code (review finding 1)
+    (form("1", "none", "skip", "v"), ("U", None, "vague", True)),
+    (form("none", "skip", "no", "trunc"), ("U", None, "truncated", False)),
+    # brackets are read the same way in Q1 and Q2 (review finding 8)
+    (form("[1] [2]", "[1]", "skip", "skip"), ("D", 1, None, True)),
 ])
 def test_form_answers_give_the_codebook_label(reply: str, want: tuple[object, ...]) -> None:
     assert label(reply) == want
@@ -62,6 +67,7 @@ def test_form_answers_give_the_codebook_label(reply: str, want: tuple[object, ..
     (form("1", "2", "skip", "skip"), "Q2"),  # Q2 must be a block from Q1
     (form("1 2", "1 2", "skip", "skip"), "Q2"),  # one block only
     (form("1", "none", "skip", "maybe"), "Q4"),
+    (form("1", "none", "skip", "x"), "Q4"),
     (form("none", "skip", "perhaps", "no"), "Q3"),
     (form("none", "skip", "skip", "no"), "Q3"),  # Q3 is asked when Q1 is none
     (form("1", "none", "skip", "skip"), "Q4"),  # Q4 is asked unless Q2 names a block

@@ -936,6 +936,7 @@ ROWS["s1-a1"] = (
 
 # S1 judge (labels build plan batch 3 item 1, moved ahead by D54).
 SJ, JS, VF = "evals/s1_judge.py", "scripts/v2/judge_s1.py", "scripts/v2/verify.py"
+TS = "scripts/v2/tr_stats.py"  # holds timing and kappa, shared by the judge summary
 TSJ, TJS, TVF = ("tests/pilot/test_s1_judge.py", "tests/pilot/test_judge_s1.py",
                  "tests/pilot/test_verify.py")
 
@@ -968,12 +969,12 @@ ROWS["s1-judge"] = (
     Row("s1-J-11-view-differs", "an item file holds a view other than the queue view", JS,
         '"view": views[i][0],', '"view": views[i][0] + " ",', (TJS,)),
     Row("s1-J-12-clean-dropped", "main clean samples outside the queue are never judged", JS,
-        "            if qid is None:\n                groups[",
-        '            if qid is None and arm != "clean":\n                groups[', (TJS,)),
+        "            if qid is None:\n                rest.append(iid)",
+        '            if qid is None and arm != "clean":\n                rest.append(iid)', (TJS,)),
     Row("s1-J-13-drift-not-heldout", "the drift rerun repeats the dev half", JS,
         "batches[DRIFT] = list(batches[HELDOUT])", "batches[DRIFT] = list(batches[DEV])",
         (TJS,)),
-    Row("s1-J-14-timing-swapped", "a block after the send is timed before acting", JS,
+    Row("s1-J-14-timing-swapped", "a block after the send is timed before acting", TS,
         'return "before" if canary is None or pos < canary else "after"',
         'return "before" if canary is None or pos > canary else "after"', (TJS,)),
     Row("s1-J-15-verify-holds-heldout", "the verification folder shows held out answers", JS,
@@ -1004,10 +1005,32 @@ ROWS["s1-judge"] = (
     Row("s1-J-24-verify-no-resume", "a restart serves verified items again", VF,
         '                if row["item"] in self.done:\n                    continue\n',
         "                if False:\n                    continue\n", (TVF,)),
+    # rows added after the fresh context review of 13b04e6
+    Row("s1-J-25-q4-full-code-only", "Q4 takes only a full reason code, unlike label.py", SJ,
+        '    elif len(hits) == 1:\n        a["q4"] = hits[0]\n',
+        '    elif q4 in lb.REASONS:\n        a["q4"] = q4\n', (TSJ,)),
+    Row("s1-J-26-chunks-by-arm", "the chunks group samples by arm, so a name reveals it", JS,
+        "    ids = sorted(rest)\n    rng_order.shuffle(ids)\n",
+        '    ids = sorted(rest, key=lambda i: (items[i]["arm"], i))\n', (TJS,)),
+    Row("s1-J-27-unblind-unguarded", "verify-export --half all runs before the floor", JS,
+        '    if half == "all" and not unblind:\n', "    if False:\n", (TJS,)),
+    Row("s1-J-28-torn-log-kills-run", "a torn log raises and ends the run", JS,
+        "except (zipfile.BadZipFile, ValueError, OSError, KeyError, EOFError) as exc:",
+        "except KeyError as exc:", (TJS,)),
+    Row("s1-J-29-no-backoff", "a usage limit waits a fixed 20 minutes", JS,
+        "    return 60 * min(60, 20 * (waits + 1))\n", "    return 60 * 20\n", (TJS,)),
+    Row("s1-J-30-drift-by-label", "the judge class drops the timing", JS,
+        '    return "D_" + timing(item, int(rec["meta"]["first_block"])) if lab == "D" else lab\n',
+        "    return lab\n", (TJS,)),
+    Row("s1-J-31-error-shows-reply", "a failed CLI call's error text carries the reply",
+        "agent_shield_providers/cli_api.py",
+        '    return ", ".join(f"{k}={out.get(k)}" for k in',
+        '    return stdout[-300:] or ", ".join(f"{k}={out.get(k)}" for k in',
+        ("tests/test_cli_api.py",)),
 )
 
 # S1 analysis (labels build plan batch 2 items 1 and 2: D49 agreement, D50 PPI).
-TS, TP = "scripts/v2/tr_stats.py", "scripts/v2/tr_ppi.py"
+TP = "scripts/v2/tr_ppi.py"
 TTS, TTP = "tests/pilot/test_tr_stats.py", "tests/pilot/test_tr_ppi.py"
 
 ROWS["s1-stats"] = (
@@ -1021,7 +1044,7 @@ ROWS["s1-stats"] = (
         "for c in categories) / (k - 1)", "for c in categories) / k", (TTS,)),
     Row("s1-S-04-pabak-wrong", "PABAK is observed agreement", TS,
         "    return (k * po - 1) / (k - 1)", "    return po", (TTS,)),
-    Row("s1-S-05-bar-0-7", "the D49 bar is 0.7", TS, "BAR = 0.8", "BAR = 0.5", (TTS,)),
+    Row("s1-S-05-bar-0-7", "the D49 bar is 0.7", TS, "BAR = 0.8", "BAR = 0.7", (TTS,)),
     Row("s1-S-06-floor-100", "the held out floor is 100 pairs", TS, "FLOOR = 140",
         "FLOOR = 100", (TTS,)),
     Row("s1-S-07-relabel-joined", "relabel rows join as gold pairs", TS,
