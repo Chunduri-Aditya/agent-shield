@@ -52,6 +52,8 @@ if "NOTLOGGED" in prompt:
     out["modelUsage"] = {{}}
 else:
     out["result"] = "saw: " + prompt[-20:]
+if "REFUSE" in prompt:
+    out["stop_reason"] = "refusal"
 print(json.dumps(out))
 if "EXITONE" in prompt:
     sys.exit(1)
@@ -170,7 +172,15 @@ def test_reply_and_the_cli_reported_model_id_and_version_reach_the_output(fake: 
     out = asyncio.run(api.generate(chat, [], "none", GenerateConfig()))
     assert out.completion == "saw: " + USER[-20:]
     assert out.model == "claude-haiku-5-5"
-    assert out.metadata == {"cli": "claude", "cli_version": "claude fake 0.0"}
+    assert out.metadata == {"cli": "claude", "cli_version": "claude fake 0.0",
+                            "cli_stop_reason": "end_turn"}
+
+
+def test_a_refusal_stop_reason_reaches_the_output_metadata(fake: Path) -> None:
+    """A classifier decline answers with stop_reason refusal; the judge counts it (D51)."""
+    out = asyncio.run(CLIAPI("claude/haiku").generate(
+        [ChatMessageUser(content="REFUSE " + USER)], [], "none", GenerateConfig()))
+    assert out.metadata is not None and out.metadata["cli_stop_reason"] == "refusal"
 
 
 def test_tools_are_refused_before_any_launch(fake: Path) -> None:

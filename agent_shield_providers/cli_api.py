@@ -15,7 +15,8 @@ The system message goes to --system-prompt (DEFAULT_SYSTEM when the task has non
 Code's coding agent persona does not stand in for the model's chat behaviour); the user text
 goes to stdin. The child environment is an allowlist (PASSED_ENV): no API key reaches the CLI,
 since a present ANTHROPIC_API_KEY makes it bill the API instead of the subscription. The model
-id the CLI reports lands in ModelOutput.model; the CLI's own version in ModelOutput.metadata.
+id the CLI reports lands in ModelOutput.model; the CLI's own version and its stop_reason (a
+classifier decline reads `refusal`) in ModelOutput.metadata.
 
 A call past CALL_TIMEOUT_S, or a cancelled one, kills the CLI's whole process group and raises
 RuntimeError (never the bare TimeoutError, which Inspect would swallow into an empty, falsely
@@ -94,6 +95,12 @@ def parse_claude(stdout: str) -> tuple[str, str]:
         raise ValueError("claude reported no modelUsage, so no model id")
     model_id = max(usage, key=lambda name: int((usage[name] or {}).get("outputTokens") or 0))
     return str(out.get("result") or ""), str(model_id)
+
+
+def stop_reason(stdout: str) -> str | None:
+    """The CLI's `stop_reason` (`end_turn`, `refusal`, ...), kept so a decline stays visible."""
+    value = json.loads(stdout).get("stop_reason")
+    return None if value is None else str(value)
 
 
 class CLIAPI(ModelAPI):
@@ -182,7 +189,8 @@ class CLIAPI(ModelAPI):
                 f"{self._backend} answered with {model_id!r}, not {self._model!r}: fallback refused"
             )
         output = ModelOutput.from_content(model=model_id, content=reply)
-        output.metadata = {"cli": self._backend, "cli_version": await self._cli_version()}
+        output.metadata = {"cli": self._backend, "cli_version": await self._cli_version(),
+                           "cli_stop_reason": stop_reason(stdout)}
         return output
 
     async def _call(self, argv: list[str], stdin: bytes) -> str:
