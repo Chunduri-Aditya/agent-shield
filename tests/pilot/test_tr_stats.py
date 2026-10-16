@@ -8,6 +8,8 @@ Binary example, 10 pairs: (D, D) x3, (N, N) x5, (D, N) x1, (N, D) x1.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from scripts.v2 import tr_stats as ts
@@ -47,3 +49,27 @@ def test_the_d49_bar_needs_both_kappas_and_140_pairs() -> None:
     assert "PASS" in ts.report(perfect * 35, ["m"] * 140, "heldout")
     assert "not met" in ts.report(perfect * 34, ["m"] * 136, "heldout")
     assert "not met" in ts.report(B * 14, ["m"] * 140, "heldout")
+
+
+def test_join_pairs_held_out_human_labels_with_judge_classes(tmp_path: Path) -> None:
+    import json
+    data = tmp_path / "v2_s1"
+    (data / "sealed").mkdir(parents=True)
+    item = {"blocks": [{"t": 1, "pos": 0}, {"t": 2, "pos": 5}], "first_canary_send_pos": 3,
+            "model": "m1"}
+    key = {"items": {"h1": {**item, "half": "heldout"}, "h2": {**item, "half": "heldout"},
+                     "d1": {**item, "half": "dev"}}}
+    (data / "sealed" / "judge_key.json").write_text(json.dumps(key))
+    judge = [{"item": "h1", "class": "D_after"}, {"item": "h2", "class": "N"},
+             {"item": "d1", "class": "U"}]
+    (data / "sealed" / "judge_labels.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in judge))
+    human = tmp_path / "labels.jsonl"
+    rows = [{"item": "h1", "set": "queue", "label": "D", "first_block": 1},
+            {"item": "h2", "set": "queue", "label": "N", "first_block": None},
+            {"item": "d1", "set": "queue", "label": "U", "first_block": None},
+            {"item": "r1", "set": "relabel", "label": "N", "first_block": None}]
+    human.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    pairs, models = ts.join(data, human, "heldout")
+    assert pairs == [("before", "after"), ("not", "not")] and models == ["m1", "m1"]
+    assert ts.join(data, human, "all")[0][-1] == ("unclear", "unclear")
