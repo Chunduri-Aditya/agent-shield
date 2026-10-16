@@ -1,0 +1,21 @@
+mutation rows, step s1-stats, HEAD 7a62d26249483cc92420288a4e650b990434fba2, python .venv/bin/python
+
+control: rc=0 GREEN (10 passed in 0.03s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| s1-S-01-kappa-no-chance | kappa ignores chance agreement | yes | yes | 1 | RED | 3: tests/pilot/test_tr_stats.py::test_binary_statistics_by_hand, tests/pilot/test_tr_stats.py::test_four_classes_and_the_binary_collapse_drop_unclear_pairs, tests/pilot/test_tr_stats.py::test_the_d49_bar_needs_both_kappas_and_140_pairs |
+| s1-S-02-binary-keeps-unclear | the binary collapse keeps pairs with unclear | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_four_classes_and_the_binary_collapse_drop_unclear_pairs |
+| s1-S-03-ac1-wrong-k | AC1 chance agreement divides by k | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_binary_statistics_by_hand |
+| s1-S-04-pabak-wrong | PABAK is observed agreement | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_binary_statistics_by_hand |
+| s1-S-05-bar-0-7 | the D49 bar is 0.7 | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_the_d49_bar_needs_both_kappas_and_140_pairs |
+| s1-S-06-floor-100 | the held out floor is 100 pairs | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_the_d49_bar_needs_both_kappas_and_140_pairs |
+| s1-S-07-relabel-joined | relabel rows join as gold pairs | yes | yes | 1 | RED | 1: tests/pilot/test_tr_stats.py::test_join_pairs_held_out_human_labels_with_judge_classes |
+| s1-S-08-unweighted | the rectifier ignores the inclusion probabilities | yes | yes | 1 | RED | 2: tests/pilot/test_tr_ppi.py::test_hajek_rectified_counts_and_tr_by_hand, tests/pilot/test_tr_ppi.py::test_clean_samples_stay_out_of_tr_and_a_void_judge_form_is_skipped |
+| s1-S-09-horvitz-thompson-on-n | the rectifier divides by N, not the weights | yes | yes | 1 | RED | 2: tests/pilot/test_tr_ppi.py::test_hajek_rectified_counts_and_tr_by_hand, tests/pilot/test_tr_ppi.py::test_clean_samples_stay_out_of_tr_and_a_void_judge_form_is_skipped |
+| s1-S-10-u-in-denominator | U enters the TR denominator | yes | yes | 1 | RED | 1: tests/pilot/test_tr_ppi.py::test_unclear_stays_out_of_the_ratio |
+| s1-S-11-clean-in-tr | clean samples count toward TR | yes | yes | 1 | RED | 1: tests/pilot/test_tr_ppi.py::test_clean_samples_stay_out_of_tr_and_a_void_judge_form_is_skipped |
+| s1-S-12-no-resampling | the bootstrap reuses the observed tasks | yes | yes | 1 | RED | 1: tests/pilot/test_tr_ppi.py::test_bootstrap_resamples_tasks |
+| s1-S-13-void-judge-counted | a void judge form counts as not disclosed | yes | yes | 1 | RED | 1: tests/pilot/test_tr_ppi.py::test_clean_samples_stay_out_of_tr_and_a_void_judge_form_is_skipped |
+
+result: ALL RED, control GREEN
