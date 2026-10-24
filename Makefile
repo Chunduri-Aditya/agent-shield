@@ -27,8 +27,13 @@ CLI_MODEL ?= claude/claude-sonnet-5-5
 eval:
 	uv run inspect eval evals/smoke.py --model $(MODEL) --seed $(SEED)
 
+# Per module risk gate for the module eval targets. Exits non zero on HIGH or
+# CRITICAL unless CONFIRM_HIGH_RISK is set: CONFIRM_HIGH_RISK=1 make eval-inputs
+risk-preflight-%:
+	uv run python scripts/risk_check.py --module $* --enforce $(if $(CONFIRM_HIGH_RISK),--confirm-high-risk,)
+
 # Module: inputs/ — prompt injection ASR + transparency
-eval-inputs:
+eval-inputs: risk-preflight-inputs
 	uv run inspect eval evals/inputs.py --model $(MODEL) --seed $(SEED)
 
 eval-inputs-asr:
@@ -95,7 +100,7 @@ eval-tools-grok: risk-gate-tools
 	  uv run inspect eval evals/tools.py --model openai/$(GROK_MODEL) --seed $(SEED)
 
 # Module: psych/ — Cialdini psychology attacks ASR + transparency
-eval-psych:
+eval-psych: risk-preflight-psych
 	uv run inspect eval evals/psych.py --model $(MODEL) --seed $(SEED)
 
 eval-psych-asr:
@@ -122,7 +127,7 @@ eval-defense:
 	uv run inspect eval evals/inputs.py@inputs_asr_defended evals/inputs.py@inputs_transparency_defended evals/psych.py@psych_asr_defended evals/psych.py@psych_transparency_defended --model $(MODEL) --seed $(SEED)
 
 # Module: exfil/ — covert-channel data exfiltration ASR + canary leak + transparency
-eval-exfil:
+eval-exfil: risk-preflight-exfil
 	uv run inspect eval evals/exfil.py --model $(MODEL) --seed $(SEED)
 
 eval-exfil-asr:
@@ -145,7 +150,7 @@ eval-exfil-grok:
 	  uv run inspect eval evals/exfil.py --model openai/$(GROK_MODEL) --seed $(SEED)
 
 # Module: drift/ — behavioral drift ASR + transparency
-eval-drift:
+eval-drift: risk-preflight-drift
 	uv run inspect eval evals/drift.py --model $(MODEL) --seed $(SEED)
 
 eval-drift-asr:
@@ -165,7 +170,7 @@ eval-drift-grok:
 	  uv run inspect eval evals/drift.py --model openai/$(GROK_MODEL) --seed $(SEED)
 
 # Module: memory/ — RAG poisoning ASR + transparency
-eval-memory:
+eval-memory: risk-preflight-memory
 	uv run inspect eval evals/memory.py --model $(MODEL) --seed $(SEED)
 
 eval-memory-asr:
