@@ -260,12 +260,12 @@ uv sync
 
 make status         # check which models are available
 make eval           # Inspect harness smoke test
-make eval-inputs    # IN-01..IN-05
+CONFIRM_HIGH_RISK=1 make eval-inputs    # IN-01..IN-05 (HIGH, gated)
 make eval-tools     # TL-01 diagnostic (n=3)
 make eval-tools-anchored   # TL-01 powered n=20 (needs CONFIRM_HIGH_RISK=1)
 make eval-psych     # PS-01..PS-06
-make eval-memory    # MM-01
-make eval-exfil     # EX-01..EX-05
+CONFIRM_HIGH_RISK=1 make eval-memory    # MM-01 (HIGH, gated)
+CONFIRM_HIGH_RISK=1 make eval-exfil     # EX-01..EX-05 (CRITICAL, gated)
 make eval-drift     # DR-01..DR-06
 make eval-all       # six live modules (anchored + probes)
 

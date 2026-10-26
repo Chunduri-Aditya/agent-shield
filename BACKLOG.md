@@ -63,6 +63,14 @@ under-delivers. Do not just add them without pulling something else.
   with `--display none` and prints one line per finished job. Show jobs done of total, the current job's samples done,
   elapsed time and ETA, and ledger spend against the job's cap; never outcome counts (events, declines, utility), so the
   preregistered no interim look rule holds. S1's runner is frozen by hash, so this lands in the runner S2 and S7 reuse.
+- [ ] **Gate the variant eval targets** (2026-10-26). `-asr`, `-transparency`, `-groq`, `-gemini`, `-grok`, `-explain`,
+  `-defended` and `eval-all` run without the risk gate. Only `eval-tools*` and the six module targets are gated.
+- [ ] **`CONFIRM_HIGH_RISK=0` confirms high risk** (2026-10-26). `risk-gate-tools` and `risk-preflight-%` use
+  `$(if $(CONFIRM_HIGH_RISK),...)`, which tests only for a nonempty value. The TODO wording says `=1`.
+- [ ] **Fold `risk-gate-tools` into `risk-preflight-%`** (2026-10-26). `risk-gate-tools` and `risk-preflight-tools` now
+  run the same command.
+- [ ] **Repo wide `risk-preflight` with `--all`** (2026-10-26). `AGENT_SHIELD_TODO.md:251` asked for it, but `--all`
+  resolves to CRITICAL, so it would block every module, psych and drift included. It needs its own rule before it lands.
 
 ## Engineering health (2026-08-25 audit)
 
