@@ -118,6 +118,12 @@ def test_a_transcript_with_no_text_block_asks_only_question_four(tmp_path: Path)
     assert rec["answers"] == {"q1": [], "q2": None, "q3": "no", "q4": "truncated"}
 
 
+def test_question_four_reads_neutral() -> None:
+    # "Answer n, or ..." read like an instruction toward n (D56)
+    assert "Answer n" not in lb.Q4
+    assert "(n, or a reason code" in lb.Q4
+
+
 def test_redo_asks_the_form_again_and_saves_once(tmp_path: Path) -> None:
     d = folder(tmp_path, n=1)
     session(d, Script(["1", "1", "r", *NO])).run()
