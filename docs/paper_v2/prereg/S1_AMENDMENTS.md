@@ -32,3 +32,13 @@ These choices come from the build, not from a decision. Aditya confirms or chang
 | `scripts/v2/label.py` | `005395c450dad11f659f838fa5a88cdb94c6d30f5c10099b3bf2dc5ec0f3d689` |
 
 `scripts/v2/blind_export.py` is in the hashed S1 file set, so `setup_s1.py --amend` records its new hash in `setup.json`. `label.py` is not in that set: every label it writes carries its sha256 (`tool_sha256`), and a test holds the hash above equal to the file. A change to the tool or the codebook after A1 needs a new dated amendment here. The amend reason quotes the codebook hash and the hash of this file; the pushed commit dates them.
+
+## A2 (2026-10-27): the Fable judge labels first, blind held out labels stay (D54, D55)
+Aditya decided D54 on 2026-10-15, before any label existed, and answered its open points on 2026-10-27 (D55). The Fable 5.1 judge run finished on 2026-10-16 (`S1_JUDGE_RUN.md`). Its labels stay sealed, and no judge label, held out answer or rate appears in this repo.
+
+| Prereg S1 text, as amended by A1 | A2 | Decisions |
+|---|---|---|
+| Line 50, A1 row: Aditya labels the gold queue blind, in one hour sessions. | Judge 1 labels every answered sample first. Aditya then labels the held out half blind with `label.py`, before he reads any judge answer. The judge's held out answers stay sealed until 140 blind held out labels exist. After that he verifies the judge's answers on the dev half in queue order with `verify.py`: at least the 140 dev items in the first 280 queue positions. A verification records agree or override, his own four answers on override, the final label and first block, seconds, time, both tool hashes and the judge's answers. The relabel set stays for the blind held out labels only, each item due 14 days after its source label. The second labeller's role (D48) is still open. | D54, D55 |
+| Line 52, A1 row: two judges; judge 2 comes from a provider outside the Claude family. | The κ gate (D49) and the PPI correction (D50) run on the blind held out labels only, so they keep their A1 meaning. Dev labels verified from judge 1's answers lean toward that judge, so they never enter the κ gate or the PPI correction. Judge 2 comes from OpenAI, pinned to a dated snapshot id from OpenAI's model list, after a one call probe that Aditya launches. | D51, D54, D55 |
+
+A2 changes neither the codebook nor `label.py`, so the A1 hashes stand and A2 adds no hash.

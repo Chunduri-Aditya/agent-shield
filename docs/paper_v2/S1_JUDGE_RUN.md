@@ -5,8 +5,8 @@ Status 2026-10-16: DONE. Every answered S1 sample has a valid judge label (4,357
 ## Why it ran overnight
 Aditya, 2026-10-15, set the overnight goal: "complete the testing and logging of all the models and use fable for the judge for all the models in API ... do the necessary so i can verify them in the morning". That instruction launched the judge calls. The build plan contract and D54 had said that Aditya launches every judge call, so this run is a recorded deviation that his goal message authorised. The calls bill to his Max plan through the Claude CLI (D51), not to the $180 API cap.
 
-## Defaults taken for the open D54 points (Aditya confirms or changes each)
-The session ran unattended, so it took the recommended option for each point. Each choice keeps the other options open, and nothing below is irreversible.
+## Defaults taken for the open D54 points (confirmed by Aditya 2026-10-27, D55)
+The session ran unattended, so it took the recommended option for each point. Each choice keeps the other options open, and nothing below is irreversible. On 2026-10-27 Aditya kept all four (D55).
 
 | D54 open point | Default taken | How to change it |
 |---|---|---|
@@ -15,7 +15,7 @@ The session ran unattended, so it took the recommended option for each point. Ea
 | Q3 what a verification records | agree or override, his own four answers on override, the final label and first block, seconds, time, both tool hashes, and the judge's answers beside them (`verify.py`) | edit before the first verification |
 | Q4 does the relabel stay | Yes, for the blind held out labels only: `labels_heldout/relabel_todo.jsonl` holds the relabel items whose source is held out, due 14 days after the source label | drop the folder's relabel file |
 
-Still open and unchanged: the second labeller's role (D48) and the second judge's provider (D51). Amendment A2 in `prereg/S1_AMENDMENTS.md` should record these answers once Aditya confirms them. It is not written yet.
+Still open: the second labeller's role (D48). The second judge's provider (D51) is OpenAI (D55). Amendment A2 in `prereg/S1_AMENDMENTS.md` records these answers.
 
 ## What ran
 | Item | Value |
@@ -50,10 +50,10 @@ Batch results (`judge_s1.py status`, `DATA/v2_s1/judge/RUN_STATUS.md`):
 - **Morning folders:** `DATA/v2_s1/labels_heldout/` (226 held out items, 51 relabel items, loads in `label.py`) and `DATA/v2_s1/verify/dev/` (230 dev items, each with the judge's form, loads in `verify.py`). `tr_stats.py` and `tr_ppi.py` ran on the real files: with 0 human labels, the D49 bar reads "not met", as it should.
 
 ## Morning steps (Aditya)
-DATA below is `/Users/chunduri/Desktop/Projects/agent-shield-pilot-data/v2_s1`. Run the tools from the repo root with no Claude session open while you label or verify (D44).
+DATA below is `/Users/chunduri/Desktop/Projects/agent-shield-complete/agent-shield-pilot-data/v2_s1`. Run the tools from the repo root with no Claude session open while you label or verify (D44).
 
 1. Read `DATA/judge/RUN_STATUS.md`. It holds operational counts only: every batch judged, valid forms, the served model and the stop reasons.
-2. Confirm or change the four defaults in the table above (Q1 first).
+2. The four defaults in the table above are confirmed (D55).
 3. Under the default (Q1 option A), label the held out half blind first: `python3 scripts/v2/label.py DATA/labels_heldout`. These are one hour sessions, and the earliest valid stop is 140 labels (D49 floor). Do not open `DATA/sealed/` or `DATA/verify/` before you reach it.
 4. Then verify the judge on the dev half: `python3 scripts/v2/verify.py DATA/verify/dev`. Press Enter to agree, or `o` to answer the form yourself. The tool saves each item at once and resumes where you stopped.
 5. Then run the D49 gate: `uv run python scripts/v2/tr_stats.py --data DATA --human DATA/labels_heldout/labels.jsonl`. If it prints PASS, get the headline TR from `uv run python scripts/v2/tr_ppi.py --data DATA --human DATA/labels_heldout/labels.jsonl`. If it does not pass, D38 holds and the gold labels carry the headline.
