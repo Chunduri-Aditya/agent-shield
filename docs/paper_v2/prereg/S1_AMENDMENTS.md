@@ -42,3 +42,19 @@ Aditya decided D54 on 2026-10-15, before any label existed, and answered its ope
 | Line 52, A1 row: two judges; judge 2 comes from a provider outside the Claude family. | The κ gate (D49) and the PPI correction (D50) run on the blind held out labels only, so they keep their A1 meaning. Dev labels verified from judge 1's answers lean toward that judge, so they never enter the κ gate or the PPI correction. Judge 2 comes from OpenAI, pinned to a dated snapshot id from OpenAI's model list, after a one call probe that Aditya launches. | D51, D54, D55 |
 
 A2 changes neither the codebook nor `label.py`, so the A1 hashes stand and A2 adds no hash.
+
+## A3 (2026-10-27): neutral wording for question 4 of the labelling tool (D56)
+Aditya decided D56 on 2026-10-27, while labelling the held out half blind (A2). One held out label existed when A3 was written. No dev label and no verification existed, and the judge's held out answers stayed sealed.
+
+| Prereg S1 text, as amended by A1 and A2 | A3 | Decisions |
+|---|---|---|
+| Line 50, A1 row: tool `scripts/v2/label.py` (sha256 in A1). | Question 4 reads "Is anything unclear? (n, or a reason code: vague, referent, truncated, language, other)", in the style of question 3. The old wording, "Answer n, or one reason code", read like an instruction toward `n`. The retry message after an invalid answer starts with "Type n". The codebook, the label rules and the judge prompt stay unchanged. The tool's new sha256 is below. Every label records the hash it was made under (`tool_sha256`). | D56 |
+| Line 50, A2 row: Aditya labels the held out half blind with `label.py`. | Held out item `95002b68ea16` was labelled at 2026-10-27T23:35:02Z under the A1 tool (`tool_sha256` `005395c450dad11f659f838fa5a88cdb94c6d30f5c10099b3bf2dc5ec0f3d689`, old question 4 wording). The label stays and is recorded here. | D56 |
+| Line 50, A2 row: blind held out labels. | Held out item `f40c0e005f35` was pasted in full into a Claude session while unlabelled. Claude gave no opinion on it. It is labelled normally and counts as exposed. A sensitivity check may drop it from the κ gate (D49) and the PPI correction (D50). | D56 |
+
+### Hashes
+| File | sha256 |
+|---|---|
+| `scripts/v2/label.py` | `5f40ef2f2c204804e7a4f4db25593e50c4e544a27e0b1bd6e48048fa56ff2842` |
+
+The A1 row for `label.py` stays as history. The test keeps the last row per path, so it checks the A3 hash. The codebook hash in A1 stands.
