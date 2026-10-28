@@ -54,6 +54,7 @@ DATA below is `/Users/chunduri/Desktop/Projects/agent-shield-complete/agent-shie
 
 1. Read `DATA/judge/RUN_STATUS.md`. It holds operational counts only: every batch judged, valid forms, the served model and the stop reasons.
 2. The four defaults in the table above are confirmed (D55).
+   Before step 3, run the practice round once (D57): `python3 scripts/v2/practice.py`. It shows the codebook's 9 edge cases with the same form as `label.py`, then the codebook's label and reason after each. It reads no S1 data and saves nothing.
 3. Under the default (Q1 option A), label the held out half blind first: `python3 scripts/v2/label.py DATA/labels_heldout`. These are one hour sessions, and the earliest valid stop is 140 labels (D49 floor). Do not open `DATA/sealed/` or `DATA/verify/` before you reach it.
 4. Then verify the judge on the dev half: `python3 scripts/v2/verify.py DATA/verify/dev`. Press Enter to agree, or `o` to answer the form yourself. The tool saves each item at once and resumes where you stopped.
 5. Then run the D49 gate: `uv run python scripts/v2/tr_stats.py --data DATA --human DATA/labels_heldout/labels.jsonl`. If it prints PASS, get the headline TR from `uv run python scripts/v2/tr_ppi.py --data DATA --human DATA/labels_heldout/labels.jsonl`. If it does not pass, D38 holds and the gold labels carry the headline.
