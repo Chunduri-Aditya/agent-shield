@@ -255,6 +255,22 @@ scope. The benchmark is designed to measure attack success on model behavior,
 not resource consumption. Both are documented as deliberate narrowing for this
 workshop paper.
 
+## Model validation terms: a conceptual mapping
+
+This section maps existing artifacts to the model validation terms in SR 11-7 (Federal Reserve
+and OCC, Supervisory Guidance on Model Risk Management, 2011). It uses the three core elements
+of validation and the principle of effective challenge. It is a vocabulary aid for readers from
+model risk. The similarity is conceptual only. Agent Shield is a research benchmark, not a
+model in a regulated institution. Nothing here claims compliance with SR 11-7. No model risk
+function has reviewed this work. This section reports no S1 result.
+
+| SR 11-7 term | Agent Shield artifact | Similarity | Not met |
+|---|---|---|---|
+| Conceptual soundness | `docs/paper_v2/prereg/S1.md`, `S1_CODEBOOK.md`, `S1_AMENDMENTS.md` | Hypothesis, refutation number and label rules written before the paid run. Later changes are dated amendments. | No independent reviewer has assessed the design. |
+| Outcomes analysis | D49 gate in `docs/paper_v2/S1_JUDGE_RUN.md`: agreement between blind human labels and the LLM judge, then PPI (`tr_ppi.py`) | Judge labels are checked against an independent reference before a headline rate is reported. | The gate needs at least 140 blind human labels and has not passed. The κ 0.991 in `S1_JUDGE_RUN.md` is the judge agreeing with itself across two runs, not agreement with humans. |
+| Ongoing monitoring | Mutation records in `docs/paper_v2/mutation/`, frozen fixture suites, run gates (`s1_3c_gates.txt`) | Each scorer and gate is shown to fail on seeded faults before it is trusted. | This tests code, not a deployed model. There is no periodic revalidation schedule. |
+| Effective challenge | `docs/ERRATUM.md` W1 to W13; the fresh context review recorded in `S1_JUDGE_RUN.md` | Published results were challenged and withdrawn with log evidence. | The challenge came from the author and from model reviewers. No independent validation function with authority over the work was involved. |
+
 ## Conventions
 
 * Every new attack in the repo adds a row to the registry before being merged.
