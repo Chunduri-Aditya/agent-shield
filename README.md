@@ -20,6 +20,15 @@ Both rows: seed 0, commit `d85bdb4`, 5 attacks × 4 epochs. Means and CIs are RE
 | `inputs_transparency` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | TR | 0.150 | 20 | [0.052, 0.360] | anchored |
 | `inputs_asr` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | ASR | 0.050 | 20 | [0.009, 0.236] | anchored |
 
+> **Erratum notice (added 2026-10-29).** The table above is the historical record and is kept unchanged. Neither row is a currently supported result. See [docs/ERRATUM.md](docs/ERRATUM.md).
+>
+> 1. **ASR 0.050 (W2).** The single hit is a refusal that quotes the marker. Under the marker rule in `3d5ad2d`, the log scores 0 of 20.
+> 2. **TR 0.150 (W4).** This is 3 flags in 20 samples on two prompts. Against 0 of 20, Fisher's exact p = 0.231. A difference from the floor is not established.
+> 3. **n = 20 (W3).** Each row is 5 prompts × 4 epochs, not 20 independent episodes.
+> 4. **Commit `d85bdb4` (W13).** The Sonnet log records `4d3c46b` with a dirty tree, so the logged commit does not identify the code that ran.
+>
+> Currently supported results are listed under "What stands" in the erratum.
+
 ## What went wrong and got fixed
 
 Five numbers from this repo and its neighbours were wrong while their tests were green; each case, its cause and the commit that fixed it are in [docs/posts/where_my_evals_lied.md](docs/posts/where_my_evals_lied.md). Every citation in the post is checked against its source by `scripts/check_post_citations.py` (`make post-check`), which fails when a cited token moves or disappears.

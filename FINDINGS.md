@@ -7,6 +7,20 @@
 > interpretation, not a results dump — raw rows, seeds, and Inspect log filenames
 > live in `RESULTS.md`.
 
+> **Erratum notice (added 2026-10-29).** This file is the 2026-07-31 historical record and is kept unchanged below. Most findings rest on results that [docs/ERRATUM.md](docs/ERRATUM.md) withdraws. Do not cite them as current.
+>
+> | Finding | Status | Erratum |
+> |---|---|---|
+> | F-01 Transparency gap | Withdrawn. The TR values it compares are withdrawn or come from generations separate from the ASR runs. | W1, W4, W5, W7 to W10 |
+> | F-02 Covert exfiltration | Withdrawn. Both Sonnet hits are refusals. | W6, W8 |
+> | F-03 Cialdini framing | Withdrawn for psych. The psych contrasts recompute under the marker rule and are not significant. | W10 |
+> | F-04 Compromised but transparent cell | The cell stands as a definition. No cell count was measured: the ASR hit and the TR flag come from different runs, and the ASR hit is a quoted refusal. | W2, W5 |
+> | F-05 Substring scorer errors | Describes the scorer flaw that the erratum's "Why" section names. Its counts come from May 2026 logs run from dirty trees. | W11, W13 |
+> | F-06 Gemini breaks | Withdrawn. The memory hits quote the marker without complying, and the exfil inversion pairs separate generations. | W6, W7, W9 |
+> | Cross model summary table | Historical. The tools, psych, memory, exfil and drift rows and the n=20 note are withdrawn. | W1 to W10 |
+>
+> Currently supported results are listed under "What stands" in the erratum.
+
 ---
 
 ## F-01: Transparency gap is the primary cross model differentiator
