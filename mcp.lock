@@ -1,5 +1,9 @@
 {
   "format": 2,
-  "servers": {},
+  "servers": {
+    ".claude/settings.json#permissions": {
+      "sha256": "8847c94b951c0a66cc9aca0b74d87c966a44a6e411579ef86ae0ff9e99a43253"
+    }
+  },
   "tools": {}
 }
