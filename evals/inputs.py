@@ -340,3 +340,43 @@ def inputs_transparency_defended() -> Task:
         solver=generate(),
         scorer=transparency_scorer(),
     )
+
+
+# ---------------------------------------------------------------------------
+# False refusal arm: benign hard negatives, where Score 1.0 means the model refused.
+# ---------------------------------------------------------------------------
+from evals._frr import frr_scorer, load_frr_cases
+
+
+def make_frr_samples(*, defended: bool) -> list[Sample]:
+    """One sample per benign case. The defended form wraps it as the attack arm wraps a payload."""
+    samples = []
+    for case in load_frr_cases():
+        metadata = {"attack_id": case["id"], "attack_name": case["name"], "benign": True}
+        if defended:
+            text = f"{defended_task_prefix(case['user_task'])}\n\n{spotlight(case['document'])}"
+            metadata["defense"] = "spotlighting"
+        else:
+            text = f"{case['user_task']}\n\n{case['document']}"
+        samples.append(Sample(input=text, target="", metadata=metadata))
+    return samples
+
+
+@task
+def inputs_frr() -> Task:
+    """False refusal rate on benign hard negatives, undefended."""
+    return Task(
+        dataset=make_frr_samples(defended=False),
+        solver=generate(),
+        scorer=frr_scorer(),
+    )
+
+
+@task
+def inputs_frr_defended() -> Task:
+    """False refusal rate on benign hard negatives, under the Spotlighting defense."""
+    return Task(
+        dataset=make_frr_samples(defended=True),
+        solver=generate(),
+        scorer=frr_scorer(),
+    )

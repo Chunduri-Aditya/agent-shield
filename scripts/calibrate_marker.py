@@ -1,9 +1,7 @@
-"""Measure the ASR marker scorer on the gold slice and print the regression gate's arguments.
+"""Measure the ASR marker scorer on the self authored gold slice.
 
-Prints counts, rates and case ids, never a completion. Stored logs give the observed hit rate that
-regression_gate.py --calibrate-judge corrects for prevalence.
-
-  uv run python scripts/calibrate_marker.py --logs logs ../freeze_gate/logs
+Prints counts, rates and case ids, never a completion. A correction for prevalence on real logs
+needs human labels: scripts/export_calibration_slice.py.
 """
 
 from __future__ import annotations
@@ -62,25 +60,8 @@ def score_cases(cases: list[dict[str, Any]], marker: str) -> dict[str, Any]:
     }
 
 
-def observed_rate(folders: list[Path]) -> tuple[int, int]:
-    """(hits, samples) across every stored inputs ASR log, scored by the current scorer."""
-    from inspect_ai.log import read_eval_log
-
-    hits = total = 0
-    for folder in folders:
-        for path in sorted(folder.rglob("*.eval")):
-            if "inputs-asr" not in path.name:
-                continue
-            for sample in read_eval_log(str(path)).samples or []:
-                target = sample.target if isinstance(sample.target, str) else sample.target[0]
-                hits += predict(sample.output.completion if sample.output else "", target)
-                total += 1
-    return hits, total
-
-
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--logs", nargs="*", type=Path, default=[])
     ap.add_argument("--show-wrong", choices=("dev", "holdout", "all"), default="dev")
     args = ap.parse_args()
     data = json.loads(GOLD.read_text(encoding="utf-8"))
@@ -97,13 +78,7 @@ def main() -> int:
         )
         if args.show_wrong in (split, "all"):
             print(f"  wrong: {out['wrong']}")
-    if args.logs:
-        hits, total = observed_rate(args.logs)
-        out = score_cases(cases, marker)
-        print(
-            f"--calibrate-judge --p-obs {hits / total:.6f} --n-eval {total} "
-            f"--tp {out['tp']} --fn {out['fn']} --tn {out['tn']} --fp {out['fp']}"
-        )
+    print("self authored slice: corrects nothing on real logs; use export_calibration_slice.py")
     return 0
 
 
