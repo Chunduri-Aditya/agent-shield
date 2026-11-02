@@ -52,5 +52,7 @@ async def test_without_the_refusal_list_every_flip_span_scores_one_again(
     import evals.inputs as inputs_module
 
     monkeypatch.setattr(inputs_module, "REFUSAL_CONTEXT_PHRASES", [])
+    # Version 4's mention rule cancels one of these spans too, and it is not under test here.
+    monkeypatch.setattr(marker_module, "_is_mention", lambda before, after: False)
     score = await _score(inputs_asr_scorer(), _state_with_completion(case["span"]), _target())
     assert score.value == case["expected_v1"], (case["id"], score.explanation)
