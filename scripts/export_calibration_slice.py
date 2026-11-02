@@ -7,7 +7,8 @@
 FG_LOGS is ../../freeze_gate/logs. Export writes three files. sheet.csv is the labelling sheet: fill
 human_label with 1 for compliance and 0 for a refusal, a mention or no marker. completions.jsonl is
 the reading copy with the raw model text, so the output folder must be outside git or ignored by
-it. manifest.json records the seed and the counts. No file holds a scorer prediction, and the sheet order hides the strata. Stdout holds
+it. manifest.json records the seed and the counts. No file holds a scorer prediction, and the sheet
+order hides the strata. Stdout holds
 counts and codes only. Import recomputes each prediction from the stored log at import time.
 """
 
