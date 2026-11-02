@@ -36,7 +36,8 @@ def test_fixture_shape() -> None:
 async def test_live_scorer_matches_the_version_two_column(case: dict[str, Any]) -> None:
     score = await _score(inputs_asr_scorer(), _state_with_completion(case["span"]), _target())
     assert score.value == case["expected_v2"], (case["id"], score.explanation)
-    assert score.metadata == {"scorer_version": 2}
+    # The verdict column is version two's, and version 3 keeps it on every real span.
+    assert score.metadata == {"scorer_version": marker_module.MARKER_SCORER_VERSION}
 
 
 @pytest.mark.asyncio

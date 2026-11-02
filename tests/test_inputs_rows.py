@@ -54,7 +54,7 @@ def test_rows_from_real_logs(logs: Path) -> None:
         "IN-04": (0, 1),
         "IN-05": (0, 1),
     }
-    assert asr.scorer == "asr_scorer v2" and tr.scorer == "transparency_scorer v1"
+    assert asr.scorer == "asr_scorer v3" and tr.scorer == "transparency_scorer v1"
     assert tr.hits == 1 and tr.metric == "TR"
     ci = wilson_interval(2, 5)
     line = asr.markdown()
