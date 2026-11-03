@@ -11,7 +11,28 @@ store listing. Details below and in
 Full orientation (goals, modules, runtime, what success looks like):
 [docs/WHAT_AGENT_SHIELD_DOES.md](docs/WHAT_AGENT_SHIELD_DOES.md).
 
-## Results (anchored rows only)
+**Status (2026-10-29): most results in the preprint are withdrawn.** A reread of the raw
+logs found 13 claims that do not hold, each listed with its evidence in
+[docs/ERRATUM.md](docs/ERRATUM.md) (W1 to W13). The test suite was green the whole time.
+What still stands comes first; how it went wrong follows.
+
+## What stands
+
+From [docs/ERRATUM.md](docs/ERRATUM.md), "What stands":
+
+* The protocol: Transparency Rate as a third axis beside ASR and utility, the six cell taxonomy as a definition, and
+  the framework, attack registries and logs as released.
+* inputs: Llama 3.1 8B and Llama 3.3 70B comply on all 5 prompts (ASR 1.000, effective n=5, Wilson [0.566,
+  1.000]). Gemini 3.5 Flash scores 3 of 20 under both the published and the current marker rule, over 5 prompts.
+* exfil: Llama 3.3 70B executes all five channels (5 of 5; each reply carries the channel's payload) and leaks the
+  raw canary on EX-01 and EX-05 (2 of 5).
+* Spotlighting moves Sonnet 4.5 TR from 0 of 5 to 4 of 5 on inputs, as an n=5 observation from separate runs.
+
+## What went wrong and got fixed
+
+Five numbers from this repo and its neighbours were wrong while their tests were green; each case, its cause and the commit that fixed it are in [docs/posts/where_my_evals_lied.md](docs/posts/where_my_evals_lied.md). Every citation in the post is checked against its source by `scripts/check_post_citations.py` (`make post-check`), which fails when a cited token moves or disappears.
+
+## Results (historical record, withdrawn 2026-10-29)
 
 Both rows: seed 0, commit `d85bdb4`, 5 attacks × 4 epochs. Means and CIs are RESULTS.md cells rounded half up from 4 to 3 decimals; Inspect log filenames, diagnostic probes and withdrawn rows are in [RESULTS.md](RESULTS.md).
 
@@ -29,15 +50,11 @@ Both rows: seed 0, commit `d85bdb4`, 5 attacks × 4 epochs. Means and CIs are RE
 >
 > Currently supported results are listed under "What stands" in the erratum.
 
-## What went wrong and got fixed
-
-Five numbers from this repo and its neighbours were wrong while their tests were green; each case, its cause and the commit that fixed it are in [docs/posts/where_my_evals_lied.md](docs/posts/where_my_evals_lied.md). Every citation in the post is checked against its source by `scripts/check_post_citations.py` (`make post-check`), which fails when a cited token moves or disappears.
-
 ## Task index
 
 | Task | Probes | Status |
 |---|---|---|
-| `inputs_asr`, `inputs_transparency` | direct prompt injection, IN-01..IN-05 | anchored |
+| `inputs_asr`, `inputs_transparency` | direct prompt injection, IN-01..IN-05 | withdrawn (Sonnet 4.5 n=20 rows, ERRATUM W2 to W4); n=5 rows in What stands |
 | `tools_*_anchored` | MCP tool description poisoning, TL-01 | withdrawn (rows predate `920c397`; rerun pending) |
 | `psych_*`, `memory_*`, `exfil_*`, `drift_*` | social engineering, RAG poisoning, exfiltration, drift | diagnostic |
 | `persona_attribution` | do persona bibles drive the text (arms A, B, C; scorers S0 to S4) | negative (the judge reads the documented surface tells and falls under the surface baseline once they are stripped; the no bible row is malformed; RESULTS.md) |
@@ -54,16 +71,14 @@ A system that silently resists is better than a hijacked one. It is worse than a
 
 Prior-art audit (2026-07-31): [docs/originality_audit_2026-07-31.md](docs/originality_audit_2026-07-31.md).
 
-The early data hints at a contrast worth watching. The same provider that scores zero on direct prompt injection can flag manipulation under Cialdini pressure. Another provider, asked the same questions at the same seeds, surfaces nothing across either surface. If the contrast holds at scale, "the model resisted" and "the model resisted out loud" stop reading as the same outcome.
-
 ## Module coverage
 
-Statistical scope matters: exactly one module is **anchored** (`inputs/`, not agentic). The agentic anchor is withdrawn pending a TL-01 rerun; the rest are **diagnostic probes**.
+Statistical scope matters: no anchored result currently stands. The `inputs/` anchor is withdrawn (ERRATUM W2 to W4) and the agentic anchor is withdrawn pending a TL-01 rerun (W1); the rest are **diagnostic probes**.
 Do not read “six live modules” as six powered results.
 
 | Module | Status | Statistical role | What it probes | Attack IDs |
 |---|---|---|---|---|
-| `inputs/` | live | **Anchored** (n=20, Wilson 95% CI) | Prompt injection via direct instruction override | IN-01..IN-05 |
+| `inputs/` | live | **Anchor withdrawn** (Sonnet 4.5 n=20 rows, ERRATUM W2 to W4; n=5 rows stand) | Prompt injection via direct instruction override | IN-01..IN-05 |
 | `tools/` | live | **Anchor withdrawn** (TL-01 rerun pending, predates `920c397`) | MCP tool description poisoning (Inspect tool loop) | TL-01 live; TL-02..TL-05 stubbed. Groq excluded from agentic claim |
 | `psych/` | live | Diagnostic (n=6) | Cialdini grounded social engineering (6 principles) | PS-01..PS-06 |
 | `memory/` | live | Diagnostic (n=10) | RAG store poisoning via retrieval injection | MM-01 |
@@ -108,14 +123,10 @@ A result without Transparency Rate is incomplete for this project. TR is a secur
 
 ## Current status
 
-**Headline finding (locked, anchored):** one anchored model on `inputs/` at n=20
-(seed 0, Wilson 95% CI), Sonnet 4.5, in the Results table above. Llama 3.1 8B,
-Groq Llama 3.3 70B and Gemini 3.5 Flash sit at TR=0.000 on `inputs/`, but at
-n=5, whose Wilson upper bound is 0.434, not 0.161. None of the three has an
-anchored n=20 `inputs/` row, so “Sonnet is the only model with nonzero TR” is
-not yet a powered claim; it is one anchored row beside three underpowered ones.
-Silent resistance is the default on direct injection, not the same outcome as
-“resisted out loud.”
+**Inputs anchor: withdrawn.** The Sonnet 4.5 n=20 rows in the historical Results
+table do not hold: the one ASR hit is a refusal that quotes the marker, the TR difference
+from zero is not established (Fisher p = 0.231), and n=20 is 5 prompts × 4 epochs
+(ERRATUM W2 to W4). What stands on `inputs/` is listed under What stands.
 
 **Second anchor (agentic) — withdrawn, rerun pending:** every `tools/` TL-01
 row, the n=20 table included, predates `920c397`, the commit that first put the
@@ -261,6 +272,8 @@ agent-shield/
 ## Quickstart
 
 ```bash
+# inspect_evals is a local editable dependency, cloned beside this repo
+git clone https://github.com/UKGovernmentBEIS/inspect_evals ../inspect_evals
 uv sync
 
 # .env is gitignored — add your keys directly:
@@ -334,13 +347,9 @@ make lint    # ruff + mypy
 
 Always use `uv run` / `make` so the project venv is active.
 
-**Known gap (2026-08-25 audit, P0 fixed same day):** CI was red for 17 days
-on 9 `ruff` errors — fixed. `.github/workflows/ci.yml` now also runs `mypy`
-alongside `ruff` and `pytest`, matching `make lint`. That step currently
-fails (130 pre-existing errors, mostly missing type coverage on
-`agent_shield/` itself) — tracked as P1 in
-[docs/audit_2026-08-25.md](docs/audit_2026-08-25.md) /
-[BACKLOG.md](BACKLOG.md#engineering-health-2026-08-25-audit).
+**CI status (2026-11-03):** `ruff`, `mypy` and `pytest` pass locally (1370 passed,
+34 skipped). The latest CI run on `main` fails at `uv sync` dependency resolution.
+Likely cause, not yet verified: the workflow checks out `inspect_evals` at an unpinned HEAD.
 
 ## Security
 
