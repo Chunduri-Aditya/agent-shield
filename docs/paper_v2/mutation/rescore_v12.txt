@@ -1,0 +1,39 @@
+mutation rows, step rescore-v12, HEAD da3a19d7f49d2970cf7961568bd1135a0a3a7e14, python .venv/bin/python3
+
+control: rc=0 GREEN (30 passed in 46.98s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| rv-01-stamp | an output stamped with another version passes | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_wrong_stamp_exits_1 |
+| rv-02-preflight-version | the preflight accepts any marker version | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_marker_version_of_the_wrong_tree_exits_1 |
+| rv-03-preflight-file | the preflight accepts a marker from another tree | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_marker_imported_from_outside_the_tree_exits_1 |
+| rv-04-keys-unset | secret names are unset instead of sentinel (F2) | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_env_strips_vscode_and_sentinels_dotenv_names |
+| rv-05-vscode-kept | VS Code variables reach the child (F2) | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_env_strips_vscode_and_sentinels_dotenv_names |
+| rv-06-inspect-kept | INSPECT_* variables reach the child | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_env_strips_inspect_overrides |
+| rv-07-dotenv-ignored | a name only in the tree .env keeps its real value | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_env_strips_vscode_and_sentinels_dotenv_names |
+| rv-08-bytecode | the child may write bytecode into the tree | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_env_strips_vscode_and_sentinels_dotenv_names |
+| rv-09-existing-output | an existing output is not refused up front | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_existing_output_is_refused |
+| rv-10-source-sha | a source that differs from the inventory is copied | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_inventory_sha_mismatch_exits_1_and_copies_nothing |
+| rv-11-task-map | a tools log maps to a scorer | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_unmapped_task_exits_1 |
+| rv-12-clean | a dirty tree passes the clean check | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_dirty_frozen_tree_exits_1 |
+| rv-13-auth | an auth error in the child output passes | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_auth_error_in_child_output_exits_1 |
+| rv-14-auth-bare-code | a bare 401 or 403 counts as an auth error | yes | yes | 1 | RED | 2: tests/pilot/test_rescore_v12.py::test_benign_child_output_is_not_an_auth_error[inputs_asr accuracy 0.401], tests/pilot/test_rescore_v12.py::test_benign_child_output_is_not_an_auth_error[/private/var/folders/x/pytest-of-u/pytest-403/out.eval] |
+| rv-15-v2-s1 | an output root under v2_s1 is allowed | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_check_out_root_refuses_repo_tree_and_v2_s1_and_allows_outside[v2_s1] |
+| rv-16-roots | an output root inside the repo or a tree is allowed | yes | yes | 1 | RED | 2: tests/pilot/test_rescore_v12.py::test_check_out_root_refuses_repo_tree_and_v2_s1_and_allows_outside[repo], tests/pilot/test_rescore_v12.py::test_check_out_root_refuses_repo_tree_and_v2_s1_and_allows_outside[tree] |
+| rv-17-action | a transparency log is overwritten, losing its TR score (F9) | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_dry_run_lists_2n_commands_and_writes_nothing |
+| rv-18-check-stamps | the check accepts mixed stamps | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_mixed_stamps_fail_the_check |
+| rv-19-dotenv-inspect | an INSPECT_* name in the tree .env is not refused | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_inspect_setting_in_the_tree_dotenv_exits_1 |
+| rv-20-mock-model | inspect score builds the provider named in the log header | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_score_child_builds_no_provider_and_keeps_the_header_model |
+| rv-21-commit-pin | the frozen tree may sit at any commit | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_frozen_tree_at_another_commit_exits_1 |
+| rv-22-zero-samples | a log with no samples is copied and scored | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_log_without_samples_is_refused_before_any_copy |
+| rv-23-prior-asr | an append onto an existing asr_scorer is allowed | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_append_onto_an_existing_asr_score_is_refused |
+| rv-24-errored-count | errored samples go unreported in the run line | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_errored_samples_are_counted_in_the_run_and_the_check |
+| rv-25-dirty-after-child | a child that dirties the tree passes | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_child_that_dirties_the_tree_exits_1 |
+| rv-26-task-file | a task_file that disagrees with the task passes | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_task_file_that_disagrees_with_the_task_exits_1 |
+| rv-27-duplicate-name | two inventory logs may share one file name | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_two_logs_with_one_file_name_exit_1 |
+| rv-28-copy-sha | an existing copy with another sha is scored | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_existing_copy_with_another_sha_exits_1 |
+| rv-29-child-text | a failure prints the child output lines | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_a_failure_prints_no_child_text |
+| rv-30-dotenv-by-suffix | only .env names with a key suffix get the sentinel | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_every_dotenv_name_gets_the_sentinel |
+| rv-31-quoted-name | a quoted .env name is not read | yes | yes | 1 | RED | 1: tests/pilot/test_rescore_v12.py::test_every_dotenv_name_gets_the_sentinel |
+
+result: ALL RED, control GREEN
