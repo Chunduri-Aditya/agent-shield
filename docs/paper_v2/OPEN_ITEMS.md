@@ -20,13 +20,14 @@
 | O15 | Resolved 2026-10-26: `risk-preflight-%` gates `eval-inputs`, `eval-psych`, `eval-memory`, `eval-exfil` and `eval-drift` per module, and `risk-gate-tools` still gates every `eval-tools*` target (TODO:251 checked). Variant targets and a repo wide `--all` preflight stay ungated, tracked in `BACKLOG.md` | — |
 | O16 | D06 and E09 call the 3 prompt × 20 sample design "original", but `docs/powered_tools_tr_design.md` is dated 2026-07-31, after the 2026-06-22 publication; the published claim is `paper_v1.1.tex:649-650` with no log behind it (E13) | the corrections section says the n=20 design was claimed but never run |
 | O17 | Partly resolved by RR01: Ollama's `/v1/chat/completions` documents `seed`, `temperature`, `top_p` and `tools` (no `tool_choice`); whether two identical requests give identical bytes on this machine is still open; vLLM's documented Llama 3.1 route is `--enable-auto-tool-choice --tool-call-parser llama3_json` with the template from the same git tag, version pin still open | one duplicate request before step 5, recorded in `DATA/`; vLLM version chosen at the S6 engineering check |
-| O18 | RR01 third party claims of an earlier Sonnet 4.5 cutoff (24 Nov 2026, availability dropping from 30 Oct) are not on Anthropic's page | run step 4 before 24 Nov; recheck the deprecations page the day before |
+| O18 | Retired 2026-11-10: step 4 ran on 2026-10-13, before both the claimed 24 Nov cutoff and the 30 Nov retirement, so the cutoff no longer gates any v1.2 step. Was: RR01 third party claims of an earlier Sonnet 4.5 cutoff (24 Nov 2026, availability dropping from 30 Oct) are not on Anthropic's page | — |
 | O19 | Resolved 2026-10-13: PR #5764 (forced tool choice degraded to auto on 5.5 models) is in 0.3.278 (`anthropic.py:226,801`, E32); `parse_error` raises a parsing tool error (`_call_tools.py:884`); `log_model_api` defaults to None (`_log.py:220`) | — |
+| O20 | The May 2026 `.eval` logs exist only on this laptop: `logs/` is gitignored (`.gitignore:46`, 425 `.eval` files on 2026-11-10), the only backup sits on the same disk, and no `SHA256SUMS` exists yet (advisor finding F7) | H0: Aditya copies `logs/` off the laptop and writes `shasum -a 256 *.eval > SHA256SUMS`; P6 (inventory) runs after that |
 
 ## Risks
 | Id | Risk | Mitigation |
 |---|---|---|
-| R01 | Sonnet 4.5 retires before the v1.2 rerun (step 3) | run step 3 early in the chain (D21) |
+| R01 | Sonnet 4.5 retires before the v1.2 rerun (step 4) | Mitigated 2026-10-13: step 4 ran early in the chain (D21), 20 samples in `DATA/claude-sonnet-4-5/main/`, before the 30 Nov retirement |
 | R02 | Lens readouts off distribution on agent transcripts | benign agent transcript calibration with a reported false positive rate (D25) |
 | R03 | The paper's TR claim on the author's public materials may conflict with erratum W3 | reconcile outside this repo before citing the preprint externally |
 | R04 | Provider classifiers may also block Sonnet 4.5 or future panel models | the smoke step's refusal count is checked before any main run; a block is recorded as an outcome (D04) |
