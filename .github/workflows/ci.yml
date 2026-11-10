@@ -29,6 +29,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: UKGovernmentBEIS/inspect_evals
+          # Match the README quickstart and the Inspect AI pin in uv.lock.
+          ref: 7d4dd75e4f80c9cf8a83664a04fc1797ce2cb72b
           path: inspect_evals
 
       # The persona bibles are data files in the public twin repo, pinned to the commit whose
