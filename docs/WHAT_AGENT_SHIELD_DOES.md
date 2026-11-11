@@ -4,7 +4,7 @@ For the demo and current evidence, start with the [README](../README.md).
 The [October 2026 erratum](ERRATUM.md) withdraws the original inputs and tools anchors.
 
 Audience: recruiters, collaborators, future-you, anyone opening the GitHub repo cold  
-Authoritative scope lock: [`SHIP_LINE.md`](../SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Novelty boundary: [`DIFFERENTIATION.md`](DIFFERENTIATION.md)
+Authoritative scope lock: [`SHIP_LINE.md`](../research/decisions/SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Novelty boundary: [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md)
 
 ---
 
@@ -25,7 +25,7 @@ That leaves a third outcome invisible: the agent **resists silently**. Silent re
 
 In production that gap is concrete. An agent that refuses a poisoned tool call but never says why leaves the operator guessing. An agent that complies and never discloses leaves the operator blind. Agent Shield names the missing rate **Transparency Rate (TR)**: the share of attacked runs where the agent **discloses the attack to the operator** (not merely detects it internally).
 
-**TR is scoped as disclosure, not detection.** Closest detection-style metrics (SafeEmbodAI ADR, MIR) are cited and distinguished in [`DIFFERENTIATION.md`](DIFFERENTIATION.md). External transcript judges (e.g. R-Judge) are complementary: they label a finished log; TR scores what the *acting* agent said to its user in-band.
+**TR is scoped as disclosure, not detection.** Closest detection-style metrics (SafeEmbodAI ADR, MIR) are cited and distinguished in [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md). External transcript judges (e.g. R-Judge) are complementary: they label a finished log; TR scores what the *acting* agent said to its user in-band.
 
 ---
 
@@ -76,7 +76,7 @@ Make agent security **usable by any engineer**:
 
 ### Product-adjacent goal (optional Track B)
 
-Turn Transparency Rate into a **product signal**: a local AdBlock-style perimeter that alerts (and for tool descriptions, quarantines) before the model sees poison — without pretending fixture proof numbers are the same as anchored eval CIs. Integration recipe: [`company_agent_adapter.md`](company_agent_adapter.md).
+Turn Transparency Rate into a **product signal**: a local AdBlock-style perimeter that alerts (and for tool descriptions, quarantines) before the model sees poison — without pretending fixture proof numbers are the same as anchored eval CIs. Integration recipe: [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md).
 
 ---
 
@@ -143,7 +143,7 @@ Local package `agent_shield.runtime` + CLIs:
 - TL-01-style description poisons are caught by **proxy heuristics**, not by research `flagged_attack` alone.  
 - `input_schema` (parameter text, examples, `$defs`) is **not** screened yet.  
 - Proof recall is split: text alert recall vs catalog quarantine recall.  
-- Miss corpus / FP gate research: [`runtime_aggressive_testing_research.md`](runtime_aggressive_testing_research.md).
+- Miss corpus / FP gate research: [`runtime_aggressive_testing_research.md`](../research/design/runtime_aggressive_testing_research.md).
 
 This layer exists so TR is not only a paper number — it can become an operator-visible drawer in a real agent loop. It does **not** replace the eval claim.
 
@@ -189,13 +189,13 @@ This layer exists so TR is not only a paper number — it can become an operator
 
 | If you want… | Open |
 |---|---|
-| Scope lock | [`SHIP_LINE.md`](../SHIP_LINE.md) |
-| Module questions + status | [`ROADMAP.md`](../ROADMAP.md) |
+| Scope lock | [`SHIP_LINE.md`](../research/decisions/SHIP_LINE.md) |
+| Module questions + status | [`ROADMAP.md`](../research/decisions/ROADMAP.md) |
 | Threat model + metrics | [`THREAT_MODEL.md`](../THREAT_MODEL.md) |
 | Attack ↔ framework map | [`MAPPINGS.md`](../MAPPINGS.md) |
 | Numbers | [`RESULTS.md`](../RESULTS.md) |
-| Why TR ≠ detection | [`DIFFERENTIATION.md`](DIFFERENTIATION.md) |
-| Wire the local perimeter | [`company_agent_adapter.md`](company_agent_adapter.md) |
+| Why TR ≠ detection | [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md) |
+| Wire the local perimeter | [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md) |
 | Dual-use rules | [`ETHICS.md`](../ETHICS.md) |
 | Runnable example | [Local catalog demo](../README.md#try-it-in-30-seconds) |
 | Run commands | [`README.md`](../README.md) Quickstart |

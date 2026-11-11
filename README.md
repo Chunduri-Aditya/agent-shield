@@ -2,7 +2,7 @@
 
 Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. It runs on [Inspect AI](https://inspect.aisi.org.uk). **Transparency Rate** measures the third outcome.
 
-[Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md)
+[Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md) · [Map of the repo](START_HERE.md)
 
 ## Try it in 30 seconds
 
@@ -52,7 +52,7 @@ The original tool poisoning benchmark reported zero successful attacks even thou
 |---|---|
 | Threat model and attack registry | [Threat model](THREAT_MODEL.md) · [Framework mappings](MAPPINGS.md) |
 | Tool event scoring | [Event scorer](evals/tools_event_v2.py) · [Study protocol](docs/paper_v2/prereg/S1.md) |
-| Runtime integration | [MCP catalog proxy](agent_shield/runtime/mcp_proxy.py) · [Adapter guide](docs/company_agent_adapter.md) |
+| Runtime integration | [MCP catalog proxy](agent_shield/runtime/mcp_proxy.py) · [Adapter guide](showcase/guides/company_agent_adapter.md) |
 | Full evidence trail | [Erratum](docs/ERRATUM.md) · [Run ledger](RESULTS.md) · [Historical findings](FINDINGS.md) |
 
 ## Task index
@@ -72,9 +72,9 @@ Most agent benchmarks answer two questions:
 1. Did the user task succeed?
 2. Did the attack succeed?
 
-A system that silently resists is better than a hijacked one. It is worse than a system that resists *and* names what it caught. Agent Shield calls that missing signal **Transparency Rate**: operator-facing *disclosure* of an attack (not merely internal detection), reported next to ASR. Closest detection-style metrics (e.g. SafeEmbodAI ADR, MIR) are cited and distinguished in [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+A system that silently resists is better than a hijacked one. It is worse than a system that resists *and* names what it caught. Agent Shield calls that missing signal **Transparency Rate**: operator-facing *disclosure* of an attack (not merely internal detection), reported next to ASR. Closest detection-style metrics (e.g. SafeEmbodAI ADR, MIR) are cited and distinguished in [research/positioning/DIFFERENTIATION.md](research/positioning/DIFFERENTIATION.md).
 
-Prior-art audit (2026-07-31): [docs/originality_audit_2026-07-31.md](docs/originality_audit_2026-07-31.md).
+Prior-art audit (2026-07-31): [research/positioning/originality_audit_2026-07-31.md](research/positioning/originality_audit_2026-07-31.md).
 
 ## Module coverage
 
@@ -92,7 +92,7 @@ Do not read “six live modules” as six powered results.
 | `env/` | deferred (v1.1) | — | PDF, image, calendar, email payloads | — |
 | `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks | — |
 
-Per module open questions in [ROADMAP.md](ROADMAP.md). Scope lock in [SHIP_LINE.md](SHIP_LINE.md).
+Per module open questions in [ROADMAP.md](research/decisions/ROADMAP.md). Scope lock in [SHIP_LINE.md](research/decisions/SHIP_LINE.md).
 
 ## Name note
 
@@ -148,8 +148,8 @@ remains in RESULTS. One defense baseline: spotlighting on `inputs/` and
 
 **Runtime perimeter:** installable locally (see next section). Cross-purpose
 MCP description quarantine evidence:
-[docs/mcp_cross_purpose_promotion.md](docs/mcp_cross_purpose_promotion.md).
-Differentiation: [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md).
+[results/audit_reports/mcp_cross_purpose_promotion.md](results/audit_reports/mcp_cross_purpose_promotion.md).
+Differentiation: [research/positioning/DIFFERENTIATION.md](research/positioning/DIFFERENTIATION.md).
 
 ## Local runtime perimeter (optional)
 
@@ -179,9 +179,9 @@ Same repository, **separate claim** from the eval tables. Package:
 
 | Doc | Audience |
 |---|---|
-| [docs/company_agent_adapter.md](docs/company_agent_adapter.md) | Drop-in wiring for an internal agent loop |
-| [docs/mcp_proxy_testers.md](docs/mcp_proxy_testers.md) | Trusted-tester guide |
-| [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md) | Miss corpus / FP gate research (not a shipped attack pack) |
+| [showcase/guides/company_agent_adapter.md](showcase/guides/company_agent_adapter.md) | Drop-in wiring for an internal agent loop |
+| [showcase/guides/mcp_proxy_testers.md](showcase/guides/mcp_proxy_testers.md) | Trusted-tester guide |
+| [research/design/runtime_aggressive_testing_research.md](research/design/runtime_aggressive_testing_research.md) | Miss corpus / FP gate research (not a shipped attack pack) |
 
 ## DPO/LoRA fine-tuning spike
 
@@ -206,7 +206,7 @@ tracked — all training artifacts stay behind `.gitignore` and every result
 regenerates in under a minute.
 
 **Measured results on the held-out set** (full entry in
-[`BACKLOG.md`](BACKLOG.md) under Post-ship):
+[`BACKLOG.md`](research/decisions/BACKLOG.md) under Post-ship):
 
 | Metric | Before | After |
 |---|---|---|
@@ -323,7 +323,7 @@ Provider keys used by the repo:
 - `GROQ_API_KEY`
 - `AGENT_SHIELD_GUARD_OFF` — set to `1` to disable the runtime perimeter
 
-Keys live in `.env` (gitignored). Free backend reference in [docs/free_agents.md](docs/free_agents.md).
+Keys live in `.env` (gitignored). Free backend reference in [showcase/guides/free_agents.md](showcase/guides/free_agents.md).
 
 ## Reproducibility
 
@@ -380,7 +380,7 @@ See the correction below for the revision actually recorded by Inspect.
 
 ## Security
 
-Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md). Dual-use attacks stay gated by the risk check / `CONFIRM_HIGH_RISK=1` for CRITICAL evals. Runtime aggressive-testing research stays plan-only until ETHICS clearance for any HIGH dual-use fixture rows — see [docs/runtime_aggressive_testing_research.md](docs/runtime_aggressive_testing_research.md).
+Report issues in this repository's code or tooling privately per [.github/SECURITY.md](.github/SECURITY.md). Disclosure policy in [ETHICS.md](ETHICS.md). Dual-use attacks stay gated by the risk check / `CONFIRM_HIGH_RISK=1` for CRITICAL evals. Runtime aggressive-testing research stays plan-only until ETHICS clearance for any HIGH dual-use fixture rows — see [research/design/runtime_aggressive_testing_research.md](research/design/runtime_aggressive_testing_research.md).
 
 ## License
 

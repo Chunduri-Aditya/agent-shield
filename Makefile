@@ -415,13 +415,15 @@ risk-check-all:
 	uv run python scripts/risk_check.py --all
 
 # Build the paper with tectonic into build/paper (never over the published PDF):
-#   make paper                 builds paper_v1.1.tex
-#   make paper PAPER=paper_v1.2 builds that source
+#   make paper                 builds research/paper/paper_v1.1.tex
+#   make paper PAPER=paper_v1.2 builds that source from research/paper/
+#   make paper PAPER_DIR=.      builds a source at the repo root instead
 PAPER ?= paper_v1.1
+PAPER_DIR ?= research/paper
 paper:
 	@tectonic --version
 	mkdir -p build/paper
-	tectonic --untrusted --keep-logs -o build/paper $(PAPER).tex
+	tectonic --untrusted --keep-logs -o build/paper $(PAPER_DIR)/$(PAPER).tex
 	@md5 -q build/paper/$(PAPER).pdf
 
 # Check that docs/posts citations resolve (no model calls)

@@ -61,7 +61,7 @@ dependency; every result row needs a clean tree (`RESULTS.md` reproducibility ru
 **Format.** Task `persona_attribution` with task arg `bibles=on|off|swapped`; scorers S0 (surface baseline,
 code), S1 (judge attribution), S2 (verdict stability, code), S3 (distinctive term overlap, code);
 `tests/test_persona_fidelity.py` with a `mockllm/model` end to end test (`inspect_evals/CONTRIBUTING.md:188-243`
-pattern); a `RESULTS.md` section in the existing row schema; `docs/persona_fidelity_decision.md` shaped like
+pattern); a `RESULTS.md` section in the existing row schema; `research/decisions/persona_fidelity_decision.md` shaped like
 `typecast/docs/build/EXPERIMENTS.md:43`.
 
 **Failure modes (stop and report).** Judge meta eval lower bound at or below 0.50 on the 30 bible samples. S0 at
@@ -171,7 +171,7 @@ reads Claude Code event fields and taint is keyed on `prompt_id`. Known gap: cre
 3. **Judge meta eval and S0** on the 30 bible samples. Verify: accuracy, n, Wilson, flip rate printed by script.
 4. **Live run, arms A and B.** Verify: `.eval` log `revision.dirty` false; `RESULTS.md` row with model id,
    seed, n, date, SHA, log path; script prints A lower bound against B upper bound.
-5. Arms C and D, floors, `docs/persona_fidelity_decision.md`. Flagged beyond the first steps.
+5. Arms C and D, floors, `research/decisions/persona_fidelity_decision.md`. Flagged beyond the first steps.
 6. CandorBench Stage 1 and 2; holdout parked. Needs sign off on that draft.
 7. taintgate defended arm in `evals/tools.py` as `(ASR, UUA, TR)`. Flagged too big.
 8. Model-Behavior-Lab archive banner.

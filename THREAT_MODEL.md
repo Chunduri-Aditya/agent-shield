@@ -119,7 +119,7 @@ legible to the system the human actually runs on. OWASP Agentic ASI09
 already lists "adaptive trust calibration based on contextual risk" and
 "show low-certainty or unverified-source cues" as required mitigations; TR
 is the metric that confirms they fired. Full citation chain in
-[`docs/reading_notes.md`](docs/reading_notes.md) under "Neuroinclusive
+[`research/positioning/reading_notes.md`](research/positioning/reading_notes.md) under "Neuroinclusive
 Architecture and Transparency Rate".
 
 The Middle outcomes remain the research problem. Defenses that push ASR to 0
@@ -229,5 +229,5 @@ BACKLOG.md.
 - v3: after all 8 modules are live
 - Final: frozen for arxiv preprint submission
 
-See [`SHIP_LINE.md`](SHIP_LINE.md) for the scope lock that drives these
+See [`SHIP_LINE.md`](research/decisions/SHIP_LINE.md) for the scope lock that drives these
 revisions.

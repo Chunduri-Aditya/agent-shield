@@ -342,7 +342,7 @@ Defended eval files: `evals/inputs.py` (`inputs_asr_defended`, `inputs_transpare
 
 Both rows use the v1 ASR scorer (proximity-aware intent detection — see
 "Scorer evolution" below and the Scorer design note in
-[docs/reading_notes.md](docs/reading_notes.md)). Undefended baselines were
+[research/positioning/reading_notes.md](research/positioning/reading_notes.md)). Undefended baselines were
 re-run in the same session as the defended runs so the deltas come from one
 scorer, one model, one calendar day. Sonnet does not honor `seed` via the
 Anthropic API, so per-run completions vary stochastically; older n=5 / n=6
@@ -579,12 +579,12 @@ normalised text (case, emoji, punctuation and every Style rules token removed); 
 Bayes surface baseline on the same masked text. Writer `ollama/qwen3-8b-8k`; judge
 `ollama/gemma4:12b` under `GenerateConfig(temperature=0, seed=0, max_tokens=16, max_connections=1,
 attempt_timeout=120, max_retries=2, reasoning_effort="none")`, picked by the 2026-09-23 meta sweep
-(`docs/persona_fidelity_decision.md`). The arm rows are pasted from
+(`research/decisions/persona_fidelity_decision.md`). The arm rows are pasted from
 `scripts/persona_report.py arms <log> --markdown`; the meta row was read from the meta log by a one
 off script (its Seed cell is `none`: the meta task has no writer, and the judge seed is in the Judge
 cell).
 
-> **Validity (kill rows, docs/persona_fidelity_decision.md).** Three rows fire (malformed judge,
+> **Validity (kill rows, research/decisions/persona_fidelity_decision.md).** Three rows fire (malformed judge,
 > lexical shortcut, arms not separated), so nothing here is promoted. Arm B's S1 row is withdrawn on the malformed row: malformed 0.850 (34 of 40 samples;
 > the judge answered `Neither.` on 65 of 80 calls, since a turn written with no bible matches
 > neither style guide and the prompt admits only A or B). Arm A's S1 claim is withdrawn on the

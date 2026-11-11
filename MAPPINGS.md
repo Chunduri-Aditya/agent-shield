@@ -1,6 +1,6 @@
 # Agent Shield: Framework Mappings
 
-Reading notes behind these mappings live in docs/reading_notes.md.
+Reading notes behind these mappings live in research/positioning/reading_notes.md.
 
 Architectural spine cross linking industry frameworks to the 8 Agent Shield modules.
 Every attack in the repo must resolve to at least one OWASP item, one ATLAS technique,
@@ -141,7 +141,7 @@ operationalizes the cognitive bandwidth dimension of ASI09 — whether the
 agent makes its defense behavior legible to the bounded human operator —
 and is the metric that confirms ASI09 mitigations like adaptive trust
 calibration and low-certainty cues actually fired. Full argument and
-citation chain in [`docs/reading_notes.md`](docs/reading_notes.md) under
+citation chain in [`research/positioning/reading_notes.md`](research/positioning/reading_notes.md) under
 "Neuroinclusive Architecture and Transparency Rate".
 
 Reference incidents named by OWASP:
