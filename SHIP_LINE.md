@@ -4,6 +4,10 @@ This file is the controlling scope lock for v1.0.0. If another checklist item
 conflicts with this file, this file wins for ship decisions and the checklist
 item moves to v1.1.
 
+The [October 2026 erratum](docs/ERRATUM.md) supersedes the inputs and tools
+statistical criteria below. See the [v1.2 correction plan](docs/paper_v2/V1_2_PLAN.md)
+for the current evidence requirements.
+
 ## What Ships At v1.0.0
 
 1. Six modules ship: `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, and `drift/`.

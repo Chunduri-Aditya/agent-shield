@@ -1,8 +1,8 @@
 """
 README results sections stay consistent with RESULTS.md.
 
-The README carries a short anchored results table, a task index and a pointer to the
-post mortem. These tests parse both files by heading, never by line number, and derive
+The README carries a withdrawn results table, a task index and a pointer to the
+postmortem. These tests parse both files by heading, never by line number, and derive
 every expected number from RESULTS.md at test time, so a README cell cannot outlive the
 RESULTS.md row it summarises.
 """
@@ -18,7 +18,6 @@ README_TASK_INDEX = "## Task index"
 README_MODULES = "## Module coverage"
 RESULTS_ANCHORED = "### inputs_asr + inputs_transparency"
 
-ALLOWED_STATUS = {"anchored", "TBD"}
 METRIC_TO_TASK = {"TR": "inputs_transparency", "ASR": "inputs_asr"}
 ATTACKS_PER_TASK = 5  # IN-01..IN-05; the Results paragraph names attacks x epochs
 STATUS_CELLS = ("Status", "Statistical role")
@@ -27,7 +26,6 @@ STATUS_WORDS = {"anchored", "withdrawn", "diagnostic", "deferred"}
 # persona_attribution maps to no Module coverage row; its status is the arms outcome. An anchored
 # persona result would also need Results table rows, which no RESULTS.md table matches yet.
 PERSONA_STATUS_WORDS = {"tbd", "negative"}
-TBD_COLUMNS = ("Mean", "n", "95% Wilson CI")
 THREE_DP = Decimal("0.001")
 
 CI_RE = re.compile(r"^\[\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\]$")
@@ -133,14 +131,14 @@ def _results_anchored_rows(repo_root: Path) -> list[dict[str, str]]:
     return _records(section, "RESULTS.md anchored table")
 
 
-def test_readme_anchored_rows_match_results_md(repo_root: Path) -> None:
-    """Every anchored README row is a RESULTS.md row rounded half up to 3 decimals."""
+def test_readme_withdrawn_rows_match_results_md(repo_root: Path) -> None:
+    """Every withdrawn README row is a RESULTS.md row rounded half up to 3 decimals."""
     _, readme_rows = _readme_results(repo_root)
-    anchored = [row for row in readme_rows if row["Status"] == "anchored"]
     results_rows = _results_anchored_rows(repo_root)
-    assert anchored, "README Results table has no anchored row"
-    for row in anchored:
+    assert readme_rows, "README Results table has no archived row"
+    for row in readme_rows:
         label = f"README {row['Task']} {row['Metric']}"
+        assert row["Status"] == "withdrawn", f"{label}: archived row must say withdrawn"
         matches = [
             source
             for source in results_rows
@@ -174,27 +172,10 @@ def test_readme_anchored_rows_match_results_md(repo_root: Path) -> None:
         assert int(row["n"]) == int(source["n"]), (
             f"{label}: n {row['n']!r} != RESULTS.md n {source['n']!r}"
         )
-    assert len(anchored) == len(results_rows), (
-        f"README has {len(anchored)} anchored rows, "
+    assert len(readme_rows) == len(results_rows), (
+        f"README has {len(readme_rows)} archived rows, "
         f"RESULTS.md anchored table has {len(results_rows)} rows"
     )
-
-
-def test_readme_tbd_rows_are_fully_tbd(repo_root: Path) -> None:
-    """A TBD row carries no number, and every Status is anchored or TBD."""
-    _, rows = _readme_results(repo_root)
-    assert rows, "README Results table has no rows"
-    statuses = {row["Status"] for row in rows}
-    assert statuses <= ALLOWED_STATUS, (
-        f"README Results Status cells {sorted(statuses)} not within {sorted(ALLOWED_STATUS)}"
-    )
-    for row in rows:
-        if row["Status"] != "TBD":
-            continue
-        for column in TBD_COLUMNS:
-            assert row[column] == "TBD", (
-                f"README TBD row {row['Task']} has {column} {row[column]!r}, expected 'TBD'"
-            )
 
 
 def test_results_note_commit_matches_results_md(repo_root: Path) -> None:

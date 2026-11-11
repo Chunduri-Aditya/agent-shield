@@ -1,7 +1,8 @@
 # What Agent Shield is doing (and trying to achieve)
 
-Status: public orientation doc  
-Date: 2026-07-31  
+For the demo and current evidence, start with the [README](../README.md).
+The [October 2026 erratum](ERRATUM.md) withdraws the original inputs and tools anchors.
+
 Audience: recruiters, collaborators, future-you, anyone opening the GitHub repo cold  
 Authoritative scope lock: [`SHIP_LINE.md`](../SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Novelty boundary: [`DIFFERENTIATION.md`](DIFFERENTIATION.md)
 
@@ -97,8 +98,8 @@ Full threat model: [`THREAT_MODEL.md`](../THREAT_MODEL.md).
 
 | Module | Role | What it probes |
 |---|---|---|
-| `inputs/` | **Anchored** (n=20, Wilson CI) | Direct prompt injection (IN-01..IN-05) |
-| `tools/` | **Anchored agentic** (n=20 Sonnet/Llama; Gemini hung → `---`) | MCP tool **description** poisoning (TL-01 live) |
+| `inputs/` | Original anchor withdrawn. Five prompt observations remain. | Direct prompt injection (IN-01..IN-05) |
+| `tools/` | Original anchor withdrawn. S1 collected a separate panel. | MCP tool **description** poisoning (TL-01 live) |
 | `psych/` | Diagnostic | Cialdini’s six principles on agents (PS-01..PS-06) |
 | `memory/` | Diagnostic | RAG / retrieval poisoning (MM-01) |
 | `exfil/` | Diagnostic | Covert channels (zero-width, homoglyph, base64, URL sink, …) |
@@ -123,7 +124,7 @@ Published TR rows use **TR-v1** (phrase list). **TR-v2** (LLM judge) is a challe
 
 Four models for cross-provider contrast: Claude Sonnet 4.5, Llama 3.1 8B (Ollama), Groq Llama 3.3 70B, Gemini 3.5 Flash. One defense baseline: **spotlighting** on `inputs/` and `psych/`.
 
-Headline pattern already visible in anchored data: **silent resistance is common**; non-zero TR is rare (Sonnet shows non-zero TR on `inputs/` n=20; several providers sit at TR = 0 with a Wilson upper bound). Cross-surface profiles do not always generalize (e.g. a model can look hard on `inputs/` and soft on `memory/`).
+The [erratum](ERRATUM.md#what-stands) records the supported observations from the original work. The [S1 run report](paper_v2/S1_RUN_REPORT.md) documents the follow up panel and its tool events. Validated disclosure results are still pending.
 
 ---
 
@@ -196,7 +197,7 @@ This layer exists so TR is not only a paper number — it can become an operator
 | Why TR ≠ detection | [`DIFFERENTIATION.md`](DIFFERENTIATION.md) |
 | Wire the local perimeter | [`company_agent_adapter.md`](company_agent_adapter.md) |
 | Dual-use rules | [`ETHICS.md`](../ETHICS.md) |
-| Recruiter-facing sample | [`sample_report.md`](sample_report.md) |
+| Runnable example | [Local catalog demo](../README.md#try-it-in-30-seconds) |
 | Run commands | [`README.md`](../README.md) Quickstart |
 
 ---

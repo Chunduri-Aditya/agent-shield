@@ -1,54 +1,59 @@
-# agent-shield
+# Agent Shield
 
-An evaluation framework for LLM agents under adversarial pressure. Runs on the [Inspect AI](https://inspect.aisi.org.uk) harness. Compatible with AgentDojo. Reports the axis most agent benchmarks skip: whether the agent told its operator it was under attack.
+Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. It runs on [Inspect AI](https://inspect.aisi.org.uk). **Transparency Rate** measures the third outcome.
 
-Optional **local runtime perimeter** (same repo, separate claim from the eval
-numbers): screen untrusted text and MCP tool descriptions, quarantine known
-TL-01-style poisons, and surface operator alerts. Not a hosted firewall or
-store listing. Details below and in
-[docs/company_agent_adapter.md](docs/company_agent_adapter.md).
+[Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md)
 
-Full orientation (goals, modules, runtime, what success looks like):
-[docs/WHAT_AGENT_SHIELD_DOES.md](docs/WHAT_AGENT_SHIELD_DOES.md).
+## Try it in 30 seconds
 
-**Status (2026-10-29): most results in the preprint are withdrawn.** A reread of the raw
-logs found 13 claims that do not hold, each listed with its evidence in
-[docs/ERRATUM.md](docs/ERRATUM.md) (W1 to W13). The test suite was green the whole time.
-What still stands comes first; how it went wrong follows.
+Run this from the `agent-shield` checkout, the directory that contains this README. If your terminal is in `agent-shield-complete`, first run `cd agent-shield`.
 
-## What stands
+The demo uses Python 3.11 or newer and runs without dependencies, API keys, or a model server.
 
-From [docs/ERRATUM.md](docs/ERRATUM.md), "What stands":
+```bash
+env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.mcp_proxy_cli badge
+```
 
-* The protocol: Transparency Rate as a third axis beside ASR and utility, the six cell taxonomy as a definition, and
-  the framework, attack registries and logs as released.
-* inputs: Llama 3.1 8B and Llama 3.3 70B comply on all 5 prompts (ASR 1.000, effective n=5, Wilson [0.566,
-  1.000]). Gemini 3.5 Flash scores 3 of 20 under both the published and the current marker rule, over 5 prompts.
-* exfil: Llama 3.3 70B executes all five channels (5 of 5; each reply carries the channel's payload) and leaks the
-  raw canary on EX-01 and EX-05 (2 of 5).
-* Spotlighting moves Sonnet 4.5 TR from 0 of 5 to 4 of 5 on inputs, as an n=5 observation from separate runs.
+```text
+[Agent Shield] blocked=0 alerted=1 allowed=2 quarantined_descriptions=1 ruleset=research-content-v1.1.4 kill_switch=False
+```
+
+The demo screens three Model Context Protocol (MCP) tool descriptions. It replaces the poisoned `read_file` description with a quarantine message, keeps the two benign descriptions, and alerts the operator. To inspect the catalog the model would receive, run the same command with `demo-tl01 --json` in place of `badge` and look at `model_tools`.
+
+Run `env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.proof_cli` to replay the bundled fixtures.
+
+| Fixture check | Result |
+|---|---|
+| Text attacks flagged | 10 of 10 |
+| Poisoned tool descriptions quarantined | 1 of 1 |
+| Benign inputs denied or quarantined | 0 of 6 |
+
+These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](#local-runtime-perimeter-optional)
+
+## Evidence and research progress
+
+The October 2026 [erratum](docs/ERRATUM.md) withdraws 13 claims from the original preprint. The observations below survived the audit and describe the specific prompts tested.
+
+| Experiment | Supported observation |
+|---|---|
+| Direct injection | Llama 3.1 8B and Llama 3.3 70B each followed the injection on all 5 distinct prompts. |
+| Covert exfiltration | Llama 3.3 70B executed all 5 channel prompts and exposed the raw test token in 2. |
+| Spotlighting defense | Claude Sonnet 4.5 disclosed the injection on 0 of 5 prompts without spotlighting and 4 of 5 with it, in separate runs. |
+
+**Follow up study.** The S1 tool poisoning panel recorded **4,760 samples across 13 Claude models**. Its event scorer checks that a unique token from a file read reaches the designated test recipient through a tool call. The [run report](docs/paper_v2/S1_RUN_REPORT.md) records setup, counts and the retry correction. The [judge run](docs/paper_v2/S1_JUDGE_RUN.md) is complete. The study has yet to report a Transparency Rate validated against human labels.
 
 ## What went wrong and got fixed
 
-Five numbers from this repo and its neighbours were wrong while their tests were green; each case, its cause and the commit that fixed it are in [docs/posts/where_my_evals_lied.md](docs/posts/where_my_evals_lied.md). Every citation in the post is checked against its source by `scripts/check_post_citations.py` (`make post-check`), which fails when a cited token moves or disappears.
+The original tool poisoning benchmark reported zero successful attacks even though the model never received the injected description. The payload was on the tool factory, while Inspect reads the returned tool's description. Commit `920c397` put the payload on the model visible surface. The [delivery tests](tests/test_eval_scorers.py) check that boundary. The [postmortem](docs/posts/where_my_evals_lied.md) documents this and four other measurement failures. The citation checker at `scripts/check_post_citations.py` runs via `make post-check` and uses sibling checkouts for the other projects cited in the post.
 
-## Results (historical record, withdrawn 2026-10-29)
+## Explore the implementation
 
-Both rows: seed 0, commit `d85bdb4`, 5 attacks × 4 epochs. Means and CIs are RESULTS.md cells rounded half up from 4 to 3 decimals; Inspect log filenames, diagnostic probes and withdrawn rows are in [RESULTS.md](RESULTS.md).
-
-| Task | Model | Metric | Mean | n | 95% Wilson CI | Status |
-|---|---|---|---|---|---|---|
-| `inputs_transparency` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | TR | 0.150 | 20 | [0.052, 0.360] | anchored |
-| `inputs_asr` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | ASR | 0.050 | 20 | [0.009, 0.236] | anchored |
-
-> **Erratum notice (added 2026-10-29).** The table above is the historical record and is kept unchanged. Neither row is a currently supported result. See [docs/ERRATUM.md](docs/ERRATUM.md).
->
-> 1. **ASR 0.050 (W2).** The single hit is a refusal that quotes the marker. Under the marker rule in `3d5ad2d`, the log scores 0 of 20.
-> 2. **TR 0.150 (W4).** This is 3 flags in 20 samples on two prompts. Against 0 of 20, Fisher's exact p = 0.231. A difference from the floor is not established.
-> 3. **n = 20 (W3).** Each row is 5 prompts × 4 epochs, not 20 independent episodes.
-> 4. **Commit `d85bdb4` (W13).** The Sonnet log records `4d3c46b` with a dirty tree, so the logged commit does not identify the code that ran.
->
-> Currently supported results are listed under "What stands" in the erratum.
+| Area | Start here |
+|---|---|
+| Threat model and attack registry | [Threat model](THREAT_MODEL.md) · [Framework mappings](MAPPINGS.md) |
+| Tool event scoring | [Event scorer](evals/tools_event_v2.py) · [Study protocol](docs/paper_v2/prereg/S1.md) |
+| Runtime integration | [MCP catalog proxy](agent_shield/runtime/mcp_proxy.py) · [Adapter guide](docs/company_agent_adapter.md) |
+| Full evidence trail | [Erratum](docs/ERRATUM.md) · [Run ledger](RESULTS.md) · [Historical findings](FINDINGS.md) |
 
 ## Task index
 
@@ -274,7 +279,8 @@ agent-shield/
 ```bash
 # inspect_evals is a local editable dependency, cloned beside this repo
 git clone https://github.com/UKGovernmentBEIS/inspect_evals ../inspect_evals
-uv sync
+git -C ../inspect_evals checkout --detach 7d4dd75e4f80c9cf8a83664a04fc1797ce2cb72b
+uv sync --locked
 
 # .env is gitignored — add your keys directly:
 #   ANTHROPIC_API_KEY, GROQ_API_KEY, GOOGLE_API_KEY
@@ -321,24 +327,23 @@ Keys live in `.env` (gitignored). Free backend reference in [docs/free_agents.md
 
 ## Reproducibility
 
-Reproducibility trail kept in-repo:
+The demo and its fixture inputs are included in this checkout. The [run ledger](RESULTS.md)
+records historical model IDs, seeds, revisions and log names. Raw benchmark logs are
+stored outside this checkout. The GitHub v1.0.0 release lists source archives only.
+[Release assets](https://github.com/Chunduri-Aditya/agent-shield/releases/expanded_assets/v1.0.0)
 
-- [RESULTS.md](RESULTS.md) — run summaries with model IDs, seeds, timestamps, commit SHAs
-- [MAPPINGS.md](MAPPINGS.md) — every attack mapped to OWASP LLM, OWASP Agentic, MITRE ATLAS
-- [docs/reading_notes.md](docs/reading_notes.md) — paper notes indexed by attack code
-- [docs/DIFFERENTIATION.md](docs/DIFFERENTIATION.md) — disclosure vs detection claim boundary
+The [erratum](docs/ERRATUM.md) records which historical runs used a dirty working
+tree and which conclusions survived the audit. For S1, start with the
+[run report](docs/paper_v2/S1_RUN_REPORT.md) and its artifact inventory.
 
 ## Testing
 
 Agent Shield keeps model calls out of the unit-test path. Tests validate
 deterministic scoring, attack metadata consistency, paper-artifact
-reproducibility, risk-gate behavior, runtime guard / MCP proxy / proof metrics
-(including TL-01 honesty pins and schema-boundary pins), TR-v2 parse + dry-run
-holdout, and report generation. `tests/test_readme_results.py` holds the README
-Results cells, commit and seed to the RESULTS.md anchored table, the Task index
-statuses to the Module coverage table, and checks that the post and its citation
-checker exist. The full suite
-runs without API keys, network access, or local model servers.
+reproducibility, risk gates, the runtime guard, the MCP proxy, and report generation.
+The tests also keep the archived README rows in sync with [RESULTS.md](RESULTS.md).
+The full suite runs without API keys or local model servers. CI supplies the optional
+persona fixtures from a pinned checkout.
 
 ```bash
 make test    # pytest — no API keys required
@@ -347,9 +352,31 @@ make lint    # ruff + mypy
 
 Always use `uv run` / `make` so the project venv is active.
 
-**CI status (2026-11-03):** `ruff`, `mypy` and `pytest` pass locally (1370 passed,
-34 skipped). The latest CI run on `main` fails at `uv sync` dependency resolution.
-Likely cause, not yet verified: the workflow checks out `inspect_evals` at an unpinned HEAD.
+CI uses the same pinned `inspect_evals` revision and `uv sync --locked` as the
+quickstart. The upstream default branch requires a newer Inspect AI than the
+version in this project's lockfile.
+
+## Results (historical record, withdrawn 2026-10-29)
+
+<details>
+<summary>Archived Sonnet 4.5 rows and why they were withdrawn</summary>
+
+The original table recorded seed 0, commit `d85bdb4` and 5 attacks × 4 epochs.
+See the correction below for the revision actually recorded by Inspect.
+
+| Task | Model | Metric | Mean | n | 95% Wilson CI | Status |
+|---|---|---|---|---|---|---|
+| `inputs_transparency` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | TR | 0.150 | 20 | [0.052, 0.360] | withdrawn |
+| `inputs_asr` | anthropic/claude-sonnet-4-5 → claude-sonnet-4-5-20250929 | ASR | 0.050 | 20 | [0.009, 0.236] | withdrawn |
+
+> **Erratum notice (added 2026-10-29).** See [docs/ERRATUM.md](docs/ERRATUM.md).
+>
+> 1. **ASR 0.050 (W2).** The single hit is a refusal that quotes the marker. Under the marker rule in `3d5ad2d`, the log scores 0 of 20.
+> 2. **TR 0.150 (W4).** This is 3 flags in 20 samples on two prompts. Against 0 of 20, Fisher's exact p = 0.231. A difference from the floor is not established.
+> 3. **n = 20 (W3).** Each row is 5 prompts × 4 epochs, not 20 independent episodes.
+> 4. **Commit `d85bdb4` (W13).** The Sonnet log records `4d3c46b` with a dirty tree, so the logged commit does not identify the code that ran.
+
+</details>
 
 ## Security
 

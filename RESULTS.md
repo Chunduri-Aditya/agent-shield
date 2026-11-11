@@ -1,7 +1,7 @@
 # Agent Shield — Results
 
-All numbers here are real. No estimates, no extrapolations.
-Every row includes: date, model ID + version, seed, eval file, task name, n samples.
+This run ledger includes historical results withdrawn in the [preprint erratum](docs/ERRATUM.md).
+See the erratum's [What stands](docs/ERRATUM.md#what-stands) section for supported observations.
 
 Commit SHAs below were remapped on 2026-07-31 after a history rewrite that
 purged internal working files. Each points to the same tree state under its

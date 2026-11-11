@@ -2,10 +2,10 @@
 
 > Last updated: 2026-07-31 (claim-audit pass). Models: `anthropic/claude-sonnet-4-5`,
 > `ollama/llama3.1:8b`, `google/gemini-3.5-flash`, `groq/llama-3.3-70b-versatile`.
-> Six live modules covered. **Only `inputs/` at n=20 is statistically anchored;**
-> the other five modules are diagnostic probes (n=3–10). This file is distilled
-> interpretation, not a results dump — raw rows, seeds, and Inspect log filenames
-> live in `RESULTS.md`.
+> This historical interpretation covers six modules. The original inputs anchor
+> and several diagnostic results were withdrawn in October 2026.
+> For the scope of the withdrawals, see the notice below. The run ledger is
+> [RESULTS.md](RESULTS.md).
 
 > **Erratum notice (added 2026-10-29).** This file is the 2026-07-31 historical record and is kept unchanged below. Most findings rest on results that [docs/ERRATUM.md](docs/ERRATUM.md) withdraws. Do not cite them as current.
 >

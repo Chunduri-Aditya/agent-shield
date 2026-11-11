@@ -6,6 +6,9 @@ to answer. Scope is locked in [`SHIP_LINE.md`](SHIP_LINE.md). Numbers land in
 [`THREAT_MODEL.md`](THREAT_MODEL.md). Attack to framework mapping in
 [`MAPPINGS.md`](MAPPINGS.md).
 
+The [October 2026 erratum](docs/ERRATUM.md) withdraws the original inputs and tools
+anchors. The [correction plan](docs/paper_v2/V1_2_PLAN.md) supersedes those criteria.
+
 ## What this is
 
 An evaluation framework for LLM agents under adversarial pressure, built on
@@ -37,8 +40,8 @@ Integration recipe: [`docs/company_agent_adapter.md`](docs/company_agent_adapter
 
 | Code | Module | Status | Statistical role | Probes |
 |---|---|---|---|---|
-| IN | `inputs/` | live | **Anchored** (n=20, Wilson 95% CI) | Direct and indirect prompt injection (IN-01..IN-05) |
-| TL | `tools/` | live | **Anchored agentic** (n=20, Wilson 95% CI) | MCP tool description poisoning (TL-01 live; TL-02..TL-04 stubbed; Groq excluded from agentic claim) |
+| IN | `inputs/` | live | Original anchor withdrawn | Direct and indirect prompt injection (IN-01..IN-05) |
+| TL | `tools/` | live | Original anchor withdrawn | MCP tool description poisoning (TL-01 live; TL-02..TL-04 stubbed; Groq excluded from agentic claim) |
 | PS | `psych/` | live | Diagnostic (n=6) | Cialdini six principles applied to agents (PS-01..PS-06) |
 | MM | `memory/` | live | Diagnostic (n=10) | RAG and retrieval poisoning (MM-01) |
 | EX | `exfil/` | live | Diagnostic (n=5) | Covert exfiltration channels (EX-01..EX-05) |
@@ -46,7 +49,7 @@ Integration recipe: [`docs/company_agent_adapter.md`](docs/company_agent_adapter
 | EN | `env/` | deferred (v1.1) | — | PDF, image, calendar, and email payloads |
 | MA | `multiagent/` | deferred (v1.1) | — | Adversarial peer and orchestrator attacks |
 
-Except for anchored `inputs/`, cross-module comparisons are qualitative.
+See the [erratum](docs/ERRATUM.md#what-stands) for supported observations.
 
 ## Open questions per module
 
@@ -96,14 +99,14 @@ A defense that drops ASR by collapsing UUA below 50 percent of benign is
 flagged as denial of service mounted by the defender. Quiet UUA collapse is
 the failure mode this metric exists to surface.
 
-## v1.0.0 ship line (summary)
+## Original v1.0.0 scope
 
-- Six modules: `inputs/` (anchored), plus five diagnostic probes
+- Six modules: `inputs/` and five diagnostic probes
   (`tools/`, `psych/`, `memory/`, `exfil/`, `drift/`).
 - Four models: `anthropic/claude-sonnet-4-5`, `ollama/llama3.1:8b`,
   `groq/llama-3.3-70b-versatile`, `google/gemini-3.5-flash`.
 - One defense: spotlighting on `inputs/` and `psych/`.
-- One anchored confidence interval: 95 percent on `inputs/` at n equals 20.
+- The original confidence interval for `inputs/` at n equals 20 was withdrawn.
 - Workshop length manuscript: prefer `paper_v1.1.tex` (canonical) over legacy
   `paper.tex`. Headline finding gates submission.
 
