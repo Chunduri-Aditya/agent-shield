@@ -1,5 +1,7 @@
 # v2 studies: preregistration skeletons
 
+Note (2026-11-11): the session prompt files and research_prompts/ named in this document moved to the private pilot data repository. They are not part of this public repository.
+
 Each study is preregistered before any run (D17). Fields marked **TBD (Aditya)** are decisions for Aditya and are never filled by an assistant. Every primary metric is an event count (D05) unless a validated text metric is named. Panel per D20: Haiku, Sonnet and Opus 5.5 plus Llama 3.1 8B and one Qwen model; the Claude credit runs use the 13 model panel of D31 (S1 Models row). Each study's `research_prompts/` file is run first to refresh its requirements, and `07_model_panel_refresh.md` runs before every study; for the Claude API runs on the credit (D31) `08_claude_api_panel.md` replaces it (RR08).
 
 Shared rules (from the 2026-10-13 audit):

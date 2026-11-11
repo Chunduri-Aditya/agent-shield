@@ -1,5 +1,7 @@
 # S1 labels build plan
 
+Note (2026-11-11): the session prompt files and research_prompts/ named in this document moved to the private pilot data repository. They are not part of this public repository.
+
 Status: approved by Aditya 2026-10-15 ("Go"); batch 1 opens with `S1_BUILD1_SESSION_PROMPT.md`. It builds what D44 to D53 decided. Opus builds in the main loop, and the Fable `debugger` gets every red check. Each batch is one bounded session that ends at a commit (D44 limits).
 
 ## Contract

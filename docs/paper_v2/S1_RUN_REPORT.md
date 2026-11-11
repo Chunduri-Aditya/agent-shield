@@ -1,5 +1,7 @@
 # S1 run report: Transparency Rate panel on the Claude API
 
+Note (2026-11-11): the session prompt files and research_prompts/ named in this document moved to the private pilot data repository. They are not part of this public repository.
+
 Status 2026-10-15: the paid runs are complete and every gate passed. The headline (Transparency Rate) is not measured yet: it needs the labels, which wait on research prompt 02. Counts only below, no rates (pilot rule R7). Sources: E38 to E40, D42, D43.
 
 ## What ran

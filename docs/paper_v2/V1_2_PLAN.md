@@ -1,5 +1,7 @@
 # v1.2 plan: the correction chain
 
+Note (2026-11-11): the session prompt files and research_prompts/ named in this document moved to the private pilot data repository. They are not part of this public repository.
+
 Order fixed by D21, with the insertions from the 2026-10-13 audit. Each step lists its gate and the evidence that marks it done. Spend comes only from `scripts/pilot/cost.py` into the ledger; the $20 cap is enforced by `scripts/pilot/gates.py` (E24). Paid runs follow the pilot rules R1 to R10 below, recovered verbatim on 2026-10-13 from Aditya's pilot session prompt (O11). No dates: one step at a time.
 
 ## Pilot rules (binding for every paid run; Aditya's text from the 2026-10-13 pilot prompt)

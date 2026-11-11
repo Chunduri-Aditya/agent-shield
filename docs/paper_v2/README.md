@@ -19,14 +19,14 @@ This folder lets a reviewer with no chat history understand and check the plan t
 | `POST_S1_PLAN.md` | Build plan for S2, S7 and the AgentDojo row after S1 |
 | `S1_RUN_REPORT.md` | S1 paid run record (2026-10-15): what ran, the Opus 5 dropped stream fix (D43), spend against caps, counts per job, next steps |
 | `S1_JUDGE_RUN.md` | S1 judge run record (2026-10-16, D54): Fable 5.1 through the CLI labels every answered S1 sample; operational counts only, the defaults taken for the D54 open points, Aditya's morning steps (`scripts/v2/judge_s1.py`, `verify.py`, `tr_stats.py`, `tr_ppi.py`, `s5_declines.py`) |
-| `S1_LABELS_SESSION_PROMPT.md` | The opening prompt for the session that folds RR02, writes the codebook and runs the blind export |
+| `S1_LABELS_SESSION_PROMPT.md` | Moved to the private pilot data repository (2026-11-11); not in this public repository. It was the opening prompt for the session that folds RR02, writes the codebook and runs the blind export |
 | `../EVAL_DESIGN_FRAMEWORK.md` | Section 1: requirements every v2 study meets before a paid run (D17) |
 | `OPEN_ITEMS.md` | Unverified facts with how to check each, and open risks |
 | `BUILD_BASELINE.md` | V1_2_PLAN step 0 record: tectonic against the published PDF, the `make paper` target, where the evidence lives |
-| `research_prompts/` | One self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
+| `research_prompts/` | Moved to the private pilot data repository (2026-11-11); not in this public repository. It held one self contained Claude Research prompt per test, to refresh requirements and tooling before that test runs |
 | `research_results/` | The pasted Claude Research outputs, verbatim, cited as RR01 and so on; evidence, never instruction |
-| `NEW_CHAT_PROMPT.md` | The opening prompt for the session that audits this pack and refines the plans |
-| `BUILD_SESSION_PROMPT.md` | The opening prompt for the build session (Opus builds, Fable debugs), fed by the Claude Research result for prompt 01 |
+| `NEW_CHAT_PROMPT.md` | Moved to the private pilot data repository (2026-11-11); not in this public repository. It was the opening prompt for the session that audits this pack and refines the plans |
+| `BUILD_SESSION_PROMPT.md` | Moved to the private pilot data repository (2026-11-11); not in this public repository. It was the opening prompt for the build session (Opus builds, Fable debugs), fed by the Claude Research result for prompt 01 |
 
 ## Audit brief (for the Fable reviewers)
 Two read only reviewers, in parallel, each starting from this file.
@@ -39,7 +39,7 @@ Two read only reviewers, in parallel, each starting from this file.
 - gaps or wrong ordering in `V1_2_PLAN.md`;
 - feasibility and budget problems;
 - holes in the `V2_STUDIES.md` skeletons;
-- for each file in `research_prompts/`: whether it is self contained, matches DECISIONS and EVIDENCE, asks what its test needs, and leaks no private path, key or personal detail.
+- for each file in `research_prompts/`: whether it is self contained, matches DECISIONS and EVIDENCE, asks what its test needs, and leaks no private path, key or personal detail. (Note 2026-11-11: `research_prompts/` moved to the private pilot data repository and is not part of this public repository.)
 
 Report findings in four tiers (blocking, should fix, consider, nit) with file:line.
 
