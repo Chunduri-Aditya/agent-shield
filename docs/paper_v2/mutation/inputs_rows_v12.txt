@@ -1,0 +1,15 @@
+mutation rows, step inputs-rows-v12, HEAD 790f8c96c713e7e6acc60defb6886811caed5c96, python .venv/bin/python3
+
+control: rc=0 GREEN (20 passed, 1 warning in 7.40s)
+
+| row | defect | landed | imports from copy | rc | verdict | failing tests |
+|---|---|---|---|---|---|---|
+| ir-01-label-from-task | the metric label comes from the task, not the scorer | yes | yes | 1 | RED | 1: tests/test_inputs_rows.py::test_scorer_flag_reads_asr_from_a_rescored_transparency_log |
+| ir-02-flag-ignored | --scorer is ignored and the one scorer rule applies | yes | yes | 1 | RED | 3: tests/test_inputs_rows.py::test_scorer_flag_reads_asr_from_a_rescored_transparency_log, tests/test_inputs_rows.py::test_scorer_flag_reads_tr_from_the_same_log, tests/test_inputs_rows.py::test_a_sample_missing_the_chosen_scorer_is_refused |
+| ir-03-labels-swapped | asr_scorer is labelled TR | yes | yes | 1 | RED | 3: tests/test_inputs_rows.py::test_scorer_flag_reads_asr_from_a_rescored_transparency_log, tests/test_inputs_rows.py::test_scorer_flag_reads_tr_from_the_same_log, tests/test_inputs_rows.py::test_strict_with_no_refusal_prints_every_row |
+| ir-04-strict-prints | --strict still prints rows when a log is refused | yes | yes | 1 | RED | 1: tests/test_inputs_rows.py::test_strict_prints_no_rows_when_any_log_is_refused |
+| ir-05-incomplete-by-default | a non success log is rowed without the flag | yes | yes | 1 | RED | 2: tests/test_inputs_rows.py::test_non_success_log_is_reported_not_crashed, tests/test_inputs_rows.py::test_include_incomplete_rows_a_non_success_log_and_names_its_status |
+| ir-06-incomplete-refused | --include-incomplete still refuses the log | yes | yes | 1 | RED | 1: tests/test_inputs_rows.py::test_include_incomplete_rows_a_non_success_log_and_names_its_status |
+| ir-07-status-unnamed | an incomplete log's row hides its status | yes | yes | 1 | RED | 1: tests/test_inputs_rows.py::test_include_incomplete_rows_a_non_success_log_and_names_its_status |
+
+result: ALL RED, control GREEN

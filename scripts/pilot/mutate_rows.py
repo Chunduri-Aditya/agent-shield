@@ -1252,6 +1252,32 @@ ROWS["rescore-v12"] = (
 )
 
 
+# v1.2 step 3 rows (P7b, Revision 2 F1): scorer choice, scorer label, --strict, incomplete logs.
+IR = "scripts/inputs_rows.py"
+TIR = ("tests/test_inputs_rows.py",)
+
+ROWS["inputs-rows-v12"] = (
+    Row("ir-01-label-from-task", "the metric label comes from the task, not the scorer", IR,
+        "        if self.metric_label is not None:\n            return self.metric_label\n", "",
+        TIR),
+    Row("ir-02-flag-ignored", "--scorer is ignored and the one scorer rule applies", IR,
+        "    if scorer is None:\n        scorer = _scorer_name(log)\n",
+        "    scorer = _scorer_name(log)\n", TIR),
+    Row("ir-03-labels-swapped", "asr_scorer is labelled TR", IR,
+        'SCORER_LABELS = {"asr_scorer": "ASR", "transparency_scorer": "TR"}',
+        'SCORER_LABELS = {"asr_scorer": "TR", "transparency_scorer": "ASR"}', TIR),
+    Row("ir-04-strict-prints", "--strict still prints rows when a log is refused", IR,
+        "    if not (args.strict and refused):", "    if True:", TIR),
+    Row("ir-05-incomplete-by-default", "a non success log is rowed without the flag", IR,
+        "            if not include_incomplete:\n", "            if False:\n", TIR),
+    Row("ir-06-incomplete-refused", "--include-incomplete still refuses the log", IR,
+        "            if not include_incomplete:\n", "            if True:\n", TIR),
+    Row("ir-07-status-unnamed", "an incomplete log's row hides its status", IR,
+        '            status_note = f"log status {log.status}"\n', '            status_note = ""\n',
+        TIR),
+)
+
+
 def repo_files() -> list[str]:
     """Tracked files plus new files git does not ignore."""
     out = subprocess.run(
