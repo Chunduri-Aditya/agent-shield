@@ -3,7 +3,7 @@
 For the demo and current evidence, start with the [README](../README.md).
 The [October 2026 erratum](ERRATUM.md) withdraws the original inputs and tools anchors.
 
-Audience: recruiters, collaborators, future-you, anyone opening the GitHub repo cold  
+Audience: engineers, researchers, collaborators, anyone opening the GitHub repo cold  
 Authoritative scope lock: [`SHIP_LINE.md`](../research/decisions/SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Novelty boundary: [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md)
 
 ---
@@ -158,7 +158,7 @@ This layer exists so TR is not only a paper number — it can become an operator
 | `RESULTS.md` | Model ID, seed, n, date, git SHA per cited row |
 | Research content screener | Shared ruleset for retrieval / guard text; versioned; benign corpus for FP discipline |
 | `ETHICS.md` | Dual-use clearance, disclosure window, research-only constraints |
-| Sample / generated reports | Recruiter- and engineer-readable vulnerability cards |
+| Sample / generated reports | Engineer-readable vulnerability cards |
 
 ---
 
@@ -179,8 +179,7 @@ This layer exists so TR is not only a paper number — it can become an operator
 
 **Longer arc**
 
-- Portfolio + applications that point at reproducible evidence, not vibe.  
-- PhD / fellowship positioning around transparency-aware agent evaluation and operator cognitive load.  
+- Research on transparency-aware agent evaluation and operator cognitive load, anchored to reproducible evidence.  
 - v1.1 surfaces (`env/`, `multiagent/`) only after the single-agent story stays honest.
 
 ---

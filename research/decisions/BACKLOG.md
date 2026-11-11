@@ -116,9 +116,7 @@ build/tooling hygiene found during an engineering audit. Full evidence in
 5. 95% CI on every module — Deferred because `inputs/` at `n=20` is the anchor check and the other modules can ship point estimates in v1.0.0. Source: `AGENT_SHIELD_TODO.md` section 13.
 6. Full eight model coverage — Deferred because four models cover Anthropic, local Ollama, Groq, and Gemini for v1.0.0 without turning the sprint into provider operations. Source: `AGENT_SHIELD_TODO.md` section 13.
 7. `env/` and `multiagent/` result rows — Deferred because those modules do not ship at v1.0.0, so their result rows cannot be required for release. Source: `AGENT_SHIELD_TODO.md` sections 8 and 10.
-8. Job application batch — Deferred because v1.0.0 needs the research artifact first; applications resume after the four model evidence line is stable. Source: `AGENT_SHIELD_TODO.md` section 16.
-9. Fellowships — Deferred because fellowship materials depend on the shipped artifact and paper story. Source: `AGENT_SHIELD_TODO.md` section 18.
-10. Workshop submission after arxiv — Deferred because v1.0.0 ships the workshop length draft and release bundle, while submission packaging can follow in v1.1. Source: `AGENT_SHIELD_TODO.md` section 14.
+8. Workshop submission after arxiv — Deferred because v1.0.0 ships the workshop length draft and release bundle, while submission packaging can follow in v1.1. Source: `AGENT_SHIELD_TODO.md` section 14.
 
 ## Post-ship
 
@@ -224,7 +222,7 @@ Items added here were never in BACKLOG — they were discussed and moved straigh
 
 - **Human-readable reporting layer** (added to `AGENT_SHIELD_TODO.md` §13.5)
 - **CIA Triad check** (added to `CLAUDE.md` session protocol + `AGENT_SHIELD_TODO.md` §13.6) — Fact-check and firewall layer on every user query before any action. Checks Confidentiality, Integrity, and Availability in plain English so the output is readable with or without a security background. Agent-level check is live in `CLAUDE.md`; code-level CIA mapping in `risk_registry.py` and report output are on the build checklist.
-- **Risk review system** (added to `AGENT_SHIELD_TODO.md` §13.6 + `CLAUDE.md`) — Session-level and eval-level LOW/MEDIUM/HIGH risk gate. Agent sessions classify task risk before acting; eval harness classifies attack risk before running. HIGH blocks execution and requires human confirmation or an `ETHICS.md` clearance entry. — Plain English vulnerability explanations on top of eval results. Per-attack explanation registry, `make report` target, `--explain` flag, sample output in `showcase/sample_report.md`. Rationale: makes the framework accessible to non-security engineers and is a meaningful differentiator for recruiters and workshop reviewers.
+- **Risk review system** (added to `AGENT_SHIELD_TODO.md` §13.6 + `CLAUDE.md`) — Session-level and eval-level LOW/MEDIUM/HIGH risk gate. Agent sessions classify task risk before acting; eval harness classifies attack risk before running. HIGH blocks execution and requires human confirmation or an `ETHICS.md` clearance entry. — Plain English vulnerability explanations on top of eval results. Per-attack explanation registry, `make report` target, `--explain` flag, sample output in `showcase/sample_report.md`. Rationale: makes the framework accessible to non-security engineers and workshop reviewers.
 
 ---
 
