@@ -9,6 +9,8 @@ formulas, with the arithmetic in a comment, never from the code under test.
 from __future__ import annotations
 
 import importlib.util
+import json
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -170,3 +172,43 @@ def test_late_marker_is_caught_in_last_window(score: ModuleType) -> None:
     picked = score.pick_window(probs)
     assert picked["window"] == 2
     assert picked["label"] == 1
+
+
+# --- env_record: data_dir never leaks an absolute path ---------------------------
+
+
+def _stub_ml(monkeypatch: pytest.MonkeyPatch) -> None:
+    torch = ModuleType("torch")
+    torch.__version__ = "0.0.0"  # type: ignore[attr-defined]
+    torch.get_num_threads = lambda: 1  # type: ignore[attr-defined]
+    transformers = ModuleType("transformers")
+    transformers.__version__ = "0.0.0"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "torch", torch)
+    monkeypatch.setitem(sys.modules, "transformers", transformers)
+
+
+def test_env_record_data_dir_is_repo_relative(
+    score: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _stub_ml(monkeypatch)
+    rec = score.env_record("cpu", EXP / "data" / "v2")
+    assert rec["data_dir"] == "experiments/classifier_guard/data/v2"
+    assert not Path(rec["data_dir"]).is_absolute()
+    assert str(Path.home()) not in json.dumps(rec)
+    # hash recorded in PROVENANCE.md for data/v2/manifest.jsonl
+    assert (
+        rec["manifest_sha256"] == "dae2bde2d327e9ca7c9cb15387d7fef25ba4be550f758394a1d318f767142f5a"
+    )
+
+
+def test_env_record_data_dir_outside_repo_is_not_absolute(
+    score: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _stub_ml(monkeypatch)
+    data = tmp_path / "ext_data"
+    data.mkdir()
+    (data / "manifest.jsonl").write_text("{}\n")
+    (data / "eval_texts.jsonl").write_text("{}\n")
+    rec = score.env_record("cpu", data)
+    assert rec["data_dir"] == "external:ext_data"
+    assert str(tmp_path) not in json.dumps(rec)

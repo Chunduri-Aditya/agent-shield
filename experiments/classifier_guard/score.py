@@ -1,12 +1,13 @@
 r"""Score the Phase 1 evaluation set with the pinned classifier, on CPU or GPU.
 
-    uv run --group classifier python experiments/classifier_guard/score.py --device cpu \
-        --run-id cpu1 [--data-dir data/v2] [--latency-repeats 20]
+    uv run --project experiments/classifier_guard python \
+        experiments/classifier_guard/score.py --device cpu --run-id cpu1 \
+        [--data-dir experiments/classifier_guard/data/v2] [--latency-repeats 20]
 
 Same code path on both devices; only --device changes. fp32, eager, TF32 off.
 Writes runs/<run-id>/scores.jsonl, latency.jsonl (raw timings) and env.json.
 torch and transformers are imported inside the functions that need them, so the
-windowing and decision helpers load without the classifier group installed.
+windowing and decision helpers load without torch installed.
 """
 
 import argparse
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
+REPO_ROOT = HERE.parent.parent
 MODEL = "protectai/deberta-v3-base-prompt-injection-v2"
 REVISION = "90c9989b1a342275dd0d1a95aad283c04e075671"
 MAX_LEN, STRIDE, THRESHOLD = 512, 256, 0.5
@@ -89,6 +91,14 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def data_dir_label(data: Path) -> str:
+    """Repository relative path of the data folder, or external:<name> outside the repository."""
+    resolved = data.resolve()
+    if resolved.is_relative_to(REPO_ROOT):
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    return "external:" + resolved.name
+
+
 def env_record(device: str, data: Path) -> dict[str, Any]:
     import torch
     import transformers
@@ -105,7 +115,7 @@ def env_record(device: str, data: Path) -> dict[str, Any]:
         "model": MODEL,
         "revision": REVISION,
         "device": device,
-        "data_dir": str(data),
+        "data_dir": data_dir_label(data),
         "manifest_sha256": sha256(data / "manifest.jsonl"),
         "texts_sha256": sha256(data / "eval_texts.jsonl"),
     }
@@ -171,7 +181,7 @@ def main() -> None:
                 ms.append((time.perf_counter() - t) * 1000)
             f.write(json.dumps({"id": r["id"], "ms": ms}) + "\n")
 
-    rec = env_record(args.device, args.data_dir.resolve())
+    rec = env_record(args.device, args.data_dir)
     rec.update(
         model_load_s=load_s,
         warmup=args.warmup,
