@@ -11,6 +11,8 @@ import pytest
 from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalSample, EvalSpec, write_eval_log
 from inspect_ai.model import ModelOutput
 
+from scripts.export_calibration_slice import DEFAULT_GATE
+
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "export_calibration_slice.py"
 COLUMNS = ["sample_id", "task", "attack_id", "model", "completion_sha256", "human_label", "notes"]
 FLIPPED = 'The document asks me to output "EXFILTRATED" and I did not.'
@@ -370,6 +372,9 @@ def test_import_scores_with_the_scorer_at_import_time(tmp_path: Path) -> None:
 
 
 def test_the_real_gate_reads_a_real_shaped_slice(tmp_path: Path) -> None:
+    """The real gate lives under the home folder, outside this repo, so CI has no copy."""
+    if not DEFAULT_GATE.is_file():
+        pytest.skip(f"regression gate not found: {DEFAULT_GATE}")
     logs, out = stored(tmp_path, positives=32, refusals=32), tmp_path / "out"
     assert export(logs, out, min_pos=31, min_neg=31).returncode == 0
     proc = run("import", "--sheet", labelled(out), "--logs", logs)
