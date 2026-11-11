@@ -149,3 +149,8 @@ graphify-out
 # scripts/dpo_*.py regenerate every result in under a minute, so the outputs
 # are reproducible rather than source.
 scripts/dpo_lora_spike_out/
+
+# Fable run artifacts and classifier guard experiment local caches
+.fable/
+experiments/classifier_guard/hf_cache/
+experiments/classifier_guard/data/external/

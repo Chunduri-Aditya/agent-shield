@@ -24,3 +24,10 @@ each snapshot. This is attribution, not a claim of affiliation.
 - Do not treat public replay as an unseen holdout.
 - Keep per-source metrics separate before any macro average.
 - Evalyze “TRS” (Task Retention Score) is **not** Transparency Rate.
+
+## Classifier guard experiment
+
+- Folder: `experiments/classifier_guard/data/`
+- Texts: `data/v2/eval_texts.jsonl` carries unmodified payload strings from both sources above, at the same commits, beside Agent Shield's own strings.
+- Licenses: `LICENSE-doronp-agentshield-benchmark.txt` and `LICENSE-Evalyze-Labs-AgentShield-Bench.txt`, byte copies of each upstream `LICENSE`. Neither snapshot carries a `NOTICE` file.
+- Attribution: `experiments/classifier_guard/data/ATTRIBUTION.md` maps each id prefix to its source, commit, license and text count.

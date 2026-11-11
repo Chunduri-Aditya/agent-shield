@@ -1,0 +1,57 @@
+{
+ "patterns": [
+  "openai_or_anthropic_key",
+  "aws_access_key",
+  "github_token",
+  "slack_token",
+  "private_key_block",
+  "email",
+  "us_phone",
+  "local_home_path",
+  "owner_name",
+  "password_assignment"
+ ],
+ "hits": {
+  "email": [
+   "AS-TL-01",
+   "ext/Evalyze-Labs_AgentShield-Bench/attack_021/1b1e3ffd696f",
+   "ext/Evalyze-Labs_AgentShield-Bench/attack_079/821631f0bb50",
+   "ext/Evalyze-Labs_AgentShield-Bench/attack_099/fc0fb7a1f51c",
+   "ext/doronp_agentshield-benchmark/de-006/4019b003de37",
+   "ext/doronp_agentshield-benchmark/de-029/f3d5ccfdec10",
+   "ext/doronp_agentshield-benchmark/ma-007/d97769778106",
+   "ext/doronp_agentshield-benchmark/ma-019/53658aba00ad",
+   "ext/doronp_agentshield-benchmark/ma-031/1ccb75d6a216",
+   "ext/doronp_agentshield-benchmark/pi-024/56fb3a4478a8",
+   "ext/doronp_agentshield-benchmark/pi-028/8d5e950434b3",
+   "ext/doronp_agentshield-benchmark/pi-029/59bb8932cef4",
+   "ext/doronp_agentshield-benchmark/pi-031/e410de3f681c",
+   "ext/doronp_agentshield-benchmark/pi-046/07677298cf5a",
+   "ext/doronp_agentshield-benchmark/pi-097/9d7cfcbed784",
+   "ext/doronp_agentshield-benchmark/pi-102/20e130d96537",
+   "ext/doronp_agentshield-benchmark/pi-103/5e4d29c9ed8b",
+   "ext/doronp_agentshield-benchmark/pi-140/c359fc5690bb",
+   "ext/doronp_agentshield-benchmark/pi-152/8df070b19418",
+   "ext/doronp_agentshield-benchmark/pi-154/8c81377c12b7",
+   "ext/doronp_agentshield-benchmark/pi-155/de09552dc56f",
+   "ext/doronp_agentshield-benchmark/prov-001/fee614e02f01",
+   "ext/doronp_agentshield-benchmark/prov-009/83ffd459b7f6",
+   "ext/doronp_agentshield-benchmark/ta-012/67f161790be0",
+   "ext/doronp_agentshield-benchmark/ta-015/646aedd6db62",
+   "ext/doronp_agentshield-benchmark/ta-016/67aeb2ec8052",
+   "ext/doronp_agentshield-benchmark/ta-019/caad8b2d3c6c",
+   "ext/doronp_agentshield-benchmark/ta-060/b0eecff9d0ca",
+   "ext/doronp_agentshield-benchmark/ta-070/f5f8488c1e94"
+  ],
+  "password_assignment": [
+   "ext/doronp_agentshield-benchmark/pi-029/59bb8932cef4",
+   "ext/doronp_agentshield-benchmark/pi-163/27788ad3e583"
+  ],
+  "local_home_path": [
+   "ext/doronp_agentshield-benchmark/pi-100/54e53e9304d5",
+   "ext/doronp_agentshield-benchmark/pi-105/c843ba24ef2b",
+   "ext/doronp_agentshield-benchmark/pi-195/30fb2a3686ec",
+   "ext/doronp_agentshield-benchmark/ta-004/757be0781d38"
+  ]
+ }
+}

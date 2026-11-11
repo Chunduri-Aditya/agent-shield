@@ -1,0 +1,81 @@
+{
+ "n": 8,
+ "flag_jaccard": 0.8,
+ "sets": {
+  "jackhhao/jailbreak-classification": {
+   "status": "checked",
+   "strings_checked": 2612
+  },
+  "natolambert/xstest-v2-copy": {
+   "status": "checked",
+   "strings_checked": 18480
+  },
+  "OpenSafetyLab/Salad-Data": {
+   "status": "checked",
+   "strings_checked": 166430
+  },
+  "alespalla/chatbot_instruction_prompts": {
+   "status": "checked",
+   "strings_checked": 645106
+  },
+  "HuggingFaceH4/grok-conversation-harmless": {
+   "status": "checked",
+   "strings_checked": 313943
+  },
+  "Harelix/Prompt-Injection-Mixed-Techniques-2024": {
+   "status": "unavailable: DatasetNotFoundError"
+  },
+  "VMware/open-instruct": {
+   "status": "checked",
+   "strings_checked": 729790
+  }
+ },
+ "flagged": {
+  "AS-BENIGN-01": {
+   "set": "VMware/open-instruct",
+   "jaccard": 1.0,
+   "exact": true
+  },
+  "ext/doronp_agentshield-benchmark/or-026/f55b1645c51b": {
+   "set": "alespalla/chatbot_instruction_prompts",
+   "jaccard": 1.0,
+   "exact": true
+  },
+  "ext/doronp_agentshield-benchmark/pi-069/069b9dc7eaa5": {
+   "set": "VMware/open-instruct",
+   "jaccard": 1.0,
+   "exact": true
+  },
+  "ext/doronp_agentshield-benchmark/pi-070/bbf3492d496f": {
+   "set": "alespalla/chatbot_instruction_prompts",
+   "jaccard": 1.0,
+   "exact": true
+  }
+ },
+ "short_texts_exact_only": [
+  "AS-BENIGN-01",
+  "AS-BENIGN-05",
+  "ext/Evalyze-Labs_AgentShield-Bench/attack_032/bbaed1159867",
+  "ext/Evalyze-Labs_AgentShield-Bench/attack_035/1e87cf6abafa",
+  "ext/Evalyze-Labs_AgentShield-Bench/attack_096/9f81bc0abb27",
+  "ext/Evalyze-Labs_AgentShield-Bench/attack_118/581e669d7878",
+  "ext/doronp_agentshield-benchmark/jb-018/cde3e182d82e",
+  "ext/doronp_agentshield-benchmark/jb-020/7e4d5a2ffa5a",
+  "ext/doronp_agentshield-benchmark/jb-039/c357777cbf14",
+  "ext/doronp_agentshield-benchmark/or-025/567dc3a9c6af",
+  "ext/doronp_agentshield-benchmark/or-026/f55b1645c51b",
+  "ext/doronp_agentshield-benchmark/or-027/0442f5536875",
+  "ext/doronp_agentshield-benchmark/or-028/610b789a3f0a",
+  "ext/doronp_agentshield-benchmark/or-059/64d48a2cc101",
+  "ext/doronp_agentshield-benchmark/or-060/85d7e34c0e8e",
+  "ext/doronp_agentshield-benchmark/or-061/41ac542bbb1a",
+  "ext/doronp_agentshield-benchmark/or-062/833b84ffc652",
+  "ext/doronp_agentshield-benchmark/pi-011/50b1a2d87ab0",
+  "ext/doronp_agentshield-benchmark/pi-067/4cb24305f071",
+  "ext/doronp_agentshield-benchmark/pi-068/4d02f9385332",
+  "ext/doronp_agentshield-benchmark/pi-069/069b9dc7eaa5",
+  "ext/doronp_agentshield-benchmark/pi-070/bbf3492d496f",
+  "ext/doronp_agentshield-benchmark/pi-176/ee1a2d288fb7",
+  "ext/doronp_agentshield-benchmark/pi-177/09bfe72b5526"
+ ]
+}
