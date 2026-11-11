@@ -2,15 +2,18 @@
 numbers reproduce the two published anchored Sonnet rows, and an unversioned log is refused."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from inspect_ai import eval as inspect_eval
-from inspect_ai.log import read_eval_log
+from inspect_ai.log import read_eval_log, write_eval_log
 from inspect_ai.model import Model, ModelOutput, get_model
+from inspect_ai.scorer import Score
 
 from agent_shield.runtime.stats import wilson_interval
 from evals.inputs import inputs_asr, inputs_transparency
 from scripts.inputs_rows import compare, load_rows, row_from_log
+from scripts.inputs_rows import main as rows_main
 
 REFUSAL = "I notice this instruction tries to make me output a word. I refuse."
 
@@ -181,3 +184,114 @@ def test_reasoning_none_is_part_of_the_generation_note() -> None:
         == "temperature 0, max_tokens 2048, reasoning none"
     )
     assert "reasoning" not in temperature_note(GenerateConfig(temperature=0.0, max_tokens=2048))
+
+
+# --- v1.2 step 3 rows (agent plan P7b, Revision 2 F1) -----------------------------------------
+# A rescored -transparency log holds transparency_scorer plus an appended asr_scorer
+# (scripts/pilot/rescore_v12.py, action append), so the row must pick its scorer by name and
+# take its metric label from that scorer, never from the task name.
+
+
+def _rescored_tr_log(logs: Path, asr: list[int], *, version: int = 5) -> Any:
+    log = read_eval_log(sorted(str(p) for p in logs.glob("*inputs-transparency*.eval"))[0])
+    assert log.samples and len(log.samples) == len(asr)
+    for sample, value in zip(log.samples, asr, strict=True):
+        assert sample.scores is not None
+        sample.scores["asr_scorer"] = Score(value=value, metadata={"scorer_version": version})
+    return log
+
+
+def test_scorer_flag_reads_asr_from_a_rescored_transparency_log(logs: Path) -> None:
+    row = row_from_log(_rescored_tr_log(logs, [1, 0, 1, 1, 0]), scorer="asr_scorer")
+    assert (row.hits, row.n) == (3, 5)
+    assert row.metric == "ASR"  # the task is inputs_transparency; the score is ASR
+    assert row.scorer == "asr_scorer v5"
+    assert "| ASR | 0.6000 | 5 |" in row.markdown()
+
+
+def test_scorer_flag_reads_tr_from_the_same_log(logs: Path) -> None:
+    row = row_from_log(_rescored_tr_log(logs, [1, 1, 1, 1, 1]), scorer="transparency_scorer")
+    assert (row.hits, row.n) == (1, 5)
+    assert row.metric == "TR" and row.scorer == "transparency_scorer v1"
+
+
+def test_two_scorers_without_the_flag_are_refused(logs: Path) -> None:
+    with pytest.raises(ValueError, match="expected one scorer"):
+        row_from_log(_rescored_tr_log(logs, [1, 0, 1, 1, 0]))
+
+
+def test_a_sample_missing_the_chosen_scorer_is_refused(logs: Path) -> None:
+    log = _rescored_tr_log(logs, [1, 0, 1, 1, 0])
+    del log.samples[2].scores["asr_scorer"]
+    with pytest.raises(ValueError, match="has no asr_scorer score"):
+        row_from_log(log, scorer="asr_scorer")
+
+
+def _write_pair(logs: Path, tmp_path: Path) -> tuple[str, str]:
+    """A good inputs_asr log and the same log with its stamps removed (refused)."""
+    src = sorted(str(p) for p in logs.glob("*inputs-asr*.eval"))[0]
+    good = tmp_path / "2026-05-01T00-00-00-00-00_inputs-asr_good.eval"
+    bad = tmp_path / "2026-05-01T00-00-00-00-00_inputs-asr_bad.eval"
+    log = read_eval_log(src)
+    write_eval_log(log, str(good))
+    for sample in log.samples or []:
+        assert sample.scores is not None
+        sample.scores["asr_scorer"].metadata = None
+    write_eval_log(log, str(bad))
+    return str(good), str(bad)
+
+
+def test_strict_prints_no_rows_when_any_log_is_refused(
+    logs: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # A `> rows.md` redirect must not keep a partial table (P10 counts rows per log).
+    good, bad = _write_pair(logs, tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        rows_main(["--logs", good, bad, "--strict"])
+    assert exc.value.code == 1
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert "refused: " in out.err
+
+
+def test_without_strict_rows_print_and_the_exit_is_still_1(
+    logs: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    good, bad = _write_pair(logs, tmp_path)
+    with pytest.raises(SystemExit) as exc:
+        rows_main(["--logs", good, bad])
+    assert exc.value.code == 1
+    assert "| inputs | mockllm/model |" in capsys.readouterr().out
+
+
+def test_strict_with_no_refusal_prints_every_row(
+    logs: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    good, _ = _write_pair(logs, tmp_path)
+    rows_main(["--logs", good, "--strict", "--scorer", "asr_scorer"])
+    out = capsys.readouterr().out
+    assert out.count("| inputs | mockllm/model |") == 1 and "| ASR |" in out
+
+
+def test_include_incomplete_rows_a_non_success_log_and_names_its_status(
+    logs: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The v1.2 inventory keeps error and started logs (plan P6); their scored samples count.
+    import scripts.inputs_rows as rows_mod
+
+    path = sorted(str(p) for p in logs.glob("*inputs-asr*.eval"))[0]
+    real = read_eval_log(path)
+    real.status = "error"
+    monkeypatch.setattr(rows_mod, "read_eval_log", lambda p: real)
+    rows, refused = load_rows([path], None, include_incomplete=True)
+    assert refused == [] and len(rows) == 1
+    assert "log status error" in rows[0].markdown()
+    rows, refused = load_rows([path], None)
+    assert rows == [] and refused == [f"{Path(path).name}: status error"]
+
+
+def test_an_unknown_scorer_name_is_a_usage_error(logs: Path) -> None:
+    path = sorted(str(p) for p in logs.glob("*inputs-asr*.eval"))[0]
+    with pytest.raises(SystemExit) as exc:
+        rows_main(["--logs", path, "--scorer", "no_such_scorer"])
+    assert exc.value.code == 2

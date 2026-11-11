@@ -9,9 +9,20 @@ scorer_version metadata (rescore it first: `make rescore LOG=...`, `RESCORE_MODU
 for a psych log) or when a sample stopped on max_tokens with no text: that sample spent the
 cap thinking, and its 0 is a measurement failure, not an answer (qwen3.5 rows, 2026-10-10).
 
+Three flags serve the v1.2 rescore of the May logs. `--scorer NAME` reads only that score from
+each sample and takes the Metric label from the scorer, not from the task name: a rescored
+transparency log carries transparency_scorer and an appended asr_scorer, so without the flag
+it is refused (expected one scorer), and an ASR value from it must never read as TR.
+`--strict` prints nothing to stdout when any log is refused, so a `> rows.md` redirect never
+keeps a partial table. The refusals still go to stderr and the exit is 1.
+`--include-incomplete` rows a log whose status is not success, because the v1.2 inventory
+keeps error and started logs. Its errored samples stay out of n, and its note names the status.
+
   uv run python scripts/inputs_rows.py --logs logs/2026-10-09T*inputs*.eval
   uv run python scripts/inputs_rows.py --date 2026-10-10 --model ollama/
   uv run python scripts/inputs_rows.py --date 2026-10-10 --module exfil --compare
+  uv run python scripts/inputs_rows.py --logs DIR/v5/*.eval --scorer asr_scorer --strict \\
+      --include-incomplete
 """
 
 from __future__ import annotations
@@ -38,6 +49,8 @@ SCORERS = {
     "benign": "ASR (benign control)",
     "canary": "Canary",
 }
+SCORER_LABELS = {"asr_scorer": "ASR", "transparency_scorer": "TR"}
+"""Metric label per scorer name, for --scorer rows whose task name does not say the metric."""
 MODULES = ("inputs", "tools", "psych", "memory", "exfil", "drift")
 TEXT_MODULES = frozenset({"memory", "exfil", "drift"})
 """Modules whose tasks give the model no tools, so every row is a text result."""
@@ -70,6 +83,7 @@ class Row:
     note: str
     low: float = field(default=0.0)
     high: float = field(default=0.0)
+    metric_label: str | None = field(default=None)
 
     @property
     def module(self) -> str:
@@ -80,7 +94,9 @@ class Row:
 
     @property
     def metric(self) -> str:
-        kind = self.task.rsplit("_", 1)[-1] if "_" in self.task else self.task
+        if self.metric_label is not None:
+            return self.metric_label
+        kind =self.task.rsplit("_", 1)[-1] if "_" in self.task else self.task
         if self.task.endswith("_defended"):
             kind = self.task.rsplit("_", 2)[-2]
         return SCORERS.get(kind, kind)
@@ -142,8 +158,10 @@ def _note(log: EvalLog) -> str:
     return "; ".join(parts)
 
 
-def row_from_log(log: EvalLog) -> Row:
-    scorer = _scorer_name(log)
+def row_from_log(log: EvalLog, scorer: str | None = None) -> Row:
+    metric_label = SCORER_LABELS[scorer] if scorer is not None else None
+    if scorer is None:
+        scorer = _scorer_name(log)
     versions: set[object] = set()
     per_attack: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     hits = n = errors = empty = capped_empty = 0
@@ -203,10 +221,16 @@ def row_from_log(log: EvalLog) -> Row:
         note=_note(log),
         low=ci.low,
         high=ci.high,
+        metric_label=metric_label,
     )
 
 
-def load_rows(paths: list[str], model_filter: str | None) -> tuple[list[Row], list[str]]:
+def load_rows(
+    paths: list[str],
+    model_filter: str | None,
+    scorer: str | None = None,
+    include_incomplete: bool = False,
+) -> tuple[list[Row], list[str]]:
     """Rows for every usable log, plus one line per log refused (not success, unversioned)."""
     rows = []
     refused: list[str] = []
@@ -214,13 +238,20 @@ def load_rows(paths: list[str], model_filter: str | None) -> tuple[list[Row], li
         log = read_eval_log(path)
         if model_filter and model_filter not in log.eval.model:
             continue
+        status_note = ""
         if log.status != "success":
-            refused.append(f"{Path(path).name}: status {log.status}")
-            continue
+            if not include_incomplete:
+                refused.append(f"{Path(path).name}: status {log.status}")
+                continue
+            status_note = f"log status {log.status}"
         try:
-            rows.append(row_from_log(log))
+            row = row_from_log(log, scorer)
         except ValueError as exc:
             refused.append(str(exc))
+            continue
+        if status_note:
+            row.note = "; ".join(part for part in (status_note, row.note) if part)
+        rows.append(row)
     return sorted(rows, key=lambda r: (r.model, r.task, r.date)), refused
 
 
@@ -244,7 +275,7 @@ def compare(rows: list[Row]) -> str:
     return "\n".join(lines)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -253,7 +284,20 @@ def main() -> None:
     parser.add_argument("--module", choices=MODULES, help="with --date: this module only")
     parser.add_argument("--model", help="keep only models whose id contains this")
     parser.add_argument("--compare", action="store_true", help="print the cross model table")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--scorer",
+        choices=sorted(SCORER_LABELS),
+        help="read only this score per sample; the metric label comes from the scorer",
+    )
+    parser.add_argument(
+        "--strict", action="store_true", help="print nothing to stdout when any log is refused"
+    )
+    parser.add_argument(
+        "--include-incomplete",
+        action="store_true",
+        help="row logs whose status is not success, naming the status in the note",
+    )
+    args = parser.parse_args(argv)
     paths: list[str] = []
     for pattern in args.logs:
         paths += sorted(glob.glob(pattern))
@@ -262,14 +306,15 @@ def main() -> None:
             paths += sorted(glob.glob(pattern))
     if not paths:
         raise SystemExit("no logs given")
-    rows, refused = load_rows(paths, args.model)
-    print(HEADER)
-    print(DIVIDER)
-    for r in rows:
-        print(r.markdown())
-    if args.compare:
-        print()
-        print(compare(rows))
+    rows, refused = load_rows(paths, args.model, args.scorer, args.include_incomplete)
+    if not (args.strict and refused):
+        print(HEADER)
+        print(DIVIDER)
+        for r in rows:
+            print(r.markdown())
+        if args.compare:
+            print()
+            print(compare(rows))
     for line in refused:
         print(f"refused: {line}", file=sys.stderr)
     if refused:
