@@ -19,6 +19,7 @@ from report_generator import (
     EVIDENCE_CHAR_LIMIT,
     ReportData,
     ReportError,
+    _format_references,
     attack_id_for_sample,
     build_card,
     build_report_data,
@@ -327,3 +328,13 @@ def test_generate_report_raises_when_logs_dir_empty(tmp_path: Path) -> None:
     empty.mkdir()
     with pytest.raises(ReportError):
         generate_report(out_path=tmp_path / "x.md", logs_dir=empty)
+
+
+def test_reference_line_never_prints_a_todo_atlas_id() -> None:
+    from risk_registry import all_attack_ids
+
+    for aid in all_attack_ids():
+        line = _format_references(get_attack(aid))
+        assert "ATLAS: TODO" not in line, f"{aid}: {line}"
+        assert "ATLAS: AML." in line, f"{aid}: {line}"
+

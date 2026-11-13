@@ -9,6 +9,8 @@ spec'd assertions are adapted to those real IDs below.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from risk_registry import (
@@ -236,3 +238,62 @@ def test_attackmeta_cia_all_orders_primary_then_secondary_no_dupes() -> None:
     kwargs["cia_plain_secondary"] = "non-empty"
     meta = AttackMeta(**kwargs)  # type: ignore[arg-type]
     assert meta.cia_all == [CIAProperty.INTEGRITY, CIAProperty.CONFIDENTIALITY]
+
+
+# ---------------------------------------------------------------------------
+# MITRE ATLAS ids stay in sync with MAPPINGS.md
+# ---------------------------------------------------------------------------
+
+_MAPPINGS_PATH = Path(__file__).resolve().parent.parent / "MAPPINGS.md"
+
+# Registry attack id -> the MAPPINGS.md registry row that carries its ATLAS cell.
+# inputs IN-01..IN-05 have no per id row in MAPPINGS.md, so they are not listed.
+_MAPPINGS_ROW_FOR = {
+    "TL-01": "MCP tool poisoning",
+    "MM-01": "MM-01 poisoned_rag_basic",
+    "PS-01": "Cialdini authority",
+    "PS-02": "Cialdini reciprocity",
+    "PS-03": "Cialdini scarcity",
+    "PS-04": "Cialdini consistency",
+    "PS-05": "Cialdini liking",
+    "PS-06": "Cialdini social proof",
+    "EX-01": "EX-01 canary_token",
+    "EX-02": "EX-02 zero_width_stego",
+    "EX-03": "EX-03 homoglyph_sub",
+    "EX-04": "EX-04 base64_encoding",
+    "EX-05": "EX-05 markdown_image_sink",
+    "DR-01": "DR-01 authority_over_turns",
+    "DR-02": "DR-02 social_proof_over_turns",
+    "DR-03": "DR-03 user_displeasure_pushback",
+    "DR-04": "DR-04 expertise_claim_pushback",
+    "DR-05": "DR-05 capability_suppression",
+    "DR-06": "DR-06 knowledge_suppression",
+}
+
+
+def _mappings_atlas_cells() -> dict[str, str]:
+    """Attack label -> ATLAS cell from the MAPPINGS.md attack registry table."""
+    cells: dict[str, str] = {}
+    for line in _MAPPINGS_PATH.read_text(encoding="utf-8").splitlines():
+        parts = [p.strip() for p in line.strip().strip("|").split("|")]
+        if len(parts) != 6 or parts[0] in ("Attack", "---"):
+            continue
+        assert parts[0] not in cells, f"duplicate MAPPINGS.md row: {parts[0]}"
+        cells[parts[0]] = parts[4]
+    return cells
+
+
+def test_atlas_technique_ids_match_mappings_md() -> None:
+    cells = _mappings_atlas_cells()
+    for aid, label in _MAPPINGS_ROW_FOR.items():
+        assert label in cells, f"{aid}: no MAPPINGS.md row {label!r}"
+        assert get_attack(aid).atlas_technique_id == cells[label], (
+            f"{aid}: registry {get_attack(aid).atlas_technique_id!r} != "
+            f"MAPPINGS.md {cells[label]!r}"
+        )
+
+
+def test_no_registry_entry_has_a_todo_atlas_id() -> None:
+    todo = [aid for aid, meta in REGISTRY.items() if "TODO" in meta.atlas_technique_id]
+    assert todo == []
+

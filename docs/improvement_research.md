@@ -284,7 +284,7 @@ Validation chain:
 4. **Luo et al. (2025), AGrail**: "Integrity risks arise when malicious attacks manipulate agents into executing unintended commands."
 5. **NIST AI RMF 1.0**: "accountable and transparent" as a trustworthy AI characteristic. Transparency failure is an integrity-of-self-representation failure.
 
-**Caveat — CIA+TA extension**: Verma (arXiv:2508.15839, 2025) proposes adding **Trust** and **Autonomy** as fourth and fifth CIA pillars. Under CIA+TA, TR failure maps to Trust more precisely. Recommended: classify as **Integrity** in public-facing reports (established vocabulary); note CIA+TA in design docs as future extension.
+**Caveat — CIA+TA extension**: Aydin (arXiv:2508.15839, 2025) proposes adding **Trust** and **Autonomy** as fourth and fifth CIA pillars. Under CIA+TA, TR failure maps to Trust more precisely. Recommended: classify as **Integrity** in public-facing reports (established vocabulary); note CIA+TA in design docs as future extension.
 
 [CHANGES BUILD] TR = Integrity in `risk_registry.py` and all report output. Flag CIA+TA as v1.1 extension.
 
@@ -308,7 +308,7 @@ Validation chain:
 - Multi-turn drift as Integrity is an inference — no paper says "drift = Integrity violation" in those exact words. Agent Shield establishes this framing.
 - MITRE ATLAS lacks both severity ratings and CIA mapping. Agent Shield extends ATLAS but does not depend on it for these layers.
 - HITL gates can be attacked (Checkmarx Lies-in-the-Loop, Sept 2025). Approval UI must show actual tool args, not LLM summaries.
-- Rath (2026) arXiv:2601.04170 has a future-dated ID and is single-author with no peer review. Cite cautiously.
+- Rath (2026), "Agent Drift: Quantifying Behavioral Degradation in Multi-Agent LLM Systems Over Extended Interactions," arXiv:2601.04170 (Abhishek Rath, submitted 2026-01-07), is single-author with no peer review. Cite cautiously.
 - OWASP Agentic Top 10 and AIVSS Agentic Core Risks are two distinct lists. Do not conflate.
 
 ---

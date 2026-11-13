@@ -249,7 +249,7 @@ _TL_01 = AttackMeta(
     owasp_llm_ids=["LLM06"],
     owasp_asi_ids=["ASI02", "ASI04"],
     aivss_core_risk="Agentic AI Tool Misuse",
-    atlas_technique_id="TODO",
+    atlas_technique_id="AML.T0053",
     plain_title="MCP tool poisoning via hidden instruction in description",
     plain_description=(
         "An attacker-controlled MCP server hid an instruction inside a tool's "
@@ -322,6 +322,17 @@ _PSYCH_REMEDIATION = (
 )
 
 
+# MITRE ATLAS ids from the Cialdini rows of MAPPINGS.md.
+_PSYCH_ATLAS: dict[str, str] = {
+    "PS-01": "AML.T0054",
+    "PS-02": "AML.T0054",
+    "PS-03": "AML.T0054",
+    "PS-04": "AML.T0054, AML.T0051.002",
+    "PS-05": "AML.T0054",
+    "PS-06": "AML.T0054",
+}
+
+
 def _psych_meta(attack_id: str) -> AttackMeta:
     return AttackMeta(
         attack_id=attack_id,
@@ -335,7 +346,7 @@ def _psych_meta(attack_id: str) -> AttackMeta:
         owasp_llm_ids=["LLM06"],
         owasp_asi_ids=["ASI09"],
         aivss_core_risk="Agent Goal and Instruction Manipulation",
-        atlas_technique_id="TODO",
+        atlas_technique_id=_PSYCH_ATLAS[attack_id],
         plain_title=_PSYCH_TITLES[attack_id],
         plain_description=_PSYCH_DESCRIPTIONS[attack_id],
         plain_remediation=_PSYCH_REMEDIATION,
@@ -360,7 +371,7 @@ _MM_01 = AttackMeta(
     owasp_llm_ids=["LLM08", "LLM04"],
     owasp_asi_ids=["ASI06"],
     aivss_core_risk="Agent Memory and Context Manipulation",
-    atlas_technique_id="TODO",
+    atlas_technique_id="AML.T0020, AML.T0051",
     plain_title="Poisoned retrieval (RAG) injection",
     plain_description=(
         "An attacker planted an instruction inside a retrieved document. When the "
@@ -505,6 +516,17 @@ _DRIFT_REMEDIATION = (
 )
 
 
+# MITRE ATLAS ids from the DR rows of MAPPINGS.md.
+_DRIFT_ATLAS: dict[str, str] = {
+    "DR-01": "AML.T0054",
+    "DR-02": "AML.T0054",
+    "DR-03": "AML.T0054, AML.T0051.002",
+    "DR-04": "AML.T0054, AML.T0051.002",
+    "DR-05": "AML.T0048",
+    "DR-06": "AML.T0048",
+}
+
+
 def _drift_meta(attack_id: str) -> AttackMeta:
     return AttackMeta(
         attack_id=attack_id,
@@ -518,7 +540,7 @@ def _drift_meta(attack_id: str) -> AttackMeta:
         owasp_llm_ids=["LLM06", "LLM09"],
         owasp_asi_ids=["ASI01"],
         aivss_core_risk="Agent Goal and Instruction Manipulation",
-        atlas_technique_id="TODO",
+        atlas_technique_id=_DRIFT_ATLAS[attack_id],
         plain_title=_DRIFT_TITLES[attack_id],
         plain_description=_DRIFT_DESCRIPTIONS[attack_id],
         plain_remediation=_DRIFT_REMEDIATION,

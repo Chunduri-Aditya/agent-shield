@@ -266,8 +266,8 @@ uv run inspect eval evals/inputs.py@inputs_asr evals/inputs.py@inputs_transparen
 - [CITE: chao2023] Chao et al., "Jailbreaking Black Box Large Language Models in Twenty Queries," arXiv 2310.08419
 - [CITE: li2024] Li et al., "PoisonedRAG: Knowledge Corruption Attacks to Retrieval-Augmented Generation of Large Language Models," arXiv 2402.07867
 - [CITE: zeng2024] Zeng et al., "How Johnny Can Persuade LLMs to Jailbreak Them," arXiv 2401.06373
-- [CITE: sharma2023] Sharma et al., "Towards Understanding Sycophancy in Language Models," arXiv 2308.03188
-- [CITE: denison2024] Denison et al., "Sycophancy to Subterfuge: Investigating Reward Tampering in Language Models," arXiv 2406.07358
+- [CITE: sharma2023] Sharma et al., "Towards Understanding Sycophancy in Language Models," arXiv 2310.13548
+- [CITE: vanderweij2024] van der Weij et al., "AI Sandbagging: Language Models can Strategically Underperform on Evaluations," arXiv 2406.07358
 - [CITE: owasp_llm] OWASP, "Top 10 for LLM Applications 2025"
 - [CITE: owasp_agentic] OWASP, "Top 10 for Agentic AI Applications 2026"
 - [CITE: mitre_atlas] MITRE, "ATLAS: Adversarial Threat Landscape for Artificial-Intelligence Systems," atlas.mitre.org

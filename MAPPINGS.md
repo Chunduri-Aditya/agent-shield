@@ -52,9 +52,9 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Image multimodal injection | EN, IN | LLM01 | ASI01 | AML.T0051.001 | arXiv 2026 https://arxiv.org/abs/2603.03637 |
 | Calendar event payload | EN, IN | LLM01 | ASI01 | AML.T0051.001 | Debenedetti et al. 2406.13352 |
 | Email payload | EN, IN | LLM01 | ASI01 | AML.T0051.001 | Debenedetti et al. 2406.13352 |
-| Orchestrator bypass | MA | LLM06 | ASI07, ASI08 | AML.T0053 (loose) | Gu et al. 2407.10788 |
+| Orchestrator bypass | MA | LLM06 | ASI07, ASI08 | AML.T0053 (loose) | Gu et al. 2402.08567 |
 | Majority vote poisoning | MA | LLM04 | ASI07, ASI08 | AML.T0053 (loose) | arXiv 2026 https://arxiv.org/abs/2604.17139 |
-| Adversarial peer | MA | LLM06 | ASI07, ASI10 | AML.T0053 (loose) | Gu et al. 2407.10788 |
+| Adversarial peer | MA | LLM06 | ASI07, ASI10 | AML.T0053 (loose) | Gu et al. 2402.08567 |
 | EX-01 canary_token | EX | LLM02 | ASI02 | AML.T0057 | Thinkst 2026 https://canarytokens.org |
 | EX-02 zero_width_stego | EX | LLM02 | ASI02 | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
 | EX-03 homoglyph_sub | EX | LLM02 | ASI02 | AML.T0057 | OWASP 2025 https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html |
@@ -70,10 +70,10 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | Kahneman System 1 exploits | PS | LLM01 | ASI01, ASI09 | AML.T0054 | Kahneman 2011 |
 | DR-01 authority_over_turns | DR | LLM01 | ASI09 | AML.T0054 | Cialdini 1984; Russinovich et al. 2404.01833 |
 | DR-02 social_proof_over_turns | DR | LLM01 | ASI09 | AML.T0054 | Cialdini 1984 |
-| DR-03 user_displeasure_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2308.03188 |
-| DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2308.03188 |
-| DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
-| DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | Denison et al. 2406.07358 |
+| DR-03 user_displeasure_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2310.13548 |
+| DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2310.13548 |
+| DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
+| DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
 | Policy bypass — authority spoof (PB-001) | IN, PS | LLM01 | ASI01 | AML.T0054 | Perez et al. 2212.09251; Cialdini 1984 |
 | Policy bypass — hypothetical framing (PB-002) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
 | Policy bypass — fictional framing (PB-003) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |

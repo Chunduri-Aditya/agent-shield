@@ -271,15 +271,12 @@ agent-shield/
 - Python `3.11+`
 - [uv](https://docs.astral.sh/uv/) for environment and dependency management
 - [Inspect AI](https://inspect.aisi.org.uk) for eval orchestration
-- `inspect-evals[agentdojo]` from a local editable checkout at `../inspect_evals`
+- `inspect-evals[agentdojo]==0.9.0` from PyPI, pinned in `pyproject.toml` and `uv.lock`
 - Provider SDKs: Anthropic, OpenAI, Google GenAI
 
 ## Quickstart
 
 ```bash
-# inspect_evals is a local editable dependency, cloned beside this repo
-git clone https://github.com/UKGovernmentBEIS/inspect_evals ../inspect_evals
-git -C ../inspect_evals checkout --detach 7d4dd75e4f80c9cf8a83664a04fc1797ce2cb72b
 uv sync --locked
 
 # .env is gitignored — add your keys directly:
@@ -352,9 +349,8 @@ make lint    # ruff + mypy
 
 Always use `uv run` / `make` so the project venv is active.
 
-CI uses the same pinned `inspect_evals` revision and `uv sync --locked` as the
-quickstart. The upstream default branch requires a newer Inspect AI than the
-version in this project's lockfile.
+CI installs with `uv sync --locked`, the same command as the quickstart, so both
+get the `inspect-evals` release pinned in `uv.lock`.
 
 ## Results (historical record, withdrawn 2026-10-29)
 
