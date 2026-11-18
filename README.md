@@ -146,6 +146,8 @@ TL-01 result. Validity note and the historical rows stay in
 remains in RESULTS. One defense baseline: spotlighting on `inputs/` and
 `psych/`. Seeds, dates, and Inspect log filenames in [RESULTS.md](RESULTS.md).
 
+`wallet/` DW-01 pagination loop on claude-haiku-5-5 (diagnostic, n=5): [results/wallet/DW01_haiku55_2026-11-18.md](results/wallet/DW01_haiku55_2026-11-18.md).
+
 **Runtime perimeter:** installable locally (see next section). Cross-purpose
 MCP description quarantine evidence:
 [results/audit_reports/mcp_cross_purpose_promotion.md](results/audit_reports/mcp_cross_purpose_promotion.md).
