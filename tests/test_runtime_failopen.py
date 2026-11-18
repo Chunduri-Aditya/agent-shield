@@ -342,7 +342,8 @@ def test_d_screen_catalog_never_prints_stderr_alert_lines() -> None:
     assert out["stderr_len"] == 0  # as_json=True hard coded at mcp_proxy_cli.py:177
 
 
-def test_d_no_alert_sink_exists_alert_only_in_return_value() -> None:
+def test_d_the_screening_path_writes_no_event_the_alert_is_only_returned() -> None:
+    # runtime/events.py holds the log. alert.py, pipeline.py and mcp_proxy.py do not call it.
     src = "".join(
         (Path(REPO) / "agent_shield/runtime" / f).read_text()
         for f in ("alert.py", "pipeline.py", "mcp_proxy.py")

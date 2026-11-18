@@ -7,31 +7,15 @@ Two tests pin that limit.
 
 from __future__ import annotations
 
-import importlib
 import json
+import stat
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from agent_shield.runtime import events
 from agent_shield.runtime.alert import AlertCard
-
-pytestmark = pytest.mark.xfail(
-    strict=True, reason="red: agent_shield.runtime.events is not written yet"
-)
-
-
-class _Lazy:
-    """Resolves the module on first use, so a missing module fails the test, not collection."""
-
-    def __init__(self, name: str) -> None:
-        self._name = name
-
-    def __getattr__(self, attr: str) -> Any:
-        return getattr(importlib.import_module(self._name), attr)
-
-
-events: Any = _Lazy("agent_shield.runtime.events")
 
 TS = "2026-11-18T22:00:00+00:00"
 SHA = "ab" * 32
@@ -113,6 +97,9 @@ def test_an_event_carries_ids_with_edition_and_version_and_the_card() -> None:
         ("atlas", ("AML.T0034.002",)),  # no version
         ("atlas", ("T0034@2026.10",)),
         ("owasp_llm", "LLM10:2025"),  # a bare string, not a tuple of ids
+        ("owasp_llm", ["LLM10:2025"]),  # a list can change after the check
+        ("owasp_llm", ("LLM10:2025 and more",)),
+        ("atlas", ("AML.T0034.002@2026.10\n",)),
     ],
 )
 def test_a_framework_id_without_its_edition_or_version_is_refused(field: str, value: Any) -> None:
@@ -184,11 +171,38 @@ def edit_and_rehash_one(rows: list[str]) -> list[str]:
     return [rows[0], json.dumps(record, sort_keys=True, separators=(",", ":")), rows[2]]
 
 
+def edit_rehash_and_relink(rows: list[str]) -> list[str]:
+    """As above, and the next record is pointed at the new hash without a new hash of its own.
+
+    A record hash that left out prev_hash would let this pass and leave the head unchanged.
+    """
+    edited = json.loads(edit_and_rehash_one(rows)[1])
+    after = json.loads(rows[2])
+    after["prev_hash"] = edited["hash"]
+    return [
+        rows[0],
+        *(json.dumps(r, sort_keys=True, separators=(",", ":")) for r in (edited, after)),
+    ]
+
+
+def renumber(rows: list[str]) -> list[str]:
+    """A chain whose hashes and links are right and whose second record says seq 5."""
+    out: list[str] = []
+    head = events.GENESIS
+    for seq, row in zip((0, 5, 2), rows, strict=True):
+        record = {"seq": seq, "prev_hash": head, "event": json.loads(row)["event"]}
+        record["hash"] = head = events.record_hash(record)
+        out.append(json.dumps(record, sort_keys=True, separators=(",", ":")))
+    return out
+
+
 @pytest.mark.parametrize(
     "tamper,bad_line",
     [
         (edit_field, 2),
         (edit_and_rehash_one, 3),
+        (edit_rehash_and_relink, 3),
+        (renumber, 2),
         (lambda rows: [rows[0], rows[2]], 2),  # a deleted line
         (lambda rows: [rows[1], rows[0], rows[2]], 1),  # two lines swapped
         (lambda rows: [rows[0], rows[1], rows[1], rows[2]], 3),  # a line written twice
@@ -262,10 +276,25 @@ def test_read_chain_refuses_a_broken_log_and_returns_events_of_a_good_one(tmp_pa
         events.read_chain(path)
 
 
+def test_read_chain_checks_the_head_kept_elsewhere(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    head = write(path, 3).head
+    assert len(events.read_chain(path, expected_head=head)) == 3
+    path.write_text("\n".join(lines(path)[:2]) + "\n")
+    with pytest.raises(events.ChainError):
+        events.read_chain(path, expected_head=head)
+
+
+def test_the_log_file_is_readable_by_its_owner_only(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    write(path, 1)
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
 def test_append_takes_only_a_security_event(tmp_path: Path) -> None:
     log = events.ChainedLog(tmp_path / "events.jsonl")
     with pytest.raises(TypeError):
-        log.append({"session": "s1"})
+        log.append({"session": "s1"})  # type: ignore[arg-type]
     assert log.count == 0
 
 
