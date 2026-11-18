@@ -1,13 +1,13 @@
 """
-Tests for attack ID correctness across all six Agent Shield modules.
+Tests for attack ID correctness across the six v1.0.0 modules and the wallet module.
 
 Attack IDs are the primary key used everywhere: risk registry, report cards,
 RESULTS.md, audit CSV, MAPPINGS.md. A duplicate or malformed ID silently
 corrupts all of them. These tests catch structural problems at import time
 before they cascade.
 
-Expected ID format: (IN|TL|PS|MM|EX|DR)-DD
-  IN = inputs, TL = tools, PS = psych, MM = memory, EX = exfil, DR = drift
+Expected ID format: (IN|TL|PS|MM|EX|DR|DW)-DD
+  IN = inputs, TL = tools, PS = psych, MM = memory, EX = exfil, DR = drift, DW = wallet
 """
 
 import re
@@ -20,8 +20,9 @@ from inputs.attacks import ATTACKS as INPUT_ATTACKS
 from memory.attacks import MEMORY_ATTACKS
 from psych.attacks import ATTACKS as PSYCH_ATTACKS
 from tools.attacks import TOOL_ATTACKS
+from wallet.attacks import WALLET_ATTACKS
 
-VALID_ID_PATTERN = re.compile(r"^(IN|TL|PS|MM|EX|DR)-\d{2}$")
+VALID_ID_PATTERN = re.compile(r"^(IN|TL|PS|MM|EX|DR|DW)-\d{2}$")
 
 
 def _all_attack_ids() -> list[str]:
@@ -32,6 +33,7 @@ def _all_attack_ids() -> list[str]:
     ids.extend(a.id for a in MEMORY_ATTACKS)
     ids.extend(a.id for a in EXFIL_ATTACKS)
     ids.extend(a.id for a in DRIFT_ATTACKS)
+    ids.extend(a.id for a in WALLET_ATTACKS)
     return ids
 
 
@@ -52,6 +54,7 @@ def _registry_backed_attack_ids() -> list[str]:
     ids.extend(a.id for a in MEMORY_ATTACKS)
     ids.extend(a.id for a in EXFIL_ATTACKS)
     ids.extend(a.id for a in DRIFT_ATTACKS)
+    ids.extend(a.id for a in WALLET_ATTACKS)
     # Tools: only implemented attacks are registry-backed (TL-02..TL-05 are stubs).
     ids.extend(a.id for a in TOOL_ATTACKS if a.implemented)
     return ids
@@ -70,7 +73,7 @@ def test_all_attack_ids_match_allowed_prefix_pattern() -> None:
 
 
 def test_attack_id_count_matches_expected() -> None:
-    """Sanity check: 5+6+5+1+5+6 = 28 total attack IDs in v1.0.0."""
+    """Sanity check: 5+6+5+1+5+6 = 28 attack IDs in v1.0.0, plus DW-01 from the wallet module."""
     expected = {
         "IN": 5,
         "PS": 6,
@@ -78,6 +81,7 @@ def test_attack_id_count_matches_expected() -> None:
         "MM": 1,
         "EX": 5,
         "DR": 6,
+        "DW": 1,
     }
     by_prefix: dict[str, int] = {}
     for aid in _all_attack_ids():

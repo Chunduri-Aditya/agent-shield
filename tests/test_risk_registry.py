@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from risk_registry import (
+    CIA_PLAIN_TEMPLATES,
     REGISTRY,
     AttackMeta,
     CIAProperty,
@@ -56,6 +57,7 @@ EXPECTED_IDS: set[str] = {
     "DR-04",
     "DR-05",
     "DR-06",
+    "DW-01",
 }
 
 
@@ -78,7 +80,36 @@ def test_every_entry_has_non_empty_plain_text_fields() -> None:
 def test_all_entries_have_tr_maps_to_integrity_true() -> None:
     """TR failure = Integrity violation, per Q6 of docs/improvement_research.md."""
     for aid, meta in REGISTRY.items():
+        if aid == "DW-01":
+            continue
         assert meta.tr_maps_to_integrity is True, f"{aid}: TR should map to Integrity"
+
+
+def test_dw01_has_no_transparency_rate_and_maps_to_availability() -> None:
+    """The wallet module measures spend. It has no TR, so nothing maps TR to Integrity."""
+    meta = get_attack("DW-01")
+    assert meta.tr_maps_to_integrity is False
+    assert (meta.module, meta.cia_primary, meta.cia_secondary) == (
+        "wallet",
+        CIAProperty.AVAILABILITY,
+        [],
+    )
+    assert meta.cia_plain_primary == CIA_PLAIN_TEMPLATES[CIAProperty.AVAILABILITY]
+    assert meta.severity is Severity.MEDIUM
+
+
+def test_dw01_ids_carry_their_edition_or_version() -> None:
+    """OWASP renumbered between 2025 and 2026, so a bare LLM10 or LLM06 names two risks."""
+    meta = get_attack("DW-01")
+    assert meta.owasp_llm_ids == ["LLM10:2025", "LLM06:2026"]
+    assert meta.owasp_asi_ids == ["ASI02"]
+    assert meta.atlas_technique_id == "AML.T0034.002@2026.10"
+
+
+def test_every_wallet_attack_is_in_the_registry() -> None:
+    from wallet.attacks import WALLET_ATTACKS
+
+    assert [a.id for a in WALLET_ATTACKS] == [m.attack_id for m in get_module_attacks("wallet")]
 
 
 def test_severity_matches_aivss_score_band() -> None:
@@ -268,6 +299,7 @@ _MAPPINGS_ROW_FOR = {
     "DR-04": "DR-04 expertise_claim_pushback",
     "DR-05": "DR-05 capability_suppression",
     "DR-06": "DR-06 knowledge_suppression",
+    "DW-01": "DW-01 pagination_loop",
 }
 
 
@@ -297,3 +329,22 @@ def test_no_registry_entry_has_a_todo_atlas_id() -> None:
     todo = [aid for aid, meta in REGISTRY.items() if "TODO" in meta.atlas_technique_id]
     assert todo == []
 
+
+# ---------------------------------------------------------------------------
+# MAPPINGS.md scope text agrees with the registry on denial of wallet
+# ---------------------------------------------------------------------------
+
+
+def test_mappings_md_does_not_call_llm10_out_of_scope_while_dw01_is_registered() -> None:
+    text = " ".join(_MAPPINGS_PATH.read_text(encoding="utf-8").split())
+    assert "DW-01" in REGISTRY
+    assert "| LLM10 | Unbounded Consumption | DW |" in text
+    assert "| LLM10 | Unbounded Consumption | Out of scope |" not in text
+    assert "and model extraction, is fully out of scope" not in text
+    assert "| DW | `wallet/` |" in text
+
+
+def test_wallet_ethics_entry_exists_and_names_the_run_conditions() -> None:
+    text = (_MAPPINGS_PATH.parent / "wallet" / "ETHICS.md").read_text(encoding="utf-8")
+    for needle in ("DW-01", "token limit", "cost limit", "No Transparency Rate"):
+        assert needle in text, needle

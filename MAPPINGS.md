@@ -2,7 +2,8 @@
 
 Reading notes behind these mappings live in research/positioning/reading_notes.md.
 
-Architectural spine cross linking industry frameworks to the 8 Agent Shield modules.
+Architectural spine cross linking industry frameworks to the 8 Agent Shield modules of the
+workshop paper, plus `wallet/` (version 0, added after it).
 Every attack in the repo must resolve to at least one OWASP item, one ATLAS technique,
 and one module. Missing mapping is debt, not done.
 
@@ -18,6 +19,7 @@ and one module. Missing mapping is debt, not done.
 | EX | `exfil/` | Covert data exfiltration |
 | DR | `drift/` | Multi turn behavioral drift |
 | PS | `psych/` | Psychology grounded manipulation |
+| DW | `wallet/` | Denial of wallet through tool results (version 0, one attack) |
 
 ## Attack registry
 
@@ -74,6 +76,7 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2310.13548 |
 | DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
 | DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
+| DW-01 pagination_loop | DW | LLM10:2025, LLM06:2026 | ASI02 (T4) | AML.T0034.002@2026.10 | Zhang et al. 2407.20859; evals/wallet.py |
 | Policy bypass — authority spoof (PB-001) | IN, PS | LLM01 | ASI01 | AML.T0054 | Perez et al. 2212.09251; Cialdini 1984 |
 | Policy bypass — hypothetical framing (PB-002) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
 | Policy bypass — fictional framing (PB-003) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
@@ -83,6 +86,12 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 Note: `policy_bypass` is a fixture-level category in `tests/fixtures/agent_shield_eval_cases.json` (PB-001..PB-005). It maps to the IN and PS modules in the codebase. No dedicated module code planned before v1.1.
 
 \* ASI03 tagged on confused deputy is partial coverage. See Scope and Limitations section.
+
+Note. The DW-01 row writes each id with its edition or version, because OWASP renumbered
+between editions: LLM10:2025 and LLM06:2026 are both Unbounded Consumption. The other rows
+still carry bare 2025 ids. ASI02 (T4): the OWASP Top 10 for Agentic Applications 2026 maps
+ASI02 to T2 Tool Misuse first and lists T4 Resource Overload as a contributing threat
+(Appendix A). T4 is the part DW-01 exercises.
 
 ## Reverse index: OWASP LLM Top 10 for LLM Applications 2025
 
@@ -100,7 +109,7 @@ November 18, 2024. Verified against primary document on Apr 20.
 | LLM07 | System Prompt Leakage | IN, EX | Full |
 | LLM08 | Vector and Embedding Weaknesses | MM, EX | Full (EX added to cover embedding inversion leakage paths) |
 | LLM09 | Misinformation | DR | Full |
-| LLM10 | Unbounded Consumption | Out of scope | See Scope and Limitations |
+| LLM10 | Unbounded Consumption | DW | Partial (denial of wallet through tool results only, one attack, DW-01; see Scope and Limitations). Renumbered LLM06:2026 in the 2026 edition |
 
 ### Cross cutting principle that shapes the architecture
 
@@ -120,7 +129,7 @@ ASI prefix = Agentic Security Issue.
 | ID | Name | Primary modules | Coverage |
 |---|---|---|---|
 | ASI01 | Agent Goal Hijack | IN, EN, MM, PS | Full |
-| ASI02 | Tool Misuse & Exploitation | TL, IN | Full |
+| ASI02 | Tool Misuse & Exploitation | TL, IN, DW | Full |
 | ASI03 | Identity & Privilege Abuse | TL, MA | Partial (see Scope and Limitations) |
 | ASI04 | Agentic Supply Chain Vulnerabilities | TL | Full (MCP descriptors, tool provenance) |
 | ASI05 | Unexpected Code Execution | TL, EN | Partial (see Scope and Limitations) |
@@ -173,6 +182,7 @@ the current ATLAS definition is broader than the original seed.
 | AML.T0048.002 | Societal Harm | DR | Misinformation, polarization |
 | AML.T0048.003 | User Harm | DR, PS | Direct harm to interacting user |
 | AML.T0048.004 | AI Intellectual Property Theft | EX, IN | Model or system prompt theft as IP loss |
+| AML.T0034.002 | Agentic Resource Consumption | DW | Sub technique of AML.T0034 Cost Harvesting. Verified on Nov 18, 2026 against `dist/v6/ATLAS-2026.10.yaml` at tag `v2026.10` of `mitre-atlas/atlas-data`. ATLAS lists AML.M0036 Limit AI Workload Resource Consumption as a mitigation |
 
 ### Open question: agent specific ATLAS coverage
 
@@ -216,6 +226,7 @@ mapping is locked for the paper methodology section.
 * [x] Base64 smuggling anchor source (May 4, 2026)
 * [x] Sandbagging detection anchor source (May 4, 2026)
 * [x] LLM10 Unbounded Consumption scope decision (Apr 20, out of scope, documented in Scope and Limitations)
+* [x] LLM10 scope decision revised (Nov 18, 2026: partial, DW-01 only). Ids checked against primary sources: LLM10:2025 and LLM06:2026 (OWASP GenAI Security Project), ASI02 with T4 as a contributing threat (OWASP Top 10 for Agentic Applications 2026, Appendix A), AML.T0034.002 (ATLAS data release 2026.10)
 
 ## Scope and limitations
 
@@ -249,11 +260,18 @@ of scope. LLM03 Supply Chain, in its full form, covers model weights, LoRA
 adapters, datasets, conversion pipelines, provider privacy policy drift, and
 on device model tampering. Agent Shield only touches this surface through MCP
 tool and descriptor provenance in the tool module. Training time artifacts and
-model packaging are out of scope. LLM10 Unbounded Consumption, covering cost
-abuse, compute drain, denial of wallet, and model extraction, is fully out of
-scope. The benchmark is designed to measure attack success on model behavior,
-not resource consumption. Both are documented as deliberate narrowing for this
-workshop paper.
+model packaging are out of scope. LLM10 Unbounded Consumption (LLM10:2025,
+renumbered LLM06:2026) covers cost abuse, compute drain, denial of wallet, and
+model extraction. It was fully out of scope for the workshop paper, which
+measures attack success on model behavior, not resource consumption. Both were
+documented as deliberate narrowing for that paper.
+
+After the paper, the `wallet/` module took in one part of LLM10: DW-01, a
+pagination loop carried in tool results. It measures token spend on an attack
+arm against a control arm and a benign heavy arm, under a hard token limit.
+Compute drain, model extraction and every other cost abuse path stay out of
+scope. The module is version 0: one attack, no Transparency Rate, and no row
+in the vulnerability report.
 
 ## Model validation terms: a conceptual mapping
 

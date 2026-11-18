@@ -210,6 +210,10 @@ eval-memory-grok:
 	OPENAI_API_KEY=$$XAI_API_KEY OPENAI_BASE_URL=https://api.x.ai/v1 \
 	  uv run inspect eval evals/memory.py --model openai/$(GROK_MODEL) --seed 42
 
+# Module: wallet/ — denial of wallet, DW-01 pagination loop (version 0, scripted mock, no key)
+wallet-demo:
+	uv run python scripts/wallet_demo.py $(if $(WALLET_MODEL),--model $(WALLET_MODEL),)
+
 # Run all implemented evals
 eval-all: eval eval-inputs eval-tools eval-psych eval-memory eval-exfil eval-drift
 
