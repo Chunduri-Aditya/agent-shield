@@ -7,7 +7,6 @@ while the last `repeats` calls to one tool brought no new content. The tests nam
 
 from __future__ import annotations
 
-import importlib
 import random
 import re
 from collections.abc import Sequence
@@ -15,26 +14,10 @@ from typing import Any
 
 import pytest
 
+from agent_shield.runtime import governor
 from evals.wallet import ARMS, BENIGN_HEAVY_PAGES, page_body
 from evals.wallet_meter import stale_repeat
 from wallet.attacks import DW_01
-
-pytestmark = pytest.mark.xfail(
-    strict=True, reason="red: agent_shield.runtime.governor is not written yet"
-)
-
-
-class _Lazy:
-    """Resolves the module on first use, so a missing module fails the test, not collection."""
-
-    def __init__(self, name: str) -> None:
-        self._name = name
-
-    def __getattr__(self, attr: str) -> Any:
-        return getattr(importlib.import_module(self._name), attr)
-
-
-governor: Any = _Lazy("agent_shield.runtime.governor")
 
 PAGE = "status ok. [page {n}] more follows, fetch page {next}"
 
@@ -152,6 +135,8 @@ def test_a_text_turn_and_a_call_with_no_result_reset_the_run() -> None:
             gov.observe("fetch_page", None)
         drive(gov, [loop(4), loop(5)])
         assert gov.check().action.value == "allow", reset
+        gov.observe("fetch_page", loop(6))  # content seen before the reset is still stale
+        assert gov.check().action.value == "ask", reset
 
 
 def test_a_long_read_of_distinct_pages_is_never_stopped() -> None:
@@ -190,14 +175,14 @@ def test_a_result_that_is_not_text_raises_and_is_not_counted_as_new(bad: object)
     gov = governor.SpendGovernor(repeats=3)
     drive(gov, [loop(1), loop(2), loop(3)])
     with pytest.raises(TypeError):
-        gov.observe("fetch_page", bad)
+        gov.observe("fetch_page", bad)  # type: ignore[arg-type]
     gov.observe("fetch_page", loop(4))
     assert gov.check().action.value == "ask"  # the bad result did not reset the run
 
 
 def test_a_tool_name_that_is_not_text_raises() -> None:
     with pytest.raises(TypeError):
-        governor.SpendGovernor().observe(None, "text")
+        governor.SpendGovernor().observe(None, "text")  # type: ignore[arg-type]
 
 
 def test_negative_spend_raises() -> None:
@@ -327,3 +312,40 @@ def test_the_evidence_hash_names_the_stale_content_and_not_the_text() -> None:
     other = governor.SpendGovernor(repeats=3)
     drive(other, [loop(n) for n in range(11, 15)])
     assert other.evidence_sha256 == gov.evidence_sha256  # numbers are masked before hashing
+
+
+# ---- the card an operator reads
+def test_alert_for_an_ask_and_for_a_terminate() -> None:
+    gov = governor.SpendGovernor(repeats=3)
+    drive(gov, [loop(n) for n in range(1, 5)])
+    ask = gov.alert(gov.check(), "fetch_page", "medium")
+    assert ask.title == "Tool call loop with no new content"
+    assert (ask.action, ask.severity, ask.cia_impact) == ("ask", "medium", "Availability")
+    assert ask.evidence == "3 calls in a row to fetch_page brought no new content"
+    assert ask.content_sha256 == gov.evidence_sha256 and ask.flagged_attack is True
+    assert ask.content_ruleset_version == governor.RULE_VERSION
+    assert "Confirm" in ask.remediation
+    stop = gov.alert(gov.check(), "fetch_page", "medium")
+    assert stop.action == "terminate" and "stopped" in stop.remediation
+
+
+def test_alert_for_a_budget_stop_is_not_called_an_attack() -> None:
+    gov = governor.SpendGovernor(budget=100)
+    card = gov.alert(gov.check(spent=100), "fetch_page", "medium")
+    assert card.title == "Session spend reached the budget"
+    assert card.evidence == "spend reached the budget of 100"
+    assert card.flagged_attack is False and card.description.endswith("Rule: budget.")
+
+
+def test_alert_keeps_a_hostile_tool_name_short_and_on_one_line() -> None:
+    gov = governor.SpendGovernor(repeats=1)
+    drive(gov, [loop(1), loop(2)])
+    card = gov.alert(gov.check(), "fetch\npage\x1b[31m" + "x" * 500, "medium")
+    assert len(card.evidence) <= 60 and card.evidence.isprintable()
+    assert "fetch?page?[31m" in card.evidence
+
+
+def test_an_allowed_call_has_no_alert() -> None:
+    gov = governor.SpendGovernor()
+    with pytest.raises(ValueError):
+        gov.alert(gov.check(), "fetch_page", "medium")

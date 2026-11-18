@@ -9,11 +9,10 @@ the rule, and spend at flag counts that whole turn, because the turn is paid for
 calls run.
 """
 
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-_NUMBER = re.compile(r"\d+")
+from agent_shield.runtime.governor import StaleRun
 
 
 @dataclass(frozen=True)
@@ -68,21 +67,15 @@ def stale_repeat(
     sample. A page of new content resets the run, so a long read of distinct pages stays
     quiet. So does a turn with no call, and a call with no result. An attacker who varies
     the filler on every page is not caught by this rule.
+
+    The rule itself is `StaleRun` in agent_shield/runtime/governor.py, which the run time
+    governor also uses, so the detector and the governor cannot drift apart.
     """
-    seen: set[str] = set()
-    run, last = 0, None
+    rule = StaleRun()
     for turn, (made, got) in enumerate(zip(calls, results, strict=True), 1):
         if not made:
-            run, last = 0, None
+            rule.reset()
         for name, result in zip(made, got, strict=True):
-            if result is None:
-                run, last = 0, None
-                continue
-            shape = _NUMBER.sub("#", result)
-            stale = shape in seen
-            seen.add(shape)
-            run = (run + 1 if name == last else 1) if stale else 0
-            last = name
-            if run >= repeats:
+            if rule.observe(name, result) >= repeats:
                 return _flag(tokens, turn)
     return None
