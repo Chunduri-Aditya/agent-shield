@@ -18,6 +18,9 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from inspect_ai.log import EvalConfig, EvalDataset, EvalLog, EvalSample, EvalSpec, write_eval_log
+from inspect_ai.model import ModelOutput
+from inspect_ai.scorer import Score
 
 import report_generator
 from report_generator import (
@@ -439,7 +442,9 @@ def test_log_with_both_scorers_counts_not_disclosed_without_a_finding() -> None:
         ({"transparency_scorer": 1.0}, "inputs_transparency", False),
         ({"drift_asr_scorer": 1.0}, "drift_asr", False),
         ({"exfil_asr_scorer": 1.0, "exfil_canary_scorer": 0.0}, "exfil_asr", True),
-        ({"tools_event_v1": {"strict_value": 1}}, "tools_tl01_v12", False),
+        ({"some_new_event_scorer": {"strict_value": 1}}, "tools_tl01_v12", False),
+        ({"tools_event_v1": {"strict_value": 0, "invalid": 0}}, "tools_tl01_v12", True),
+        ({"tools_event_v1": {"strict_value": 1, "invalid": 1}}, "tools_tl01_v12", False),
         ({}, "inputs_asr", False),
     ],
 )
@@ -509,3 +514,108 @@ def test_reference_line_never_prints_a_todo_atlas_id() -> None:
         assert "ATLAS: TODO" not in line, f"{aid}: {line}"
         assert "ATLAS: AML." in line, f"{aid}: {line}"
 
+
+# ---------------------------------------------------------------------------
+# Samples the report cannot tie to an attack are never skipped silently
+# ---------------------------------------------------------------------------
+
+
+def _write_log(
+    tmp_path: Path, task: str, samples: list[tuple[dict[str, Any], dict[str, float]]]
+) -> Path:
+    """A log for `task` with one sample per (metadata, scorer name -> value)."""
+    built = [
+        EvalSample(
+            id=n,
+            epoch=1,
+            input="x",
+            target="",
+            metadata=metadata,
+            output=ModelOutput.from_content("mockllm/model", "ok"),
+            scores={name: Score(value=value) for name, value in scores.items()},
+        )
+        for n, (metadata, scores) in enumerate(samples, 1)
+    ]
+    spec = EvalSpec(
+        created="2026-11-18T00:00:00+00:00",
+        task=task,
+        dataset=EvalDataset(),
+        model="mockllm/model",
+        config=EvalConfig(),
+    )
+    path = tmp_path / f"{task}.eval"
+    write_eval_log(EvalLog(eval=spec, status="success", samples=built), str(path))
+    return path
+
+
+def test_task_missing_from_the_map_prints_a_warning_with_the_count(tmp_path: Path) -> None:
+    """Three samples that scored ASR 1 under a task the report does not know."""
+    path = _write_log(tmp_path, "mystery_eval", [({}, {"asr_scorer": 1.0})] * 3)
+    data = build_report_data(path)
+    assert (data.samples_total, data.skipped, len(data.cards)) == (3, 3, 0)
+
+    md = render_markdown(data)
+    warning = next(line for line in md.splitlines() if "WARNING" in line)
+    assert warning.startswith("> **WARNING: 3 of 3 samples skipped.")
+    assert "task `mystery_eval` is not in the report's task map" in warning
+    assert md.index("WARNING") < md.index("## Executive Summary")
+    assert "| Samples skipped (no attack id) | 3 of 3 |" in md
+    assert "| Overall risk | Not measured |" in md
+    reads_as_clean = "passed clean" in md or "Low (AIVSS" in md
+    assert not reads_as_clean
+
+
+def test_generate_report_logs_the_skip_warning(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path = _write_log(tmp_path, "mystery_eval", [({}, {"asr_scorer": 1.0})] * 3)
+    with caplog.at_level("WARNING", logger="agent_shield.report_generator"):
+        generate_report(log_path=path, out_path=tmp_path / "report.md")
+    logged = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert len(logged) == 1
+    assert "3 of 3 samples skipped" in logged[0]
+    assert "mystery_eval" in logged[0]
+
+
+def test_mapped_task_with_several_ids_and_no_sample_id_warns_too(tmp_path: Path) -> None:
+    path = _write_log(tmp_path, "inputs_asr", [({}, {"asr_scorer": 1.0})] * 2)
+    data = build_report_data(path)
+    assert (data.samples_total, data.skipped) == (2, 2)
+    md = render_markdown(data)
+    assert "> **WARNING: 2 of 2 samples skipped." in md
+    assert "task `inputs_asr` maps to several attack ids" in md
+    assert "not in the report's task map" not in md
+
+
+def test_only_the_samples_without_an_id_are_skipped(tmp_path: Path) -> None:
+    """An unmapped task whose sample names its attack is read; the rest are counted."""
+    path = _write_log(
+        tmp_path,
+        "mystery_eval",
+        [
+            ({"attack": "TL-01"}, {"tools_asr_scorer": 1.0}),
+            ({}, {"tools_asr_scorer": 1.0}),
+            ({}, {"tools_asr_scorer": 0.0}),
+        ],
+    )
+    data = build_report_data(path)
+    assert (data.samples_total, data.skipped, data.attack_scored) == (3, 2, 1)
+    assert [card.id for card in data.cards] == ["AS-TL-01-001"]
+    md = render_markdown(data)
+    assert "> **WARNING: 2 of 3 samples skipped." in md
+    assert "| Findings | 1 |" in md
+
+
+@pytest.mark.parametrize("log_path", [SILENT_TR_LOG, ASR_HIT_LOG, BOTH_SCORERS_LOG])
+def test_fully_resolved_logs_print_no_warning(
+    log_path: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    data = build_report_data(log_path)
+    assert data.skipped == 0
+    assert data.samples_total > 0
+    with caplog.at_level("WARNING", logger="agent_shield.report_generator"):
+        written = generate_report(log_path=log_path, out_path=tmp_path / "report.md")
+    md = written.read_text(encoding="utf-8")
+    assert "WARNING" not in md
+    assert "Samples skipped" not in md
+    assert [r for r in caplog.records if r.levelname == "WARNING"] == []

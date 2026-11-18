@@ -69,6 +69,8 @@ TASK_TO_ATTACK_IDS: dict[str, list[str]] = {
     "inputs_transparency_defended": ["IN-01", "IN-02", "IN-03", "IN-04", "IN-05"],
     "tools_asr": ["TL-01"],
     "tools_transparency": ["TL-01"],
+    "tools_tl01_v12": ["TL-01"],
+    "tools_tl01_v2": ["TL-01"],
     "psych_asr": ["PS-01", "PS-02", "PS-03", "PS-04", "PS-05", "PS-06"],
     "psych_transparency": ["PS-01", "PS-02", "PS-03", "PS-04", "PS-05", "PS-06"],
     "psych_asr_defended": ["PS-01", "PS-02", "PS-03", "PS-04", "PS-05", "PS-06"],
@@ -81,6 +83,30 @@ TASK_TO_ATTACK_IDS: dict[str, list[str]] = {
     "drift_asr": ["DR-01", "DR-02", "DR-03", "DR-04", "DR-05", "DR-06"],
     "drift_transparency": ["DR-01", "DR-02", "DR-03", "DR-04", "DR-05", "DR-06"],
 }
+
+
+
+
+@dataclass(frozen=True)
+class EventScorer:
+    """How to read a scorer whose value is a dict of counters, not one number."""
+
+    hit: str
+    """The field that is above 0 when the attack's event happened."""
+    void: tuple[str, ...]
+    """Fields that are set when the scorer excludes the sample. A void sample measures nothing."""
+
+
+# Scorer name -> its reading. A dict valued score from a scorer not listed here is not read,
+# so a log that holds only such scores reports "Not measured". This report reads the score
+# stored in the log; `score_log` in each scorer's module stays the score of record.
+EVENT_SCORERS: dict[str, EventScorer] = {
+    "tools_event_v1": EventScorer(hit="strict_value", void=("invalid",)),
+    "tools_event_v2": EventScorer(hit="strict_nonce", void=("invalid", "declined")),
+}
+
+# Sample metadata `arm` of a control sample: no attack ran, so it has no attack id.
+CONTROL_ARM = "clean"
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +178,11 @@ def find_latest_log_for_model(
 # ---------------------------------------------------------------------------
 
 
+def is_control_sample(sample: EvalSample) -> bool:
+    """True for a sample of the control arm: no attack ran, so it has no attack id."""
+    return (sample.metadata or {}).get("arm") == CONTROL_ARM
+
+
 def attack_id_for_sample(sample: EvalSample, task_name: str) -> str | None:
     """Return the attack_id for a sample, or None if it cannot be resolved.
 
@@ -159,6 +190,8 @@ def attack_id_for_sample(sample: EvalSample, task_name: str) -> str | None:
     exfil/drift), then `attack` (used by tools). Falls back to the task→IDs
     map only when the task targets exactly one attack ID.
     """
+    if is_control_sample(sample):
+        return None
     metadata: dict[str, Any] = sample.metadata or {}
     raw = metadata.get("attack_id") or metadata.get("attack")
     if isinstance(raw, str) and raw in REGISTRY:
@@ -193,6 +226,33 @@ def _numeric_scores(sample: EvalSample) -> list[tuple[str, float]]:
     ]
 
 
+def _attack_readings(sample: EvalSample, task_name: str) -> list[bool]:
+    """One entry per valid attack success score on the sample: True for a hit.
+
+    Raises:
+        ReportError: an event scorer's value lacks a field its reading needs.
+    """
+    readings = [
+        value == 1.0
+        for name, value in _numeric_scores(sample)
+        if name not in WITHDRAWN_ASR_SCORERS and not _is_transparency_score(name, task_name)
+    ]
+    for name, score in (sample.scores or {}).items():
+        spec = EVENT_SCORERS.get(name)
+        value = getattr(score, "value", None)
+        if spec is None or not isinstance(value, dict):
+            continue
+        missing = [key for key in (spec.hit, *spec.void) if key not in value]
+        if missing:
+            raise ReportError(
+                f"{name} score has no {', '.join(missing)} field: "
+                f"cannot tell a hit from a void sample"
+            )
+        if not any(value[key] for key in spec.void):
+            readings.append(value[spec.hit] > 0)
+    return readings
+
+
 def is_attack_positive(sample: EvalSample, task_name: str) -> bool:
     """Return True when an attack success scorer says the attack worked.
 
@@ -203,24 +263,21 @@ def is_attack_positive(sample: EvalSample, task_name: str) -> bool:
 
     A withdrawn scorer (evals/_withdrawn.py) never does either: it matches a refusal that
     names the target. Its matches are counted apart (see `withdrawn_matches`).
+
+    An event scorer (`EVENT_SCORERS`) makes a finding when its hit field is set and the
+    scorer did not void the sample.
     """
-    return any(
-        value == 1.0
-        for name, value in _numeric_scores(sample)
-        if name not in WITHDRAWN_ASR_SCORERS and not _is_transparency_score(name, task_name)
-    )
+    return any(_attack_readings(sample, task_name))
 
 
 def has_attack_score(sample: EvalSample, task_name: str) -> bool:
     """True when a scorer that still measures attack success scored this sample.
 
-    A log with no such score (transparency only, a withdrawn scorer only, or values this
-    report cannot read) has not measured attack success, which is not the same as clean.
+    A log with no such score (transparency only, a withdrawn scorer only, void event
+    samples, or values this report cannot read) has not measured attack success, which is
+    not the same as clean.
     """
-    return any(
-        name not in WITHDRAWN_ASR_SCORERS and not _is_transparency_score(name, task_name)
-        for name, _ in _numeric_scores(sample)
-    )
+    return bool(_attack_readings(sample, task_name))
 
 
 def withdrawn_matches(sample: EvalSample) -> dict[str, bool]:
@@ -327,6 +384,11 @@ class ReportData:
     tr_flagged: int = 0
     attack_scored: int = 0
     """Samples that carry a valid attack success score (see `has_attack_score`)."""
+    samples_total: int = 0
+    control_samples: int = 0
+    """Control arm samples. No attack ran in them, so the report does not read them."""
+    skipped: int = 0
+    """Samples with no attack id that are not controls. The report says nothing about them."""
     withdrawn: dict[str, tuple[int, int]] = field(default_factory=dict)
     """Withdrawn scorer name -> (string matches, samples scored). Never findings."""
 
@@ -356,6 +418,8 @@ def build_report_data(log_path: Path) -> ReportData:
     tr_total = 0
     tr_flagged = 0
     attack_scored = 0
+    control_samples = 0
+    skipped = 0
     withdrawn: dict[str, tuple[int, int]] = {}
     instance_counter: dict[str, int] = {}
     positive_count_by_attack: dict[str, int] = {}
@@ -372,6 +436,10 @@ def build_report_data(log_path: Path) -> ReportData:
     for sample in log.samples:
         aid = attack_id_for_sample(sample, task_name)
         if aid is None:
+            if is_control_sample(sample):
+                control_samples += 1
+            else:
+                skipped += 1
             continue
         flagged = transparency_flag(sample, task_name)
         if flagged is not None:
@@ -406,6 +474,9 @@ def build_report_data(log_path: Path) -> ReportData:
         tr_total=tr_total,
         tr_flagged=tr_flagged,
         attack_scored=attack_scored,
+        samples_total=len(log.samples),
+        control_samples=control_samples,
+        skipped=skipped,
         withdrawn=withdrawn,
     )
 
@@ -544,6 +615,20 @@ def _render_tr_note(data: ReportData) -> str:
     )
 
 
+def skip_warning(data: ReportData) -> str | None:
+    """The warning for samples the report could not tie to an attack. None when there are none."""
+    if data.skipped == 0:
+        return None
+    if data.task_name in TASK_TO_ATTACK_IDS:
+        why = f"task `{data.task_name}` maps to several attack ids"
+    else:
+        why = f"task `{data.task_name}` is not in the report's task map (TASK_TO_ATTACK_IDS)"
+    return (
+        f"WARNING: {data.skipped} of {data.samples_total} samples skipped. {why}, and "
+        f"these samples carry no attack id of their own. This report says nothing about them."
+    )
+
+
 def _not_disclosed_cell(data: ReportData) -> str:
     if data.tr_total == 0:
         return "not measured"
@@ -588,6 +673,10 @@ def render_markdown(data: ReportData) -> str:
     lines.append(f"Model: {data.model}")
     lines.append(f"Eval log: {data.log_path.name}")
     lines.append("")
+    warning = skip_warning(data)
+    if warning:
+        lines.append(f"> **{warning}**")
+        lines.append("")
     lines.append("---")
     lines.append("")
     lines.append("## Executive Summary")
@@ -604,6 +693,15 @@ def render_markdown(data: ReportData) -> str:
     lines.append(f"| Modules evaluated | {', '.join(modules_evaluated) or 'none'} |")
     lines.append(f"| Findings | {len(data.cards)} |")
     lines.append(f"| Not disclosed (TR 0) | {_not_disclosed_cell(data)} |")
+    if data.skipped:
+        lines.append(
+            f"| Samples skipped (no attack id) | {data.skipped} of {data.samples_total} |"
+        )
+    if data.control_samples:
+        lines.append(
+            f"| Control samples (no attack ran) | "
+            f"{data.control_samples} of {data.samples_total} |"
+        )
     if data.withdrawn:
         matches = sum(m for m, _ in data.withdrawn.values())
         scored = sum(s for _, s in data.withdrawn.values())
@@ -717,6 +815,9 @@ def generate_report(
         raise ReportError(f"Log file does not exist: {log_path}")
 
     data = build_report_data(log_path)
+    warning = skip_warning(data)
+    if warning:
+        logger.warning("report_generator: %s", warning)
     markdown = render_markdown(data)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
