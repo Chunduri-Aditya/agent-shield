@@ -22,13 +22,14 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from inspect_ai.log import read_eval_log
 
+from evals._withdrawn import WITHDRAWN_ASR_SCORERS, withdrawn_source
 from reports.schema import VulnerabilityCard, category_for_module, confidence_from_sample_count
 from risk_registry import (
     REGISTRY,
@@ -199,12 +200,36 @@ def is_attack_positive(sample: EvalSample, task_name: str) -> bool:
     transparency score never does: TR 0 says the reply did not flag the attack, which is
     true of a model that ignored the attack and of one that never saw it. Those samples
     are counted as not disclosed (see `transparency_flag`), apart from the findings.
+
+    A withdrawn scorer (evals/_withdrawn.py) never does either: it matches a refusal that
+    names the target. Its matches are counted apart (see `withdrawn_matches`).
     """
     return any(
         value == 1.0
         for name, value in _numeric_scores(sample)
-        if not _is_transparency_score(name, task_name)
+        if name not in WITHDRAWN_ASR_SCORERS and not _is_transparency_score(name, task_name)
     )
+
+
+def has_attack_score(sample: EvalSample, task_name: str) -> bool:
+    """True when a scorer that still measures attack success scored this sample.
+
+    A log with no such score (transparency only, a withdrawn scorer only, or values this
+    report cannot read) has not measured attack success, which is not the same as clean.
+    """
+    return any(
+        name not in WITHDRAWN_ASR_SCORERS and not _is_transparency_score(name, task_name)
+        for name, _ in _numeric_scores(sample)
+    )
+
+
+def withdrawn_matches(sample: EvalSample) -> dict[str, bool]:
+    """Withdrawn scorer name -> whether it matched its string in this sample. Not findings."""
+    return {
+        name: value == 1.0
+        for name, value in _numeric_scores(sample)
+        if name in WITHDRAWN_ASR_SCORERS
+    }
 
 
 def transparency_flag(sample: EvalSample, task_name: str) -> bool | None:
@@ -300,6 +325,15 @@ class ReportData:
     attack_ids_present: list[str]
     tr_total: int = 0
     tr_flagged: int = 0
+    attack_scored: int = 0
+    """Samples that carry a valid attack success score (see `has_attack_score`)."""
+    withdrawn: dict[str, tuple[int, int]] = field(default_factory=dict)
+    """Withdrawn scorer name -> (string matches, samples scored). Never findings."""
+
+    @property
+    def attack_unmeasured(self) -> bool:
+        """No finding and no valid attack success score: the log shows neither hit nor clean."""
+        return not self.cards and self.attack_scored == 0
 
     @property
     def tr_not_disclosed(self) -> int:
@@ -321,6 +355,8 @@ def build_report_data(log_path: Path) -> ReportData:
     cards: list[VulnerabilityCard] = []
     tr_total = 0
     tr_flagged = 0
+    attack_scored = 0
+    withdrawn: dict[str, tuple[int, int]] = {}
     instance_counter: dict[str, int] = {}
     positive_count_by_attack: dict[str, int] = {}
 
@@ -341,6 +377,10 @@ def build_report_data(log_path: Path) -> ReportData:
         if flagged is not None:
             tr_total += 1
             tr_flagged += int(flagged)
+        attack_scored += int(has_attack_score(sample, task_name))
+        for scorer_name, matched in withdrawn_matches(sample).items():
+            matches, scored = withdrawn.get(scorer_name, (0, 0))
+            withdrawn[scorer_name] = (matches + int(matched), scored + 1)
         if not is_attack_positive(sample, task_name):
             continue
         instance_counter[aid] = instance_counter.get(aid, 0) + 1
@@ -365,6 +405,8 @@ def build_report_data(log_path: Path) -> ReportData:
         attack_ids_present=attack_ids_present,
         tr_total=tr_total,
         tr_flagged=tr_flagged,
+        attack_scored=attack_scored,
+        withdrawn=withdrawn,
     )
 
 
@@ -385,6 +427,17 @@ def _executive_paragraph(
     overall_score: float,
     cia_props: set[CIAProperty],
 ) -> str:
+    if data.attack_unmeasured:
+        if data.withdrawn:
+            why = "Its attack scorer is withdrawn (see Withdrawn measure below)."
+        elif data.tr_total:
+            why = "It scores disclosure only (see the Transparency Rate note below)."
+        else:
+            why = "No sample carries an attack success score this report can read."
+        return (
+            "This log holds no valid measure of attack success, so this report shows "
+            f"neither a finding nor a clean result. {why}"
+        )
     if not data.cards:
         return (
             "No findings were detected in this log. Either the eval passed clean "
@@ -497,6 +550,17 @@ def _not_disclosed_cell(data: ReportData) -> str:
     return f"{data.tr_not_disclosed} of {data.tr_total}"
 
 
+def _render_withdrawn_note(data: ReportData) -> str:
+    """One line per withdrawn scorer in the log: what it is, where withdrawn, what it matched."""
+    return "\n\n".join(
+        f"`{name}` is withdrawn as a measure of attack success "
+        f"({withdrawn_source(WITHDRAWN_ASR_SCORERS[name])}). It found its target string in "
+        f"{matches} of {scored} replies. A reply that names the target while it refuses "
+        f"matches too, so these matches are not findings."
+        for name, (matches, scored) in sorted(data.withdrawn.items())
+    )
+
+
 def render_markdown(data: ReportData) -> str:
     """Return the full markdown report for the given parsed log."""
     timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -530,13 +594,22 @@ def render_markdown(data: ReportData) -> str:
     lines.append("")
     lines.append("| Property | Value |")
     lines.append("|---|---|")
-    lines.append(
-        f"| Overall risk | {overall_severity.value} "
-        f"(AIVSS {overall_score:.1f}/10) |"
-    )
+    if data.attack_unmeasured:
+        lines.append("| Overall risk | Not measured |")
+    else:
+        lines.append(
+            f"| Overall risk | {overall_severity.value} "
+            f"(AIVSS {overall_score:.1f}/10) |"
+        )
     lines.append(f"| Modules evaluated | {', '.join(modules_evaluated) or 'none'} |")
     lines.append(f"| Findings | {len(data.cards)} |")
     lines.append(f"| Not disclosed (TR 0) | {_not_disclosed_cell(data)} |")
+    if data.withdrawn:
+        matches = sum(m for m, _ in data.withdrawn.values())
+        scored = sum(s for _, s in data.withdrawn.values())
+        lines.append(
+            f"| Withdrawn scorer string matches (not findings) | {matches} of {scored} |"
+        )
     lines.append(f"| CIA properties at risk | {cia_summary} |")
     lines.append("")
     lines.append(_executive_paragraph(data, overall_severity, overall_score, cia_props))
@@ -576,6 +649,13 @@ def render_markdown(data: ReportData) -> str:
     lines.append("")
     lines.append(_render_tr_note(data))
     lines.append("")
+    if data.withdrawn:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Withdrawn measure")
+        lines.append("")
+        lines.append(_render_withdrawn_note(data))
+        lines.append("")
     lines.append("---")
     lines.append(
         "*Agent Shield v1.0.0 | Framework: Inspect AI | Severity: OWASP AIVSS v0.5*"

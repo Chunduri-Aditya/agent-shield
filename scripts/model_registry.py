@@ -330,7 +330,10 @@ MODULES: tuple[ModuleSpec, ...] = (
         tasks=("memory_asr", "memory_transparency"),
         n=10,
         seed=42,
-        notes="MM-01 poisoned RAG; seed=42 matches existing rows",
+        notes=(
+            "MM-01 poisoned RAG; seed=42 matches existing rows; "
+            "ASR withdrawn (docs/ERRATUM.md W7)"
+        ),
     ),
     ModuleSpec(
         name="exfil",
@@ -339,7 +342,10 @@ MODULES: tuple[ModuleSpec, ...] = (
         n=5,
         seed=0,
         extra_metrics=("canary_leak",),
-        notes="5 covert channels (EX-01..EX-05); canary leak extra metric",
+        notes=(
+            "5 covert channels (EX-01..EX-05); canary leak extra metric; "
+            "ASR withdrawn (docs/ERRATUM.md W8)"
+        ),
     ),
     ModuleSpec(
         name="drift",
@@ -347,7 +353,10 @@ MODULES: tuple[ModuleSpec, ...] = (
         tasks=("drift_asr", "drift_transparency"),
         n=6,
         seed=0,
-        notes="6 drift attacks: Cialdini ×2, sycophancy ×2, sandbagging ×2",  # noqa: RUF001
+        notes=(
+            "6 drift attacks: Cialdini ×2, sycophancy ×2, sandbagging ×2; "  # noqa: RUF001
+            "ASR withdrawn (docs/ERRATUM.md W9)"
+        ),
     ),
 )
 

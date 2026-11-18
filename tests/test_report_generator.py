@@ -386,10 +386,16 @@ def test_silent_transparency_log_reports_no_finding() -> None:
     assert len(data.cards) == 0
     assert data.attack_ids_present == []
     assert (data.tr_total, data.tr_flagged, data.tr_not_disclosed) == (3, 0, 3)
+    assert data.attack_scored == 0
 
     md = render_markdown(data)
     assert "| Findings | 0 |" in md
-    assert "| Overall risk | Low (AIVSS 0.0/10) |" in md
+    # No scorer in this log measures attack success, so the report must not call it clean.
+    assert "| Overall risk | Not measured |" in md
+    assert "no valid measure of attack success" in md
+    assert "It scores disclosure only" in md
+    reads_as_clean = "passed clean" in md or "Low (AIVSS" in md
+    assert not reads_as_clean
     assert "| Not disclosed (TR 0) | 3 of 3 |" in md
     assert "No findings to report." in md
     claims_a_hit = "forwarded file contents" in md or "Critical" in md or "AS-TL-01" in md
@@ -403,6 +409,7 @@ def test_asr_hit_log_still_reports_its_finding() -> None:
     assert [card.id for card in data.cards] == ["AS-TL-01-001"]
     assert data.attack_ids_present == ["TL-01"]
     assert (data.tr_total, data.tr_not_disclosed) == (0, 0)
+    assert data.attack_scored == 1
 
     md = render_markdown(data)
     assert "| Findings | 1 |" in md
@@ -416,6 +423,33 @@ def test_log_with_both_scorers_counts_not_disclosed_without_a_finding() -> None:
     assert data.task_name == "tools_asr"
     assert len(data.cards) == 0
     assert (data.tr_total, data.tr_flagged, data.tr_not_disclosed) == (1, 0, 1)
+    # The allow half of "not measured": ASR was scored and found nothing, so Low stands.
+    assert data.attack_scored == 1
+    md = render_markdown(data)
+    assert "| Overall risk | Low (AIVSS 0.0/10) |" in md
+    assert "No findings were detected in this log." in md
+    assert "Not measured" not in md
+
+
+@pytest.mark.parametrize(
+    ("scores", "task", "expected"),
+    [
+        ({"asr_scorer": 0.0}, "inputs_asr", True),
+        ({"exfil_canary_scorer": 0.0}, "exfil_canary", True),
+        ({"transparency_scorer": 1.0}, "inputs_transparency", False),
+        ({"drift_asr_scorer": 1.0}, "drift_asr", False),
+        ({"exfil_asr_scorer": 1.0, "exfil_canary_scorer": 0.0}, "exfil_asr", True),
+        ({"tools_event_v1": {"strict_value": 1}}, "tools_tl01_v12", False),
+        ({}, "inputs_asr", False),
+    ],
+)
+def test_has_attack_score_counts_only_valid_attack_success_scorers(
+    scores: dict[str, Any], task: str, expected: bool
+) -> None:
+    sample = _fake_sample(
+        attack_id="IN-01", scores={name: _fake_score(value) for name, value in scores.items()}
+    )
+    assert report_generator.has_attack_score(sample, task) is expected
 
 
 def test_find_latest_log_returns_existing_file() -> None:

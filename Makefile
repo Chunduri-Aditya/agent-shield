@@ -23,6 +23,16 @@ SCORER ?= asr_scorer
 RESCORE_MODULE ?= inputs
 CLI_MODEL ?= claude/claude-sonnet-5-5
 
+# The drift, memory and exfil ASR scorers are withdrawn as measures of attack success
+# (docs/ERRATUM.md W7 to W9, evals/_withdrawn.py). Every target that runs one prints this
+# line first; the run then reports withdrawn_string_match_rate in place of accuracy.
+withdrawn-asr-notice = @echo "NOTICE: $(1)_asr is WITHDRAWN as a measure of attack success (docs/ERRATUM.md $(2)). It matches a target string anywhere in the reply, so a refusal that names the target matches too. Read withdrawn_string_match_rate as a string match rate, never as ASR."
+withdrawn-item-drift = W9
+withdrawn-item-memory = W7
+withdrawn-item-exfil = W8
+# For targets that take the module as a variable: prints only for a withdrawn module.
+withdrawn-asr-notice-for = $(if $(withdrawn-item-$(1)),$(call withdrawn-asr-notice,$(1),$(withdrawn-item-$(1))))
+
 # Smoke test — verify harness end-to-end
 eval:
 	uv run inspect eval evals/smoke.py --model $(MODEL) --seed $(SEED)
@@ -128,9 +138,11 @@ eval-defense:
 
 # Module: exfil/ — covert-channel data exfiltration ASR + canary leak + transparency
 eval-exfil: risk-preflight-exfil
+	$(call withdrawn-asr-notice,exfil,W8)
 	uv run inspect eval evals/exfil.py --model $(MODEL) --seed $(SEED)
 
 eval-exfil-asr:
+	$(call withdrawn-asr-notice,exfil,W8)
 	uv run inspect eval evals/exfil.py@exfil_asr --model $(MODEL) --seed $(SEED)
 
 eval-exfil-canary:
@@ -140,49 +152,61 @@ eval-exfil-transparency:
 	uv run inspect eval evals/exfil.py@exfil_transparency --model $(MODEL) --seed $(SEED)
 
 eval-exfil-groq:
+	$(call withdrawn-asr-notice,exfil,W8)
 	uv run inspect eval evals/exfil.py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
 eval-exfil-gemini:
+	$(call withdrawn-asr-notice,exfil,W8)
 	uv run inspect eval evals/exfil.py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
 eval-exfil-grok:
+	$(call withdrawn-asr-notice,exfil,W8)
 	OPENAI_API_KEY=$$XAI_API_KEY OPENAI_BASE_URL=https://api.x.ai/v1 \
 	  uv run inspect eval evals/exfil.py --model openai/$(GROK_MODEL) --seed $(SEED)
 
 # Module: drift/ — behavioral drift ASR + transparency
 eval-drift: risk-preflight-drift
+	$(call withdrawn-asr-notice,drift,W9)
 	uv run inspect eval evals/drift.py --model $(MODEL) --seed $(SEED)
 
 eval-drift-asr:
+	$(call withdrawn-asr-notice,drift,W9)
 	uv run inspect eval evals/drift.py@drift_asr --model $(MODEL) --seed $(SEED)
 
 eval-drift-transparency:
 	uv run inspect eval evals/drift.py@drift_transparency --model $(MODEL) --seed $(SEED)
 
 eval-drift-groq:
+	$(call withdrawn-asr-notice,drift,W9)
 	uv run inspect eval evals/drift.py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
 eval-drift-gemini:
+	$(call withdrawn-asr-notice,drift,W9)
 	uv run inspect eval evals/drift.py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
 eval-drift-grok:
+	$(call withdrawn-asr-notice,drift,W9)
 	OPENAI_API_KEY=$$XAI_API_KEY OPENAI_BASE_URL=https://api.x.ai/v1 \
 	  uv run inspect eval evals/drift.py --model openai/$(GROK_MODEL) --seed $(SEED)
 
 # Module: memory/ — RAG poisoning ASR + transparency
 eval-memory: risk-preflight-memory
+	$(call withdrawn-asr-notice,memory,W7)
 	uv run inspect eval evals/memory.py --model $(MODEL) --seed $(SEED)
 
 eval-memory-asr:
+	$(call withdrawn-asr-notice,memory,W7)
 	uv run inspect eval evals/memory.py@memory_asr --model $(MODEL) --seed $(SEED)
 
 eval-memory-transparency:
 	uv run inspect eval evals/memory.py@memory_transparency --model $(MODEL) --seed $(SEED)
 
 eval-memory-groq:
+	$(call withdrawn-asr-notice,memory,W7)
 	uv run inspect eval evals/memory.py --model groq/$(GROQ_MODEL) --seed 42
 
 eval-memory-grok:
+	$(call withdrawn-asr-notice,memory,W7)
 	OPENAI_API_KEY=$$XAI_API_KEY OPENAI_BASE_URL=https://api.x.ai/v1 \
 	  uv run inspect eval evals/memory.py --model openai/$(GROK_MODEL) --seed 42
 
@@ -240,52 +264,66 @@ free-agents:
 	python3 scripts/free_agent_status.py
 
 eval-free-ollama:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model ollama/$(OLLAMA_MODEL) --seed $(SEED)
 
 eval-free-lmstudio:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	LMSTUDIO_BASE_URL=http://localhost:1234/v1 LMSTUDIO_API_KEY=lm-studio \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai-api/lmstudio/$(LMSTUDIO_MODEL) --seed $(SEED)
 
 eval-free-vllm:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	VLLM_BASE_URL=http://localhost:8000/v1 VLLM_API_KEY=EMPTY \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai-api/vllm/$(VLLM_MODEL) --seed $(SEED)
 
 eval-free-mlx:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	HF_HUB_OFFLINE=1 uv run --group mlx inspect eval evals/$(FREE_MODULE).py --model mlx/$(MLX_MODEL) -M revision=$(MLX_REVISION) --seed $(SEED)
 
 eval-free-groq:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model groq/$(GROQ_MODEL) --seed $(SEED)
 
 eval-free-gemini:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
 eval-free-openrouter:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model openrouter/$(OPENROUTER_MODEL) --seed $(SEED)
 
 eval-free-cerebras:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	CEREBRAS_BASE_URL=https://api.cerebras.ai/v1 \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai-api/cerebras/$(CEREBRAS_MODEL) --seed $(SEED)
 
 eval-free-github-models:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	GITHUB_MODELS_BASE_URL=https://models.github.ai/inference \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai-api/github-models/$(GITHUB_MODELS_MODEL) --seed $(SEED)
 
 eval-free-cloudflare:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model cloudflare/$(CLOUDFLARE_MODEL) --seed $(SEED)
 
 eval-free-hf:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model hf-inference-providers/$(HF_MODEL) --seed $(SEED)
 
 # Backward-compatible aliases.
 eval-llama-local:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	OPENAI_API_KEY=ollama OPENAI_BASE_URL=http://localhost:11434/v1 \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai/$(OLLAMA_MODEL) --seed $(SEED)
 
 eval-llama-groq:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	OPENAI_API_KEY=$$GROQ_API_KEY OPENAI_BASE_URL=https://api.groq.com/openai/v1 \
 	  uv run inspect eval evals/$(FREE_MODULE).py --model openai/$(GROQ_MODEL) --seed $(SEED)
 
 eval-gemini:
+	$(call withdrawn-asr-notice-for,$(FREE_MODULE))
 	uv run inspect eval evals/$(FREE_MODULE).py --model google/$(GEMINI_MODEL) --seed $(SEED)
 
 # ---------------------------------------------------------------------------
@@ -310,9 +348,11 @@ sweep-module:
 # scratch ledger (provider: agent_shield_providers/twin_api.py). Text tasks only: inputs, psych,
 # drift, exfil, memory. Paid through twin's own claude CLI; -M max_usd caps it (default $3).
 eval-twin:
+	$(call withdrawn-asr-notice-for,$(TWIN_MODULE))
 	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 --seed $(SEED)
 
 eval-twin-lead:
+	$(call withdrawn-asr-notice-for,$(TWIN_MODULE))
 	TWIN_DIR=$(TWIN_DIR) uv run inspect eval evals/$(TWIN_MODULE).py --model twin/clean --max-connections 3 -M lead=true --seed $(SEED)
 
 # The Claude Code CLI as the target (provider: agent_shield_providers/cli_api.py): one headless
@@ -320,6 +360,7 @@ eval-twin-lead:
 # the owner's subscription pays. Text tasks only. CLI_MODEL is claude/<full model id>.
 # (codex and gemini are not isolable this way; see BACKLOG.md.)
 eval-cli:
+	$(call withdrawn-asr-notice-for,$(CLI_MODULE))
 	uv run inspect eval evals/$(CLI_MODULE).py --model cli/$(CLI_MODEL) --max-connections 2 --seed $(SEED)
 
 # Rescore one log in place with the current scorer (SCORER=asr_scorer or transparency_scorer,
@@ -481,10 +522,13 @@ eval-psych-explain:
 	uv run inspect eval evals/psych.py --model $(MODEL) --seed $(SEED) && uv run python report_generator.py
 
 eval-memory-explain:
+	$(call withdrawn-asr-notice,memory,W7)
 	uv run inspect eval evals/memory.py --model $(MODEL) --seed $(SEED) && uv run python report_generator.py
 
 eval-exfil-explain:
+	$(call withdrawn-asr-notice,exfil,W8)
 	uv run inspect eval evals/exfil.py --model $(MODEL) --seed $(SEED) && uv run python report_generator.py
 
 eval-drift-explain:
+	$(call withdrawn-asr-notice,drift,W9)
 	uv run inspect eval evals/drift.py --model $(MODEL) --seed $(SEED) && uv run python report_generator.py
