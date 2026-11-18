@@ -35,7 +35,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from inspect_ai import eval as inspect_eval
-from inspect_ai.log import EvalSample, read_eval_log
+from inspect_ai.log import EvalError, EvalSample, read_eval_log
 from inspect_ai.model import ChatMessage, ChatMessageTool, Model, ModelOutput, get_model
 
 from evals.wallet import ARMS, TOKEN_LIMIT, wallet_dw01
@@ -52,6 +52,9 @@ LIMIT_STOPS = ("token", "cost")
 # benign_heavy already holds one sample per page count, so epochs repeat the other two arms.
 REPEATED_ARMS = ("control", "attack")
 _PAGE_OF = re.compile(r"\[page (\d+) of (\d+)\]")
+_EXCEPTION_TYPE = re.compile(r"[A-Za-z_][\w.]*")
+_HTTP_CODE = re.compile(r"Error code: (\d{3})")
+_API_ERROR_TYPE = re.compile(r"'type': '([a-z_]+_error)'")
 
 
 def scripted_answer(messages: list[ChatMessage], *_: object) -> ModelOutput:
@@ -84,6 +87,7 @@ class Metered:
     stop: str
     cost_usd: float | None
     retries: int
+    error: str | None = None
 
     @property
     def total(self) -> int:
@@ -92,6 +96,23 @@ class Metered:
     @property
     def tool_calls(self) -> int:
         return sum(len(made) for made in self.calls)
+
+
+def _error_summary(error: EvalError) -> str:
+    """The exception type, the HTTP status code and the API error type of a sample error.
+
+    It never returns the message text: a provider message can echo part of the request.
+    """
+    lines = error.traceback.strip().splitlines()
+    head = lines[-1].split(":", 1)[0] if lines else ""
+    parts = [head if _EXCEPTION_TYPE.fullmatch(head) else "unknown error type"]
+    code = _HTTP_CODE.search(error.message)
+    if code:
+        parts.append(f"HTTP {code.group(1)}")
+    kind = _API_ERROR_TYPE.search(error.message)
+    if kind:
+        parts.append(kind.group(1))
+    return ", ".join(parts)
 
 
 def meter(sample: EvalSample) -> Metered:
@@ -136,6 +157,7 @@ def meter(sample: EvalSample) -> Metered:
         stop=stop,
         cost_usd=sum(costs) if costs else None,
         retries=retries,
+        error=None if sample.error is None else _error_summary(sample.error),
     )
 
 
@@ -224,7 +246,11 @@ def run(
 
     control, attack = _mean_total(arms["control"]), _mean_total(arms["attack"])
     if not control:
-        raise SystemExit("wallet_demo: no control sample was measured, so there is no baseline")
+        first = next((m.error for metered in arms.values() for m in metered if m.error), None)
+        raise SystemExit(
+            "wallet_demo: no control sample was measured, so there is no baseline."
+            + (f" First error: {first}." if first else "")
+        )
     budget = round(BUDGET_MULTIPLE * control)
     errored = sum(m.stop == ERRORED for metered in arms.values() for m in metered)
 

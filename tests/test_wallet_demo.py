@@ -31,6 +31,7 @@ from scripts.wallet_demo import (
     MOCK,
     Metered,
     _arm_rows,
+    _error_summary,
     _fp_line,
     _mean_total,
     _unfinished,
@@ -330,8 +331,9 @@ def test_a_retried_model_call_is_not_a_turn(
 
 def test_a_sample_with_an_error_and_a_limit_is_errored() -> None:
     limit = SimpleNamespace(type="token")
-    both = SimpleNamespace(id="s", epoch=1, events=[], error="boom", limit=limit)
-    assert meter(both).stop == "errored"  # type: ignore[arg-type]
+    error = SimpleNamespace(message="boom", traceback="x\nValueError: boom")
+    both = SimpleNamespace(id="s", epoch=1, events=[], error=error, limit=limit)
+    assert (meter(both).stop, meter(both).error) == ("errored", "ValueError")  # type: ignore[arg-type]
     cut = SimpleNamespace(id="s", epoch=1, events=[], error=None, limit=limit)
     assert meter(cut).stop == "token"  # type: ignore[arg-type]
 
@@ -437,8 +439,30 @@ def test_a_run_with_no_measured_control_sample_stops(tmp_path: Path) -> None:
     def always_fails(*_: object) -> ModelOutput:
         raise RuntimeError("provider failed")
 
-    with pytest.raises(SystemExit, match="no control sample was measured"):
+    with pytest.raises(SystemExit) as stopped:
         run(get_model(MOCK, custom_outputs=always_fails), tmp_path)
+    message = str(stopped.value)
+    assert "no control sample was measured" in message
+    assert message.endswith("First error: RuntimeError.")
+    assert "provider failed" not in message
+
+
+def test_an_error_summary_gives_the_type_and_status_code_and_never_the_message_text() -> None:
+    secret = "NOT-A-REAL-KEY-0123456789"
+    body = (
+        "Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', "
+        f"'message': 'invalid x-api-key {secret}'}}, 'request_id': 'req_123'}}"
+    )
+    trace = f"Traceback (most recent call last):\n  File x\nanthropic.AuthenticationError: {body}"
+    summary = _error_summary(SimpleNamespace(message=body, traceback=trace))  # type: ignore[arg-type]
+    assert summary == "anthropic.AuthenticationError, HTTP 401, authentication_error"
+    assert secret not in summary and "req_123" not in summary
+    # No status code and no API error type: the exception type alone.
+    plain = SimpleNamespace(message=f"boom {secret}", traceback=f"x\nValueError: boom {secret}")
+    assert _error_summary(plain) == "ValueError"  # type: ignore[arg-type]
+    # A last line that is not "Type: text" gives no type, and still no message text.
+    odd = SimpleNamespace(message=secret, traceback=f"{secret} with spaces: and a colon")
+    assert _error_summary(odd) == "unknown error type"  # type: ignore[arg-type]
 
 
 def test_mean_spend_is_the_mean_of_the_measured_samples() -> None:
