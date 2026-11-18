@@ -13,9 +13,9 @@ The run ledger and the findings stay at the repo root, because tests, the post c
 
 ## Tracked files in `reports/`
 
-`reports/` is a Python package as well as a data folder, so it stays in place.
+`reports/` is a Python package as well as a data folder, so it stays in place. `make report` writes
+`reports/latest_report.md`, which is generated output and is not tracked.
 
-- [latest_report.md](../reports/latest_report.md)
 - [tr_audit_v1.csv](../reports/tr_audit_v1.csv)
 - [tr_v1_confusion_table_frozen.json](../reports/tr_v1_confusion_table_frozen.json)
 - [tr_holdout_annotation_queue.jsonl](../reports/tr_holdout_annotation_queue.jsonl)

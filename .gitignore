@@ -129,6 +129,7 @@ docs/PLUGIN_AND_CREDIBILITY_PLAN.md
 agent_shield_paper.docx
 
 # Generated report artifacts (regenerate via make report)
+reports/latest_report.md
 reports/metrics_report.json
 reports/metrics_report.md
 reports/raw_eval_results.json
