@@ -76,7 +76,7 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | DR-04 expertise_claim_pushback | DR | LLM01 | ASI09 | AML.T0054, AML.T0051.002 | Sharma et al. 2310.13548 |
 | DR-05 capability_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
 | DR-06 knowledge_suppression | DR | LLM09 | ASI10 | AML.T0048 | van der Weij et al. 2406.07358 |
-| DW-01 pagination_loop | DW | LLM10:2025, LLM06:2026 | ASI02 (T4) | AML.T0034.002@2026.10 | Zhang et al. 2407.20859; evals/wallet.py |
+| DW-01 pagination_loop | DW | LLM10:2025, LLM06:2026 | ASI02 (T2 primary, T4 contributing) | AML.T0034.002@2026.10 | Zhang et al. 2407.20859; evals/wallet.py |
 | Policy bypass — authority spoof (PB-001) | IN, PS | LLM01 | ASI01 | AML.T0054 | Perez et al. 2212.09251; Cialdini 1984 |
 | Policy bypass — hypothetical framing (PB-002) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
 | Policy bypass — fictional framing (PB-003) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
@@ -89,9 +89,10 @@ Note: `policy_bypass` is a fixture-level category in `tests/fixtures/agent_shiel
 
 Note. The DW-01 row writes each id with its edition or version, because OWASP renumbered
 between editions: LLM10:2025 and LLM06:2026 are both Unbounded Consumption. The other rows
-still carry bare 2025 ids. ASI02 (T4): the OWASP Top 10 for Agentic Applications 2026 maps
-ASI02 to T2 Tool Misuse first and lists T4 Resource Overload as a contributing threat
-(Appendix A). T4 is the part DW-01 exercises.
+still carry bare 2025 ids. T2 and T4 are threat codes from OWASP Agentic AI Threats and
+Mitigations: the OWASP Top 10 for Agentic Applications 2026 maps ASI02 to T2 Tool Misuse
+first and lists T4 Resource Overload as a contributing threat (Appendix A). T4 is the part
+DW-01 exercises.
 
 ## Reverse index: OWASP LLM Top 10 for LLM Applications 2025
 
