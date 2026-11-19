@@ -3,6 +3,10 @@
 Every number the record prints is recomputed here from result.json, so a cell in the
 record cannot outlive the data behind it. The raw logs and the event log are not in the
 repo; the sums file holds their hashes.
+
+The command was started twice. result.json is attempt 2. The one cell that attempt 1
+finished is in the record's Attempts section, and the test that measures it again needs
+the raw logs, so it skips where they are absent.
 """
 
 from __future__ import annotations
@@ -15,11 +19,22 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from inspect_ai.log import EvalLog, read_eval_log
+
+from agent_shield.runtime.events import channels_by_session, read_chain, verify_chain
+from scripts import wallet_governor_demo as demo
 
 REPO = Path(__file__).resolve().parent.parent
 RUN = "DW01_governor_haiku55_2026-11-18"
 EARLIER = "DW01_haiku55_2026-11-18"
 WALLET = REPO / "results" / "wallet"
+RAW = REPO.parent / "agent-shield-wallet-data"
+ATTEMPT_DIRS = {
+    "1": "dw01_governor_haiku55_2026-11-18",
+    "2": "dw01_governor_haiku55_2026-11-18_run2",
+}
+ATTEMPT_COMMITS = {"1": "434d906", "2": "b74506e"}
+OBSERVE = "attack/observe"
 CELLS = {
     "attack/observe": "attack, observe",
     "attack/enforce": "attack, enforce",
@@ -52,6 +67,41 @@ def _mean(values: list[int]) -> str:
 def _row(record: str, first_cell: str) -> list[str]:
     (line,) = [ln for ln in record.splitlines() if ln.startswith(f"| {first_cell} |")]
     return [cell.strip() for cell in line.strip("|").split("|")]
+
+
+def _section(record: str, title: str) -> str:
+    assert f"## {title}\n" in record, f"the record has no {title} section"
+    return record.split(f"## {title}\n", 1)[1].split("\n## ", 1)[0]
+
+
+def _number(text: str) -> int:
+    return int(text.replace(",", ""))
+
+
+def _observe_row(cell: dict[str, Any]) -> list[str]:
+    """One attack, observe row of the Attempts section, after its label."""
+    turns = sorted(set(cell["flag_turns"]))
+    return [
+        f"{cell['flagged']} of {cell['samples']}",
+        _span(turns) if turns else "never",
+        _span(cell["spend_at_flag"]),
+        _span(cell["spend_after_flag"]),
+        _mean(cell["spend_after_flag"]),
+        _span(cell["tokens"]),
+        _mean(cell["tokens"]),
+        _span(cell["loop_calls_after_flag"]),
+        str(cell["guard_events"]),
+    ]
+
+
+def _raw_logs(attempt: str) -> dict[str, tuple[Path, EvalLog]]:
+    """The Inspect logs of one attempt by cell, read from outside the repo."""
+    logs: dict[str, tuple[Path, EvalLog]] = {}
+    for path in sorted((RAW / ATTEMPT_DIRS[attempt] / "logs").glob("*.eval")):
+        log = read_eval_log(str(path))
+        args = log.eval.task_args
+        logs[f"{args['arm']}/{args['governor']}"] = (path, log)
+    return logs
 
 
 def test_sums_file_lists_the_run_files_and_matches_the_committed_result_json() -> None:
@@ -129,13 +179,74 @@ def test_the_spend_table_matches_result_json(record: str, result: dict[str, Any]
             ", ".join(f"{names[stop]} {n}" for stop, n in cell["stops"].items()),
             f"${cell['cost_usd']:.5f}",
         ]
-    observe, enforce = result["cells"]["attack/observe"], result["cells"]["attack/enforce"]
-    after = 1 - statistics.mean(enforce["spend_after_flag"]) / statistics.mean(
-        observe["spend_after_flag"]
+
+
+def test_the_record_names_every_attempt_and_its_exit_reason(record: str) -> None:
+    attempts = _section(record, "Attempts")
+    numbered = [ln for ln in attempts.splitlines() if re.match(r"\| \d+ \|", ln)]
+    assert len(numbered) == len(ATTEMPT_COMMITS)
+    first, second = _row(attempts, "1"), _row(attempts, "2")
+    assert (first[1], second[1]) == tuple(f"`{c}`" for c in ATTEMPT_COMMITS.values())
+    assert first[2] == (
+        "stopped by hand at 17:59:49: machine slept at 16:31:29, five model calls never returned"
     )
-    total = 1 - statistics.mean(enforce["tokens"]) / statistics.mean(observe["tokens"])
-    assert f"is {after:.0%} lower with enforcement" in record
-    assert f"tokens per sample are {total:.0%} lower" in record
+    assert "attack, observe (5 of 5 samples)" in first[3]
+    assert "attack, enforce started and saved no sample" in first[3]
+    assert (second[2], second[3]) == ("exit 0", "all 4")
+    assert "run once" not in " ".join(record.split())
+    opening = " ".join(record.split("## Setup", 1)[0].split())
+    assert "The second of two attempts" in opening and "interrupted" in opening
+
+
+def test_the_headline_is_a_range_over_every_finished_observe_cell(
+    record: str, result: dict[str, Any]
+) -> None:
+    attempts = _section(record, "Attempts")
+    rows = [_row(attempts, f"attempt {n}") for n in ATTEMPT_COMMITS]
+    # Attempt 2 is the committed result.json. Attempt 1 is measured from its raw log below.
+    assert rows[1][1:] == _observe_row(result["cells"][OBSERVE])
+    enforce = result["cells"]["attack/enforce"]
+    after = sorted(1 - statistics.mean(enforce["spend_after_flag"]) / _number(r[5]) for r in rows)
+    total = sorted(1 - statistics.mean(enforce["tokens"]) / _number(r[7]) for r in rows)
+    flat = " ".join(record.split())
+    assert (
+        f"the mean spend after the flag is {after[0]:.0%} to {after[-1]:.0%} lower with "
+        f"enforcement, across {len(rows)} observe runs of 5 samples each (diagnostic)"
+    ) in flat
+    assert f"mean tokens per sample are {total[0]:.0%} to {total[-1]:.0%} lower" in flat
+    assert "The enforce cell finished once, in attempt 2" in flat
+    assert not re.search(r"is \d+% lower", flat)  # no figure from one observe run alone
+
+
+def test_the_attempts_section_matches_the_raw_logs(record: str) -> None:
+    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
+        pytest.skip("the raw logs of the two attempts are not in the repo")
+    attempts = _section(record, "Attempts")
+    for attempt, name in ATTEMPT_DIRS.items():
+        run = RAW / name
+        assert verify_chain(run / "logs" / demo.EVENT_LOG).ok
+        seen = channels_by_session(read_chain(run / "logs" / demo.EVENT_LOG))
+        _, log = _raw_logs(attempt)[OBSERVE]
+        revision = log.eval.revision
+        assert revision is not None and revision.dirty is False
+        assert (log.status, revision.commit) == ("success", ATTEMPT_COMMITS[attempt])
+        rows = [demo._sample_row(s, "observe", seen) for s in log.samples or []]
+        measured = _observe_row(demo._cell("attack", rows))
+        assert _row(attempts, f"attempt {attempt}")[1:] == measured, attempt
+        if attempt == "1":  # its cost is not in the record's total, its tokens are named
+            used = sum(row["tokens"] for row in rows)
+            assert f"its finished cell used {used:,} tokens" in record
+        note = (run / "exit.txt").read_text().strip()
+        assert _row(attempts, attempt)[2] == ("exit 0" if note == "0" else note)
+        assert (run / "commit.txt").read_text().startswith(ATTEMPT_COMMITS[attempt])
+    first = _raw_logs("1")
+    assert sorted(first) == ["attack/enforce", OBSERVE]  # benign heavy never started
+    assert first["attack/enforce"][1].status == "started"
+    assert not first["attack/enforce"][1].samples
+    seen = channels_by_session(read_chain(RAW / ATTEMPT_DIRS["1"] / "logs" / demo.EVENT_LOG))
+    assert [v["guard"] for k, v in seen.items() if k.startswith("enforce/")] == [1] * 5
+    assert "wrote 5 guard events, one ask per sample" in " ".join(attempts.split())
+    assert hashlib.sha256(first[OBSERVE][0].read_bytes()).hexdigest() in attempts
 
 
 def test_the_guard_table_matches_result_json(record: str, result: dict[str, Any]) -> None:
@@ -224,7 +335,9 @@ def test_the_limits_paragraph_names_every_limit(record: str, result: dict[str, A
     earlier = json.loads((WALLET / f"{EARLIER}.result.json").read_text())
     earlier_at = [f["spend_at_flag"] for f in earlier["headline"]["arms"]["attack"]["flags"]]
     for needle in (
-        "one model, one payload and one task, run once, with 5 samples per cell",
+        "one model, one payload and one task, with 5 samples per cell",
+        "The command was started twice",
+        "Every table outside the Attempts section is attempt 2 alone",
         'The operator is the stand in "hold"',
         'the answer "approve" was not run on this model',
         "The report tool was offered in every cell",
@@ -241,7 +354,7 @@ def test_the_limits_paragraph_names_every_limit(record: str, result: dict[str, A
 def test_the_record_makes_no_transparency_attack_success_or_novelty_claim(record: str) -> None:
     for word in ("Transparency Rate", " TR ", "ASR", "attack success rate", "novel", "first to"):
         assert word not in record, word
-    assert "interrupted" not in record and "_run2" not in record
+    assert "_run2" not in record  # a local folder name, not part of the public record
 
 
 def test_readme_points_to_the_record_as_a_diagnostic() -> None:
