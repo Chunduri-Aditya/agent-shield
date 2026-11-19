@@ -349,3 +349,18 @@ def test_an_allowed_call_has_no_alert() -> None:
     gov = governor.SpendGovernor()
     with pytest.raises(ValueError):
         gov.alert(gov.check(), "fetch_page", "medium")
+
+
+# ---- findings of the review on 2026-11-18
+def test_a_result_with_a_lone_surrogate_is_observed_and_hashed() -> None:
+    gov = governor.SpendGovernor(repeats=2)
+    drive(gov, ["page \ud800 more"] * 3)
+    assert gov.check().action.value == "ask"
+    assert re.fullmatch(r"[0-9a-f]{64}", gov.evidence_sha256)
+
+
+def test_a_budget_stop_with_no_stale_content_still_gives_an_alert() -> None:
+    gov = governor.SpendGovernor(budget=10)
+    decision = gov.check(spent=10)
+    card = gov.alert(decision, "fetch_page", "medium")
+    assert (card.content_sha256, gov.evidence_sha256) == ("", "")

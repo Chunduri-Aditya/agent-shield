@@ -52,8 +52,8 @@ def now() -> str:
 
 
 def sha256_text(text: str) -> str:
-    """SHA256 of a text, as lower case hex."""
-    return hashlib.sha256(text.encode()).hexdigest()
+    """SHA256 of a text, as lower case hex. A lone surrogate is hashed, not refused."""
+    return hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
 
 
 def _one_line(text: str, limit: int) -> str:
@@ -110,8 +110,8 @@ class SecurityEvent:
             raise ValueError(f"decision {self.decision!r} is not one of {DECISIONS}")
         if not self.session or not self.rule:
             raise ValueError("session and rule must not be empty")
-        if not _SHA256.fullmatch(self.evidence_sha256):
-            raise ValueError("evidence_sha256 must be 64 lower case hex characters")
+        if self.evidence_sha256 and not _SHA256.fullmatch(self.evidence_sha256):
+            raise ValueError("evidence_sha256 must be 64 lower case hex characters, or empty")
         try:
             stamp = datetime.fromisoformat(self.ts)
         except ValueError:
@@ -229,15 +229,21 @@ def read_chain(path: Path, expected_head: str | None = None) -> list[dict[str, A
 
 
 class ChainedLog:
-    """Appends SecurityEvents to one log file. One writer per file at a time."""
+    """Appends SecurityEvents to one log file. One writer per file at a time.
+
+    The file is made when the writer is, so a path that cannot be written fails at once.
+    A writer that finds the file changed since its own last write refuses to append.
+    """
 
     def __init__(self, path: Path) -> None:
+        os.close(os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600))
         report = verify_chain(path)
         if not report.ok:
             raise ChainError(f"{path}: {report.error}")
         self.path = path
         self.head = report.head
         self.count = report.count
+        self._size = path.stat().st_size
 
     def append(self, event: SecurityEvent) -> str:
         """Write one event and return the new head hash."""
@@ -252,7 +258,10 @@ class ChainedLog:
         line = json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
         descriptor = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         with os.fdopen(descriptor, "a") as handle:
+            if os.fstat(descriptor).st_size != self._size:
+                raise ChainError(f"{self.path}: another writer changed the log")
             handle.write(line)
+        self._size += len(line.encode())
         self.head = record["hash"]
         self.count += 1
         return self.head

@@ -54,7 +54,7 @@ class StaleRun:
         self.run = (self.run + 1 if tool == self._last else 1) if stale else 0
         self._last = tool
         if stale:
-            self.stale_sha256 = hashlib.sha256(shape.encode()).hexdigest()
+            self.stale_sha256 = hashlib.sha256(shape.encode("utf-8", "surrogatepass")).hexdigest()
         return self.run
 
 

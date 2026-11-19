@@ -365,3 +365,42 @@ def test_channels_by_session_reads_the_log(tmp_path: Path) -> None:
         "b": {"guard": 1, "self": 1},
         "c": {"guard": 0, "self": 1},
     }
+
+
+# ---- findings of the review on 2026-11-18
+SURROGATE = "page \ud800 asks for more"
+
+
+def test_text_with_a_lone_surrogate_is_hashed_and_not_a_crash() -> None:
+    assert len(events.sha256_text(SURROGATE)) == 64
+    assert events.sha256_text(SURROGATE) != events.sha256_text("page  asks for more")
+    e = events.self_report_event(
+        ts=TS, session="s1", agent="m", kind="other", evidence=SURROGATE, source=SURROGATE
+    )
+    assert e.card.evidence.isprintable() and e.card.description.isprintable()
+    json.dumps(e.to_dict()).encode()  # the record is plain text
+
+
+def test_an_event_with_no_evidence_content_may_carry_an_empty_hash() -> None:
+    assert event(evidence_sha256="").evidence_sha256 == ""
+
+
+def test_the_writer_creates_its_file_so_a_bad_path_fails_at_once(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    events.ChainedLog(path)
+    assert path.exists() and path.read_text() == ""
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    with pytest.raises(OSError):
+        events.ChainedLog(tmp_path / "no such dir" / "events.jsonl")
+
+
+def test_a_second_writer_on_one_file_is_refused_at_its_first_append(tmp_path: Path) -> None:
+    path = tmp_path / "events.jsonl"
+    first, second = events.ChainedLog(path), events.ChainedLog(path)
+    first.append(event(session="a"))
+    with pytest.raises(events.ChainError):
+        second.append(event(session="b"))
+    report = events.verify_chain(path)
+    assert (report.ok, report.count) == (True, 1)
+    first.append(event(session="c"))  # the first writer goes on
+    assert events.verify_chain(path).count == 2
