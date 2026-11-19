@@ -605,7 +605,7 @@
       }
     ]
   },
-  "events": "/Users/chunduri/Desktop/Projects/agent-shield-complete/agent-shield-wallet-data/dw01_governor_haiku55_2026-11-18_run2/logs/security_events.jsonl",
+  "events": "logs/security_events.jsonl",
   "chain": {
     "ok": true,
     "count": 18,

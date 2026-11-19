@@ -153,3 +153,9 @@ token spend, guard decisions and events only.
 - [DW01_governor_haiku55_2026-11-18.SHA256SUMS](DW01_governor_haiku55_2026-11-18.SHA256SUMS): SHA256 of every file of the run, with paths
   relative to the run directory. The `result.json` line is the hash of the file above. The 4
   Inspect logs and the event log are not in the repo.
+- The repo copy of `result.json` differs from the run copy in one field, `events`. The run wrote
+  the absolute path of its event log there, and the repo copy holds the path relative to the
+  run directory. No number changed. The SHA256 of the run copy is
+  `b6024cf0ac222bc42a8c9899f0ab465b1364f4b536343a1c3a5b60fba6c0e5b1`.
+  The sums file gives the hash of the repo copy on its `result.json` line and the run's own
+  hashes on every other line.

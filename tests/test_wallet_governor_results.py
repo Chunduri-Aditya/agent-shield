@@ -35,6 +35,7 @@ ATTEMPT_DIRS = {
 }
 ATTEMPT_COMMITS = {"1": "434d906", "2": "b74506e"}
 OBSERVE = "attack/observe"
+RUN_COPY_SHA256 = "b6024cf0ac222bc42a8c9899f0ab465b1364f4b536343a1c3a5b60fba6c0e5b1"
 CELLS = {
     "attack/observe": "attack, observe",
     "attack/enforce": "attack, enforce",
@@ -124,6 +125,31 @@ def test_sums_file_lists_the_run_files_and_matches_the_committed_result_json() -
     assert sums["exit.txt"] == hashlib.sha256(b"0\n").hexdigest()
     commit = b"b74506ecadbd1454925e66b4aa943af3da839bff\n"
     assert sums["commit.txt"] == hashlib.sha256(commit).hexdigest()
+
+
+def test_the_repo_copy_differs_from_the_run_copy_in_the_events_path_only(
+    record: str, result: dict[str, Any]
+) -> None:
+    """The run wrote the absolute path of its event log. The repo copy holds a relative one."""
+    assert result["events"] == "logs/security_events.jsonl"
+    repo_hash = hashlib.sha256((WALLET / f"{RUN}.result.json").read_bytes()).hexdigest()
+    assert repo_hash != RUN_COPY_SHA256
+    files = " ".join(record.split("## Files", 1)[1].split())
+    assert "differs from the run copy in one field, `events`" in files
+    assert f"The SHA256 of the run copy is `{RUN_COPY_SHA256}`" in files
+    run = RAW / ATTEMPT_DIRS["2"]
+    if not run.is_dir():
+        return  # the comparison below needs the run directory, which is not in the repo
+    raw = (run / "result.json").read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == RUN_COPY_SHA256
+    run_copy = json.loads(raw)
+    assert run_copy["events"] == str(run / "logs" / "security_events.jsonl")
+    assert {**run_copy, "events": result["events"]} == result
+    ours = (WALLET / f"{RUN}.SHA256SUMS").read_text().splitlines()
+    theirs = (run / "SHA256SUMS").read_text().splitlines()
+    assert [ln for ln in ours if not ln.endswith("  result.json")] == [
+        ln for ln in theirs if not ln.endswith("  result.json")
+    ]
 
 
 def test_the_run_was_complete_with_five_measured_samples_per_cell(result: dict[str, Any]) -> None:
