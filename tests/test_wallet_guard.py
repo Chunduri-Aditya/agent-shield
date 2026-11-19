@@ -7,9 +7,12 @@ that was asked about does not run; "approve" confirms it once.
 
 from __future__ import annotations
 
+import functools
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import anyio
 import pytest
 from inspect_ai import Task
 from inspect_ai import eval as inspect_eval
@@ -26,14 +29,16 @@ from inspect_ai.model import (
     get_model,
 )
 from inspect_ai.solver import generate, use_tools
-from inspect_ai.tool import ToolCall
+from inspect_ai.tool import ToolCall, ToolDef
 
+import evals.wallet
+import evals.wallet_guard
 from agent_shield.runtime import events
 from agent_shield.runtime.governor import SpendGovernor
 from evals.wallet import BENIGN_HEAVY_PAGES, TOKEN_LIMIT, fetch_page, wallet_dw01
 from evals.wallet_guard import HELD, REPORT_TOOL, SELF_REPORT_CAP, GuardError, WalletGuard
 from risk_registry import get_attack
-from scripts.wallet_demo import MOCK, scripted_model
+from scripts.wallet_demo import MOCK, scripted_answer, scripted_model
 
 
 def run(
@@ -553,3 +558,86 @@ def test_a_relative_event_log_path_is_refused() -> None:
 def test_governor_off_from_the_command_line_is_the_default_task() -> None:
     assert wallet_dw01(arm="control", governor=False).approval is None
     assert wallet_dw01(arm="control", governor="off").approval is None
+
+
+# ---- the tools run one at a time, whatever Inspect's default becomes
+def test_every_wallet_tool_is_built_with_parallel_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[dict[str, Any]] = []
+
+    def spy(execute: Callable[..., Any], **kwargs: Any) -> ToolDef:
+        seen.append(kwargs)
+        return ToolDef(execute, **kwargs)
+
+    monkeypatch.setattr(evals.wallet, "ToolDef", spy)
+    monkeypatch.setattr(evals.wallet_guard, "ToolDef", spy)
+    g = guard(tmp_path)
+    fetch_page("attack", 1, g)
+    fetch_page("control")
+    g.report_tool()
+    assert [kwargs["name"] for kwargs in seen] == ["fetch_page", "fetch_page", REPORT_TOOL]
+    assert [kwargs.get("parallel") for kwargs in seen] == [False, False, False]
+
+
+def test_no_wallet_tool_allows_parallel_calls(tmp_path: Path) -> None:
+    g = guard(tmp_path)
+    for tool in (fetch_page("attack", 1, g), fetch_page("control"), g.report_tool()):
+        assert ToolDef(tool).parallel is False
+
+
+def test_eight_stale_calls_write_an_event_even_if_parallel_became_the_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Parallel calls with a tool body that waits would all pass the check before any result.
+
+    This stands in for a later Inspect whose tools run in parallel unless told not to, and
+    for a tool body that awaits I/O. The task must still hold the batch and write its event.
+    """
+
+    def parallel_unless_told_and_slow(execute: Callable[..., Any], **kwargs: Any) -> ToolDef:
+        @functools.wraps(execute)
+        async def slow(*args: Any, **more: Any) -> Any:
+            await anyio.sleep(0.01)
+            return await execute(*args, **more)
+
+        return ToolDef(slow, **{"parallel": True, **kwargs})
+
+    monkeypatch.setattr(evals.wallet, "ToolDef", parallel_unless_told_and_slow)
+    _, samples, log_path = run(tmp_path, "attack", model=batch_model(8, "stop"), governor="enforce")
+    (sample,) = samples
+    assert sample.error is None
+    assert pages_read(sample) == [1, 2, 3, 4]
+    assert held(sample) == 4
+    assert [r["decision"] for r in events.read_chain(log_path)] == ["asked"]
+
+
+# ---- a sample that is retried after an error starts with fresh governor state
+@pytest.mark.parametrize("fail_after", [1, 2, 3])
+def test_a_retried_sample_starts_with_fresh_governor_state(tmp_path: Path, fail_after: int) -> None:
+    failed: list[int] = []
+
+    def flaky(messages: list[ChatMessage], *rest: object) -> ModelOutput:
+        results = sum(isinstance(m, ChatMessageTool) for m in messages)
+        if results == fail_after and not failed:
+            failed.append(results)
+            raise RuntimeError("the provider failed once")
+        return scripted_answer(messages, *rest)
+
+    log_path = tmp_path / "security_events.jsonl"
+    task = wallet_dw01(arm="attack", governor="enforce", events=str(log_path))
+    log = inspect_eval(
+        task,
+        model=get_model(MOCK, custom_outputs=flaky),
+        log_dir=str(tmp_path / "logs"),
+        display="none",
+        fail_on_error=False,
+        retry_on_error=1,
+    )[0]
+    (sample,) = read_eval_log(log.location).samples or []
+    assert failed == [fail_after] and len(sample.error_retries or []) == 1
+    # The retry reads what a first run reads: four pages, then the held fifth call.
+    assert sample.error is None
+    assert pages_read(sample) == [1, 2, 3, 4]
+    assert held(sample) == 1
+    assert [r["decision"] for r in events.read_chain(log_path)] == ["asked"]

@@ -8,7 +8,11 @@ Two tests pin that limit.
 from __future__ import annotations
 
 import json
+import os
 import stat
+import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -394,13 +398,79 @@ def test_the_writer_creates_its_file_so_a_bad_path_fails_at_once(tmp_path: Path)
         events.ChainedLog(tmp_path / "no such dir" / "events.jsonl")
 
 
-def test_a_second_writer_on_one_file_is_refused_at_its_first_append(tmp_path: Path) -> None:
+def test_a_second_writer_follows_the_first_and_both_records_land(tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
     first, second = events.ChainedLog(path), events.ChainedLog(path)
     first.append(event(session="a"))
-    with pytest.raises(events.ChainError):
-        second.append(event(session="b"))
+    second.append(event(session="b"))  # finds a record it did not write and chains onto it
+    first.append(event(session="c"))
     report = events.verify_chain(path)
-    assert (report.ok, report.count) == (True, 1)
-    first.append(event(session="c"))  # the first writer goes on
-    assert events.verify_chain(path).count == 2
+    assert (report.ok, report.count) == (True, 3)
+    assert [e["session"] for e in events.read_chain(path)] == ["a", "b", "c"]
+    assert first.head == report.head and first.count == 3
+
+
+@pytest.mark.parametrize("damage", ["cut", "rewrite", "garbage", "empty"])
+def test_a_writer_refuses_a_log_that_is_not_an_extension_of_what_it_wrote(
+    tmp_path: Path, damage: str
+) -> None:
+    path = tmp_path / "events.jsonl"
+    log = write(path, 3)
+    if damage == "cut":
+        path.write_text("".join(ln + "\n" for ln in lines(path)[:2]))
+    elif damage == "rewrite":  # another valid chain of the same length
+        other = tmp_path / "other.jsonl"
+        writer = events.ChainedLog(other)
+        for k in range(4):  # one record more, so the size differs from what the writer knows
+            writer.append(event(session=f"x{k}"))
+        path.write_text(other.read_text())
+    elif damage == "garbage":
+        path.write_text(path.read_text() + "not a record\n")
+    else:
+        path.write_text("")
+    before = path.read_text()
+    with pytest.raises(events.ChainError):
+        log.append(event(session="late"))
+    assert path.read_text() == before  # nothing was written to the damaged log
+
+
+WORKER = """
+import sys, time
+from pathlib import Path
+from agent_shield.runtime.events import ChainedLog, now, self_report_event
+
+path, name, count, go = Path(sys.argv[1]), sys.argv[2], int(sys.argv[3]), Path(sys.argv[4])
+log = ChainedLog(path)
+Path(f"{go}.{name}").touch()
+while not go.exists():
+    time.sleep(0.001)
+for k in range(count):
+    log.append(self_report_event(ts=now(), session=name, agent="worker", kind="other",
+                                 evidence=str(k), source="race"))
+"""
+
+
+def test_two_processes_appending_at_once_both_land_and_the_chain_verifies(tmp_path: Path) -> None:
+    path, go, count = tmp_path / "events.jsonl", tmp_path / "go", 150
+    repo = Path(__file__).resolve().parent.parent
+    workers = [
+        subprocess.Popen(
+            [sys.executable, "-c", WORKER, str(path), name, str(count), str(go)],
+            cwd=repo,
+            env={**os.environ, "PYTHONPATH": str(repo)},
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for name in ("a", "b")
+    ]
+    deadline = time.monotonic() + 60
+    while not all((tmp_path / f"go.{name}").exists() for name in ("a", "b")):
+        assert time.monotonic() < deadline and all(w.poll() is None for w in workers)
+        time.sleep(0.01)
+    go.touch()  # both writers hold an open log: start them together
+    errors = [w.communicate(timeout=120)[1] for w in workers]
+    assert [w.returncode for w in workers] == [0, 0], errors
+    report = events.verify_chain(path)
+    assert (report.ok, report.count, report.error) == (True, 2 * count, "")
+    sessions = [e["session"] for e in events.read_chain(path)]
+    assert (sessions.count("a"), sessions.count("b")) == (count, count)

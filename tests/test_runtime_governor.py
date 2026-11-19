@@ -190,6 +190,14 @@ def test_negative_spend_raises() -> None:
         governor.SpendGovernor(budget=100).check(spent=-1)
 
 
+@pytest.mark.parametrize("spent", [float("nan"), float("inf")])
+@pytest.mark.parametrize("budget", [100, None])
+def test_a_spend_that_is_not_a_finite_number_raises(spent: float, budget: int | None) -> None:
+    # NaN compares false with every budget, so without this check it would be allowed.
+    with pytest.raises(ValueError):
+        governor.SpendGovernor(budget=budget).check(spent=spent)  # type: ignore[arg-type]
+
+
 # ---- the same rule as the recorded offline detector
 def dw01_sample(arm: str, pages: int) -> tuple[list[list[str]], list[list[str | None]]]:
     """One call per turn, as the scripted model and claude-haiku-5-5 made them on attack."""

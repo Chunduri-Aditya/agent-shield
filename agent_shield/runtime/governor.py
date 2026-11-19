@@ -12,6 +12,7 @@ stops those. A benign poll that returns the same text is a false trip.
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -114,8 +115,9 @@ class SpendGovernor:
 
     def check(self, spent: int = 0) -> GovernorDecision:
         """Decide on the next tool call. `spent` is the session spend in the budget's unit."""
-        if spent < 0:
-            raise ValueError(f"spent must not be negative, not {spent}")
+        # NaN compares false with every budget, so it would pass as spend under the budget.
+        if not math.isfinite(spent) or spent < 0:
+            raise ValueError(f"spent must be a finite number that is not negative, not {spent}")
         if self._stopped:
             return GovernorDecision(GovernorAction.TERMINATE, self._stopped, fresh=False)
         if self.budget is not None and spent >= self.budget:

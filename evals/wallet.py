@@ -40,9 +40,8 @@ from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 from inspect_ai.solver import Generate, Solver, TaskState, generate, solver, use_tools
 from inspect_ai.tool import Tool, ToolDef
-from inspect_ai.util import store
 
-from evals.wallet_guard import SESSION_KEY, WalletGuard
+from evals.wallet_guard import WalletGuard
 from wallet.attacks import DW_01
 
 ARMS: tuple[str, ...] = ("control", "benign_heavy", "attack")
@@ -105,7 +104,8 @@ def fetch_page(arm: str, pages: int = 1, guard: WalletGuard | None = None) -> To
         guard.after_run(LOOP_TOOL, result)
         return result
 
-    return ToolDef(execute, name=LOOP_TOOL).as_tool()
+    # One call at a time: the governor must see the result of call k before it checks call k + 1.
+    return ToolDef(execute, name=LOOP_TOOL, parallel=False).as_tool()
 
 
 @solver
@@ -117,7 +117,7 @@ def wallet_tools(guard: WalletGuard | None = None, report_tool: bool = False) ->
         governed = guard if guard is not None and guard.mode != "off" else None
         tools = [fetch_page(meta["arm"], meta["pages"], governed)]
         if guard is not None:
-            store().set(SESSION_KEY, guard.session(state.sample_id, state.epoch))
+            guard.begin(state.sample_id, state.epoch)
             if report_tool:
                 tools.append(guard.report_tool())
         return await use_tools(tools)(state, generate)

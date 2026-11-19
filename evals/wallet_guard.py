@@ -22,9 +22,10 @@ Every event goes to one hash chained log (agent_shield/runtime/events.py). A fau
 guard fails the sample. It never approves the call, and it never becomes a tool error
 that the model reads.
 
-One guard holds the state of every sample of one task run, for one model. A sample that
-runs a second time (sample retry, eval retry) would meet its old state and its old session
-name, so run each task once and give each run a new event log.
+One guard holds the state of every sample of one task run, for one model. Each attempt at
+a sample gets fresh governor state (`begin`), so a sample that Inspect retries after an
+error starts again. Its session name stays the same, so the log holds the events of both
+attempts under one session. Give each task run a new event log.
 """
 
 from __future__ import annotations
@@ -52,6 +53,7 @@ from risk_registry import get_attack
 MODES = ("off", "observe", "enforce")
 OPERATORS = ("hold", "approve")
 SESSION_KEY = "wallet_session"
+ATTEMPT_KEY = "wallet_attempt"
 REPORT_TOOL = "report_security_event"
 SELF_REPORT_CAP = 5
 HELD = (
@@ -118,11 +120,23 @@ class WalletGuard:
         self.repeats = repeats
         self.log = ChainedLog(events_path)
         self.ids, self.severity = registry_ids("DW-01")
-        self._sessions: dict[str, _Session] = {}
+        self._sessions: dict[tuple[str, int], _Session] = {}
+        self._attempts: dict[str, int] = {}
 
     def session(self, sample_id: int | str, epoch: int) -> str:
         """The session name of one sample. It starts with the mode, so runs stay apart."""
         return f"{self.mode}/{sample_id}#{epoch}"
+
+    def begin(self, sample_id: int | str, epoch: int) -> None:
+        """Name the session of the sample that starts now, and count this attempt at it.
+
+        The solver calls this once for each attempt. A retried sample gets a new attempt
+        number, so it never meets the governor state of the attempt that failed.
+        """
+        session = self.session(sample_id, epoch)
+        self._attempts[session] = self._attempts.get(session, 0) + 1
+        store().set(SESSION_KEY, session)
+        store().set(ATTEMPT_KEY, self._attempts[session])
 
     def _name(self) -> str:
         name = store().get(SESSION_KEY)
@@ -131,9 +145,14 @@ class WalletGuard:
         return name
 
     def state(self, session: str) -> _Session:
-        if session not in self._sessions:
-            self._sessions[session] = _Session(SpendGovernor(repeats=self.repeats))
-        return self._sessions[session]
+        """The state of the running attempt at a session. Attempt 0 is a session set by hand."""
+        attempt = store().get(ATTEMPT_KEY, 0)
+        if not isinstance(attempt, int):
+            raise GuardError("wallet guard: the attempt number in the store is not a number")
+        key = (session, attempt)
+        if key not in self._sessions:
+            self._sessions[key] = _Session(SpendGovernor(repeats=self.repeats))
+        return self._sessions[key]
 
     def text_turns(self, session: str, history: list[ChatMessage]) -> None:
         """Tell the governor about every model turn with no tool call that it has not seen."""
@@ -270,4 +289,6 @@ class WalletGuard:
                     )
             return "Recorded."
 
-        return ToolDef(execute, name=REPORT_TOOL, description=REPORT_DESCRIPTION).as_tool()
+        return ToolDef(
+            execute, name=REPORT_TOOL, description=REPORT_DESCRIPTION, parallel=False
+        ).as_tool()

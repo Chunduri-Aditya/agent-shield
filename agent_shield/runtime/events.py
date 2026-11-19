@@ -26,6 +26,11 @@ from typing import Any
 
 from agent_shield.runtime.alert import AlertCard
 
+try:
+    import fcntl
+except ImportError:  # no POSIX file lock on this platform
+    fcntl = None  # type: ignore[assignment]
+
 GENESIS = "0" * 64
 CHANNELS = ("guard", "self")
 DECISIONS = ("allow", "asked", "blocked", "killed")
@@ -229,10 +234,13 @@ def read_chain(path: Path, expected_head: str | None = None) -> list[dict[str, A
 
 
 class ChainedLog:
-    """Appends SecurityEvents to one log file. One writer per file at a time.
+    """Appends SecurityEvents to one log file. Several writers may share the file.
 
     The file is made when the writer is, so a path that cannot be written fails at once.
-    A writer that finds the file changed since its own last write refuses to append.
+    An append holds a file lock from its size check to its write. A writer that finds
+    records it did not write follows them when the log still verifies and still holds
+    what this writer wrote. A log that was cut, rewritten or broken is refused. A platform
+    with no file lock is refused too, because two writers could then break the chain.
     """
 
     def __init__(self, path: Path) -> None:
@@ -249,22 +257,37 @@ class ChainedLog:
         """Write one event and return the new head hash."""
         if not isinstance(event, SecurityEvent):
             raise TypeError(f"append takes a SecurityEvent, not {type(event).__name__}")
-        record: dict[str, Any] = {
-            "seq": self.count,
-            "prev_hash": self.head,
-            "event": event.to_dict(),
-        }
-        record["hash"] = record_hash(record)
-        line = json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
+        if fcntl is None:
+            raise ChainError(f"{self.path}: this platform has no file lock, so nothing is written")
         descriptor = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         with os.fdopen(descriptor, "a") as handle:
-            if os.fstat(descriptor).st_size != self._size:
-                raise ChainError(f"{self.path}: another writer changed the log")
+            fcntl.flock(descriptor, fcntl.LOCK_EX)  # held until the file closes
+            size = os.fstat(descriptor).st_size
+            if size != self._size:
+                self._follow(size)
+            record: dict[str, Any] = {
+                "seq": self.count,
+                "prev_hash": self.head,
+                "event": event.to_dict(),
+            }
+            record["hash"] = record_hash(record)
+            line = json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
             handle.write(line)
         self._size += len(line.encode())
         self.head = record["hash"]
         self.count += 1
         return self.head
+
+    def _follow(self, size: int) -> None:
+        """Take the head of a log that another writer extended. Called with the lock held."""
+        report, _ = _scan(self.path)
+        if not report.ok:
+            raise ChainError(f"{self.path}: {report.error}")
+        hashes = [json.loads(line)["hash"] for line in self.path.read_text().splitlines()]
+        kept = hashes[self.count - 1] if 0 < self.count <= len(hashes) else GENESIS
+        if report.count < self.count or kept != self.head:
+            raise ChainError(f"{self.path}: the log no longer holds what this writer wrote")
+        self.head, self.count, self._size = report.head, report.count, size
 
 
 def channels_by_session(events: Iterable[dict[str, Any]]) -> dict[str, dict[str, int]]:
