@@ -11,7 +11,12 @@ entry with its reason.
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import unicodedata
 from pathlib import Path
+
+import pytest
 
 import agent_shield.runtime as runtime
 
@@ -196,8 +201,8 @@ ALLOWED: tuple[tuple[str, str, str, str], ...] = (
         "research/paper/paper_v1.1.tex",
         "the first",
         "To our knowledge, Agent Shield is the first",
-        "PENDING: published v1.1 text (0fa6e62, in the Zenodo PDF). This file tags a withdrawn "
-        "claim and does not rewrite it, so withdrawing this one needs an erratum row",
+        "published v1.1 text, kept as published and withdrawn as docs/ERRATUM.md W14: the "
+        "sentence carries the W14 tag and the erratum box quotes it",
     ),
 )
 
@@ -277,3 +282,71 @@ def test_the_overview_does_not_read_the_alert_layer_as_transparency_rate() -> No
     assert "TR is not only a paper number" not in text
     assert "That alert is a system channel: it is not Transparency Rate" in text
     assert (REPO / "docs" / "ERRATUM.md").is_file()
+
+
+PRIORITY_CLAIM = (
+    "To our knowledge, Agent Shield is the first LLM-agent security benchmark to report "
+    "operator-facing attack disclosure as a primary episode-level metric alongside ASR and "
+    "utility, with confidence intervals for the anchored prompt-injection setting"
+)
+PRIOR_WORK = "docs/plugin/GAP_ANALYSIS.md:238"
+
+
+def _erratum_rows() -> dict[str, str]:
+    rows = [ln for ln in _lines("docs/ERRATUM.md") if re.match(r"\| W\d+ \|", ln)]
+    return {ln.split("|")[1].strip(): ln for ln in rows}
+
+
+def test_no_allowance_is_left_pending() -> None:
+    assert not [reason for *_, reason in ALLOWED if "PENDING" in reason]
+
+
+def test_the_erratum_withdraws_the_priority_claim_as_w14() -> None:
+    rows = _erratum_rows()
+    assert list(rows) == [f"W{n}" for n in range(1, 15)]
+    row = rows["W14"]
+    assert f"\"{PRIORITY_CLAIM}\" (49\u201352)" in row  # the erratum writes ranges with an en dash
+    assert f"`{PRIOR_WORK}`" in row and "arXiv 2403.02691" in row and "(W3)" in row
+    # The line the row cites says what the row says it does.
+    name, number = PRIOR_WORK.split(":")
+    cited = _lines(name)[int(number) - 1]
+    assert cited.startswith("Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691)")
+    erratum = " ".join(_lines("docs/ERRATUM.md"))
+    assert "Four mechanisms account for rows W1 to W13" in erratum
+    assert "W14 was added on 2026-11-19" in erratum
+
+
+def test_the_paper_source_tags_the_sentence_and_keeps_its_words() -> None:
+    tex = "\n".join(_lines("research/paper/paper_v1.1.tex"))
+    flat = " ".join(tex.split())
+    assert (
+        "To our knowledge, Agent Shield is the first LLM-agent security benchmark to report "
+        "operator-facing attack \\emph{disclosure}---as opposed to internal detection or "
+        "external-monitor alarms---as a primary episode-level metric alongside ASR and "
+        "utility, with Wilson intervals for the anchored prompt-injection "
+        "setting\\textsuperscript{W14}."
+    ) in flat
+    box = [int(n) for n in re.findall(r"\\textbf\{W(\d+)\.\}", tex)]
+    assert box == list(range(1, 15))
+    used = {int(n) for n in re.findall(r"\\textsuperscript\{W(\d+)\}", tex)}
+    assert 14 in used and used <= set(box)
+    assert "\\textbf{Erratum.} 14 claims in this version are withdrawn." in tex
+    assert f"``{PRIORITY_CLAIM}'' (49--52)" in flat  # the box quotes the published words
+
+
+def test_the_public_count_of_withdrawn_claims_is_fourteen() -> None:
+    for name in ("README.md", "START_HERE.md"):
+        text = " ".join(_lines(name))
+        assert "withdraws 14 claims" in text and "withdraws 13 claims" not in text, name
+    assert "`docs/ERRATUM.md` W1 to W14" in " ".join(_lines("MAPPINGS.md"))
+
+
+def test_the_cited_pdf_lines_hold_the_priority_claim() -> None:
+    pdf = REPO / "paper_v1.1.pdf"
+    tool = shutil.which("pdftotext")
+    if tool is None or not pdf.is_file():
+        pytest.skip("the published PDF or pdftotext is not on this machine")
+    out = subprocess.run([tool, str(pdf), "-"], capture_output=True, text=True, check=True)
+    # NFKC undoes ligatures. Split on newlines only, as the erratum counts lines.
+    lines = unicodedata.normalize("NFKC", out.stdout).split("\n")
+    assert PRIORITY_CLAIM in " ".join(lines[48:52])

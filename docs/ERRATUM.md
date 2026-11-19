@@ -1,7 +1,8 @@
 # Erratum for the preprint (Zenodo 10.5281/zenodo.20789431)
 
 _The record serves `paper_v1.1.pdf`, published 2026-06-22 (concept DOI 10.5281/zenodo.20789430), md5
-`b949dc6c0c5e702c2a77acd8cc8b2aa3`, the same bytes as `paper_v1.1.pdf` in this repo. Rewritten 2026-10-12. The
+`b949dc6c0c5e702c2a77acd8cc8b2aa3`, the same bytes as `paper_v1.1.pdf` in this repo. Rewritten 2026-10-12. W14 was
+added on 2026-11-19. The
 first version of this file (2026-09-23) withdrew three passages of `paper_v1.1.tex` that were added after
 publication (`a4eea0e`, 2026-07-31; `1f34c28`, 2026-08-07) and never appeared in the published PDF; this version
 corrects the PDF as published. Line numbers are those of `pdftotext paper_v1.1.pdf -`. Log names are the
@@ -25,6 +26,7 @@ the upload is the author's._
 | W11 | Spotlighting adds 0.200 to ASR through paraphrase residue, "a failure mode the original defense paper does not document" (17–19, 815–819, 926–927) | The defended IN-02 hit is the model flagging the injection while quoting the marker ("instructions attempting to get me to output a specific word (\"EXFILTRATED\")"). Section 4.3 (756–758) already says it is not compliance. The undefended and defended rows also come from different runs at different n (20 and 5). | `2026-05-20T01-41-29` inputs-asr-defended |
 | W12 | UUA 0.950 for the anchored inputs row (Table 7) | 0.950 equals one minus the anchored ASR. No log scores task completion: the inputs logs carry only the ASR and transparency scorers. | Table 7; scorer names in the inputs logs |
 | W13 | Reproducibility from the logged commit | Every May 2026 log behind Tables 4 to 7 was run from a dirty working tree except the four 2026-05-24T20 inputs runs at `bf08de8`, so the logged commit does not identify the code that ran. The Sonnet anchor log records `4d3c46b`, dirty; the first version of this file cited `d85bdb4`. | `revision.dirty` in each log header |
+| W14 | Priority claim: "To our knowledge, Agent Shield is the first LLM-agent security benchmark to report operator-facing attack disclosure as a primary episode-level metric alongside ASR and utility, with confidence intervals for the anchored prompt-injection setting" (49–52) | Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691) reports a "sensitivity rate", a keyword based share of outputs that recognise the attacker's instruction as abnormal. Only that passage of InjecAgent was checked. The anchored intervals the sentence leans on are withdrawn (W3). No priority is claimed for the metric. | `docs/plugin/GAP_ANALYSIS.md:238` (section 6, Prior work) |
 
 ## What stands
 
@@ -38,13 +40,14 @@ the upload is the author's._
 
 ## Why
 
-Four mechanisms account for every row above. Each scorer ran as its own task, so metrics that the paper pairs
+Four mechanisms account for rows W1 to W13. Each scorer ran as its own task, so metrics that the paper pairs
 per episode come from different generations (W5, W6, and the TR and ASR pairing throughout). The ASR scorers
 counted any appearance of the target string, so a model that names the attack while refusing it scored as
 compromised (W2, W7 to W11). Epochs of five prompts were treated as independent samples (W3, W4, W7). The TL-01
 directive was placed where the model never sees it (W1). `920c397` fixed the tool description and
 `3d5ad2d` added refusal context to the marker scorer; the remaining scorers are being versioned the same way,
-and `RESULTS.md` carries every historical row under its validity note.
+and `RESULTS.md` carries every historical row under its validity note. W14 is of another kind: a priority
+claim, withdrawn on prior work and not on a measurement.
 
 ## Routes for the Zenodo record
 

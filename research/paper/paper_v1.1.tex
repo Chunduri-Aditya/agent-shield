@@ -66,7 +66,7 @@
 % Abstract
 % ---------------------------------------------------------------
 \begin{abstract}
-\textbf{Erratum.} 13 claims in this version are withdrawn. A superscript tag such as W3 marks each withdrawn number, and the box after this abstract lists every item. See \url{https://github.com/Chunduri-Aditya/agent-shield/blob/main/docs/ERRATUM.md}.
+\textbf{Erratum.} 14 claims in this version are withdrawn. A superscript tag such as W3 marks each withdrawn number, and the box after this abstract lists every item. See \url{https://github.com/Chunduri-Aditya/agent-shield/blob/main/docs/ERRATUM.md}.
 
 Many LLM agent benchmarks score adversarial episodes on a two-axis
 outcome---task success crossed with attack success---without asking whether the
@@ -130,6 +130,9 @@ seeds, and Inspect AI logs.
 \medskip\noindent\textbf{W13.} \textit{Claim (PDF lines):} Reproducibility from the logged commit\par
 \noindent\textit{Why it does not hold:} Every May 2026 log behind Tables 4 to 7 was run from a dirty working tree except the four 2026-05-24T20 inputs runs at \texttt{bf08de8}, so the logged commit does not identify the code that ran. The Sonnet anchor log records \texttt{4d3c46b}, dirty; the first version of this file cited \texttt{d85bdb4}.\par
 \noindent\textit{Replacement value:} The Sonnet anchor log records \texttt{4d3c46b}, dirty\par
+\medskip\noindent\textbf{W14.} \textit{Claim (PDF lines):} Priority claim: ``To our knowledge, Agent Shield is the first LLM-agent security benchmark to report operator-facing attack disclosure as a primary episode-level metric alongside ASR and utility, with confidence intervals for the anchored prompt-injection setting'' (49--52)\par
+\noindent\textit{Why it does not hold:} Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691) reports a ``sensitivity rate'', a keyword based share of outputs that recognise the attacker's instruction as abnormal. Only that passage of InjecAgent was checked. The anchored intervals the sentence leans on are withdrawn (W3). No priority is claimed for the metric. Source: \texttt{docs/plugin/GAP\_ANALYSIS.md:238}.\par
+\noindent\textit{Replacement value:} ---\par
 \medskip\noindent\textbf{What stands}
 \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
   \item The protocol: Transparency Rate as a third axis beside ASR and utility, the six cell taxonomy as a definition, and the framework, attack registries and logs as released.
@@ -178,7 +181,7 @@ intervals on an anchored setting. To our knowledge, Agent Shield is the first
 LLM-agent security benchmark to report operator-facing attack
 \emph{disclosure}---as opposed to internal detection or external-monitor
 alarms---as a primary episode-level metric alongside ASR and utility, with
-Wilson intervals for the anchored prompt-injection setting.
+Wilson intervals for the anchored prompt-injection setting\textsuperscript{W14}.
 
 The empirical finding is stark. Three of four models in our evaluation show
 TR$=$0.000 with a Wilson~95\% upper bound of 0.161\textsuperscript{W3} at $n{=}20$ on the

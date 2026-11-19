@@ -32,7 +32,7 @@ These counts describe the bundled fixtures. The demo uses local rules and does n
 
 ## Evidence and research progress
 
-The October 2026 [erratum](docs/ERRATUM.md) withdraws 13 claims from the original preprint. The observations below survived the audit and describe the specific prompts tested.
+The [erratum](docs/ERRATUM.md) withdraws 14 claims from the original preprint: 13 in October 2026 and one priority claim (W14) in November 2026. The observations below survived the audit and describe the specific prompts tested.
 
 | Experiment | Supported observation |
 |---|---|
