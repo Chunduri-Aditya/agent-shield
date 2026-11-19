@@ -6,7 +6,10 @@ Primary APIs: `guard_text`, `McpToolProxy`, `ToolSpec`, `decide_host_exposure`
 
 ## What you get
 
-A **local perimeter**, not a hosted firewall:
+**Local screens**, not a hosted firewall and not a gate on live calls. Agent Shield is an
+evaluation harness plus a runtime governor that runs inside the Inspect eval loop. The APIs
+below screen a text or an MCP tool catalog once, when your host calls them. No live agent
+call is gated today. The screens:
 
 1. Screen untrusted text (docs, tool results, paste) before the model trusts it.
 2. Quarantine poisoned **tool descriptions** before they enter the tool catalog.
@@ -24,7 +27,7 @@ uv sync
 ## Host profiles (findings 07)
 
 Do **not** set `allow_model = (action == alert_proceed)`. That forwards poison
-the perimeter already flagged. Use a structured decision:
+the screen already flagged. Use a structured decision:
 
 | Profile | Behavior | When |
 |---|---|---|
@@ -120,7 +123,8 @@ def screen_tool_catalog(raw_tools: list[dict], *, off: bool = False) -> dict:
 
 * **TL-01 class tool poisons** are caught by `McpToolProxy` description
   heuristics, not by `guard_text` / `flagged_attack`. Email-redacted TL-01 is
-  a clean ALLOW on the text path. Always run catalogs through the proxy.
+  a clean ALLOW on the text path. Always run catalogs through the catalog screen
+  (`McpToolProxy`).
 * **`input_schema` is not screened** (parameter descriptions, examples,
   `$defs`). Do not merge raw upstream catalog fields (`title`, annotations)
   back into what the model sees. Shadow inventory: `agent_shield.runtime.schema_screen`.
@@ -173,7 +177,7 @@ uv run agent-shield-corpus --help
 - Not a Chrome extension / Cursor marketplace listing (Phase 5).
 - Not a full live MCP stdio/SSE transport proxy — catalog + text screening only.
 - Not a license to skip human review on money-moving tools.
-- Do not claim the perimeter “solves” prompt injection; report (ASR, alerts,
+- Do not claim the screens “solve” prompt injection; report (ASR, alerts,
   disable rate, host bypass).
 
 ## Ethics

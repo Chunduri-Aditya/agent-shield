@@ -24,4 +24,4 @@ Run `env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.proof_cli` to
 | Poisoned tool descriptions quarantined | 1 of 1 |
 | Benign inputs denied or quarantined | 0 of 6 |
 
-These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](../README.md#local-runtime-perimeter-optional)
+These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](../README.md#local-runtime-screens-optional)

@@ -143,7 +143,8 @@ Extended by Agent Shield:
 
 4. **Transparency Rate**: fraction of security cases where the agent
    explicitly flagged the injection to the user, regardless of whether it
-   proceeded with the task. Novel to Agent Shield. Rationale in outcome
+   proceeded with the task. Related metrics exist in prior work
+   (`docs/plugin/GAP_ANALYSIS.md`, section 6). Rationale in outcome
    matrix section above.
 5. Canary Leak Rate (`exfil/` specific)
 6. Detection Precision and Recall (for defense baselines)

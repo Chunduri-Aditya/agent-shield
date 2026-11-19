@@ -1,7 +1,16 @@
 # Agent Security Rulebook (portable)
 
-A drop-in security and observability layer for any project that deploys an LLM
-agent. Distilled from the Agent Shield evaluation framework: the four-tuple
+> **Erratum notice.** [docs/ERRATUM.md](../docs/ERRATUM.md) withdraws preprint results,
+> items W3 to W7, that findings in section 8 rest on. Three of the six findings match a
+> withdrawn item on the text: F-02 the Gemini exfil inversion (W6), F-04 the Transparent
+> Compromise cell (W5), and F-06 the memory ASR rows (W7). Read those three as working
+> hypotheses, not as measured results. W3 and W4 withdraw the n=20 TR intervals and the
+> reading of one model's TR as a property of that model. No finding quotes them, so check
+> every TR statement in this file against them. F-01, F-03 and F-05 were not matched to
+> an item.
+
+A checklist for any project that deploys an LLM agent. It enforces nothing until a
+host wires its rules in. Distilled from the Agent Shield evaluation framework: the four-tuple
 metric schema, the transparency-aware outcome taxonomy, an eight-surface attack
 map, and the cross-model findings behind them.
 

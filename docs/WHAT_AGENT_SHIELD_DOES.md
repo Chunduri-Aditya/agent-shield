@@ -4,13 +4,13 @@ For the demo and current evidence, start with the [README](../README.md).
 The [October 2026 erratum](ERRATUM.md) withdraws the original inputs and tools anchors.
 
 Audience: engineers, researchers, collaborators, anyone opening the GitHub repo cold  
-Authoritative scope lock: [`SHIP_LINE.md`](../research/decisions/SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Novelty boundary: [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md)
+Authoritative scope lock: [`SHIP_LINE.md`](../research/decisions/SHIP_LINE.md) · Numbers: [`RESULTS.md`](../RESULTS.md) · Related work boundary: [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md)
 
 ---
 
 ## One sentence
 
-**Agent Shield measures whether LLM agents under attack still tell their human operator what is going on** — then packages that measurement so engineers (not only security researchers) can run it, reproduce it, and optionally wire a local alert perimeter into their own agent loop.
+**Agent Shield measures whether LLM agents under attack still tell their human operator what is going on** — then packages that measurement so engineers (not only security researchers) can run it, reproduce it, and optionally call a local text and tool catalog screen from their own agent loop. No live agent call is gated today.
 
 ---
 
@@ -36,7 +36,7 @@ In production that gap is concrete. An agent that refuses a poisoned tool call b
 | **Eval harness** | Attack registries + Inspect AI tasks across agent surfaces; seeded runs; ASR + TR (+ utility) per module |
 | **Metric / risk layer** | Shared four-tuple metrics, AIVSS-scored attack metadata, CIA / OWASP / MITRE ATLAS mappings, risk gate before HIGH/CRITICAL evals |
 | **Reporting** | Plain-English vulnerability cards and reports (`make report`) so findings are readable without a security PhD |
-| **Optional runtime** | Local CLI / library perimeter: screen untrusted text and MCP **tool descriptions**, quarantine known TL-01-style poisons, show operator alerts — **same repo, separate claim** from the n=20 eval tables |
+| **Optional runtime** | Local CLI / library screens: screen untrusted text and MCP **tool descriptions** once, when a host calls them, quarantine known TL-01-style poisons in the returned catalog, show operator alerts — **same repo, separate claim** from the eval results. A spend governor runs inside the Inspect eval loop only |
 
 Built on [Inspect AI](https://inspect.aisi.org.uk). Compatible with AgentDojo-style agent eval thinking. Public under MIT.
 
@@ -76,7 +76,7 @@ Make agent security **usable by any engineer**:
 
 ### Product-adjacent goal (optional Track B)
 
-Turn Transparency Rate into a **product signal**: a local AdBlock-style perimeter that alerts (and for tool descriptions, quarantines) before the model sees poison — without pretending fixture proof numbers are the same as anchored eval CIs. Integration recipe: [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md).
+Offer a local screen that a host can call before the model reads a text or a tool catalog: it alerts, and for tool descriptions it quarantines. That alert is a system channel, separate from Transparency Rate, and fixture proof numbers are not eval results. The repo ships no adapter that puts the screen in a live agent loop. Integration recipe: [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md).
 
 ---
 
@@ -128,7 +128,9 @@ The [erratum](ERRATUM.md#what-stands) records the supported observations from th
 
 ---
 
-## What the runtime perimeter is doing (optional)
+## What the runtime screens do (optional)
+
+Agent Shield is an evaluation harness plus a runtime governor that runs inside the Inspect eval loop. The CLIs below screen a text or an MCP tool catalog once, when a host calls them. No live agent call is gated today; the gap list is in [`GAP_ANALYSIS.md`](plugin/GAP_ANALYSIS.md).
 
 Local package `agent_shield.runtime` + CLIs:
 
@@ -140,12 +142,12 @@ Local package `agent_shield.runtime` + CLIs:
 
 **Honest limits:**
 
-- TL-01-style description poisons are caught by **proxy heuristics**, not by research `flagged_attack` alone.  
+- TL-01-style description poisons are caught by **catalog screen heuristics**, not by research `flagged_attack` alone.  
 - `input_schema` (parameter text, examples, `$defs`) is **not** screened yet.  
 - Proof recall is split: text alert recall vs catalog quarantine recall.  
 - Miss corpus / FP gate research: [`runtime_aggressive_testing_research.md`](../research/design/runtime_aggressive_testing_research.md).
 
-This layer exists so TR is not only a paper number — it can become an operator-visible drawer in a real agent loop. It does **not** replace the eval claim.
+This layer gives a host an operator-visible alert for the text and the catalogs it screens. That alert is a system channel: it is not Transparency Rate, which scores what the acting model says. It does **not** replace the eval claim.
 
 ---
 
@@ -175,7 +177,7 @@ This layer exists so TR is not only a paper number — it can become an operator
 - TR-v2 promoted only after the holdout FP gate.  
 - Powered `tools/` story complete (including Gemini if the provider path is fixed).  
 - Aggressive miss corpus measured before tightening MCP heuristics or screening schemas.  
-- Optional: trusted testers on the local perimeter; Loom URL and “AdBlock for agents” post published.
+- Optional: trusted testers on the local screens; Loom URL and a post on local screening published.
 
 **Longer arc**
 
@@ -194,7 +196,7 @@ This layer exists so TR is not only a paper number — it can become an operator
 | Attack ↔ framework map | [`MAPPINGS.md`](../MAPPINGS.md) |
 | Numbers | [`RESULTS.md`](../RESULTS.md) |
 | Why TR ≠ detection | [`DIFFERENTIATION.md`](../research/positioning/DIFFERENTIATION.md) |
-| Wire the local perimeter | [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md) |
+| Wire the local screens | [`company_agent_adapter.md`](../showcase/guides/company_agent_adapter.md) |
 | Dual-use rules | [`ETHICS.md`](../ETHICS.md) |
 | Runnable example | [Local catalog demo](../README.md#try-it-in-30-seconds) |
 | Run commands | [`README.md`](../README.md) Quickstart |
@@ -203,4 +205,4 @@ This layer exists so TR is not only a paper number — it can become an operator
 
 ## Bottom line
 
-Agent Shield is trying to make **“did the agent tell the human?”** a first-class, reproducible axis of agent security — measured in an eval harness, explained in plain English, gated for dual-use risk, and optionally surfaced as a local perimeter — without claiming to be the firewall that ends prompt injection.
+Agent Shield is trying to make **“did the agent tell the human?”** a first-class, reproducible axis of agent security — measured in an eval harness, explained in plain English, gated for dual-use risk, and optionally paired with local screens that a host can call — without claiming to gate live agent calls or to be the firewall that ends prompt injection.

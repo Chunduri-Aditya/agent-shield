@@ -28,7 +28,7 @@ Run `env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.proof_cli` to
 | Poisoned tool descriptions quarantined | 1 of 1 |
 | Benign inputs denied or quarantined | 0 of 6 |
 
-These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](#local-runtime-perimeter-optional)
+These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](#local-runtime-screens-optional)
 
 ## Evidence and research progress
 
@@ -52,7 +52,7 @@ The original tool poisoning benchmark reported zero successful attacks even thou
 |---|---|
 | Threat model and attack registry | [Threat model](THREAT_MODEL.md) · [Framework mappings](MAPPINGS.md) |
 | Tool event scoring | [Event scorer](evals/tools_event_v2.py) · [Study protocol](docs/paper_v2/prereg/S1.md) |
-| Runtime integration | [MCP catalog proxy](agent_shield/runtime/mcp_proxy.py) · [Adapter guide](showcase/guides/company_agent_adapter.md) |
+| Runtime integration | [MCP catalog screen](agent_shield/runtime/mcp_proxy.py) · [Adapter guide](showcase/guides/company_agent_adapter.md) |
 | Full evidence trail | [Erratum](docs/ERRATUM.md) · [Run ledger](RESULTS.md) · [Historical findings](FINDINGS.md) |
 
 ## Task index
@@ -150,12 +150,18 @@ remains in RESULTS. One defense baseline: spotlighting on `inputs/` and
 
 `wallet/` DW-01 spend governor on claude-haiku-5-5, observe against enforce (diagnostic, n=5): [results/wallet/DW01_governor_haiku55_2026-11-18.md](results/wallet/DW01_governor_haiku55_2026-11-18.md).
 
-**Runtime perimeter:** installable locally (see next section). Cross-purpose
+**Runtime screens:** installable locally (see next section). They screen a text or a
+tool catalog once and gate no live agent call. Cross-purpose
 MCP description quarantine evidence:
 [results/audit_reports/mcp_cross_purpose_promotion.md](results/audit_reports/mcp_cross_purpose_promotion.md).
 Differentiation: [research/positioning/DIFFERENTIATION.md](research/positioning/DIFFERENTIATION.md).
 
-## Local runtime perimeter (optional)
+## Local runtime screens (optional)
+
+Agent Shield is an evaluation harness plus a runtime governor that runs inside the
+Inspect eval loop. The CLIs below screen a text or an MCP tool catalog once, when a
+host calls them. No live agent call is gated today. The gap list is in
+[docs/plugin/GAP_ANALYSIS.md](docs/plugin/GAP_ANALYSIS.md).
 
 Same repository, **separate claim** from the eval tables. Package:
 `agent_shield.runtime`. No model calls for the proof CLI.
@@ -168,10 +174,10 @@ Same repository, **separate claim** from the eval tables. Package:
 
 **Honest limits (read before integrating):**
 
-- TL-01-style **description** poisons are caught by **proxy-local heuristics**,
+- TL-01-style **description** poisons are caught by **heuristics local to the catalog screen**,
   not by the research screener’s `flagged_attack`. Email-redacted TL-01 is a
   clean ALLOW on `agent-shield-guard` alone. Always run catalogs through the
-  proxy. Expose `model_tools` to the model — never `tools[].original_description`.
+  catalog screen (`agent-shield-mcp-proxy`). Expose `model_tools` to the model — never `tools[].original_description`.
 - **`input_schema` is not screened** (parameter descriptions, `examples`,
   `$defs`). Do not re-merge raw upstream `title` / annotations into the
   model-facing catalog after screening.
@@ -246,7 +252,7 @@ uv run --no-project scripts/dpo_lora_spike.py --axis verbosity
 
 ```text
 agent-shield/
-├── agent_shield/      Metrics, research screener, runtime perimeter (guard / MCP proxy / proof / TR-v2)
+├── agent_shield/      Metrics, research screener, runtime screens (guard / MCP catalog screen / proof / TR-v2), spend governor (eval only)
 ├── evals/             Inspect AI task definitions (one file per module)
 ├── inputs/            Prompt injection attack registry
 ├── tools/             MCP attack registry and demo server
@@ -257,7 +263,7 @@ agent-shield/
 ├── defenses/          Defense baselines (spotlighting)
 ├── reports/           Plain-language reports, TR audits, TR-v2 holdouts
 ├── scripts/           Sweep runner, model registry, auth checks, DPO/LoRA spike
-├── tests/             Pytest suite (includes runtime perimeter pins)
+├── tests/             Pytest suite (includes runtime screen pins)
 ├── docs/              Adapter, originality audit, aggressive-testing research, paper prep
 ├── risk_registry.py   AIVSS-scored attack metadata with CIA and OWASP mappings
 ├── report_generator.py Plain-language report builder (make report)
@@ -301,7 +307,7 @@ make eval-all       # six live modules (anchored + probes)
 make sweep          # run all modules against all available models
 make report         # generate plain-language report from latest eval log
 
-# Optional local perimeter (no model required for proof)
+# Optional local screens (no model required for proof)
 make guard          # echo TEXT | make guard
 make mcp-proxy-demo # TL-01 catalog screen (JSON) — use model_tools for the model
 make mcp-proxy-badge
@@ -322,7 +328,7 @@ Provider keys used by the repo:
 - `OPENAI_API_KEY`
 - `GOOGLE_API_KEY`
 - `GROQ_API_KEY`
-- `AGENT_SHIELD_GUARD_OFF` — set to `1` to disable the runtime perimeter
+- `AGENT_SHIELD_GUARD_OFF` — set to `1` to disable the runtime screens
 
 Keys live in `.env` (gitignored). Free backend reference in [showcase/guides/free_agents.md](showcase/guides/free_agents.md).
 
@@ -341,7 +347,7 @@ tree and which conclusions survived the audit. For S1, start with the
 
 Agent Shield keeps model calls out of the unit-test path. Tests validate
 deterministic scoring, attack metadata consistency, paper-artifact
-reproducibility, risk gates, the runtime guard, the MCP proxy, and report generation.
+reproducibility, risk gates, the runtime guard, the MCP catalog screen, and report generation.
 The tests also keep the archived README rows in sync with [RESULTS.md](RESULTS.md).
 The full suite runs without API keys or local model servers. CI supplies the optional
 persona fixtures from a pinned checkout.

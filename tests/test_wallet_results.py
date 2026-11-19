@@ -15,11 +15,14 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from inspect_ai.log import read_eval_log
 
 REPO = Path(__file__).resolve().parent.parent
 RUN = "DW01_haiku55_2026-11-18"
 WALLET = REPO / "results" / "wallet"
 ARMS = ("control", "benign_heavy", "attack")
+RAW = REPO.parent / "agent-shield-wallet-data"
+ATTEMPT_DIRS = {"1": "dw01_haiku55_2026-11-18", "2": "dw01_haiku55_2026-11-18_run2"}
 
 
 @pytest.fixture(scope="module")
@@ -144,6 +147,54 @@ def test_the_tokens_and_dollars_note_matches_result_json(
 def test_the_record_makes_no_transparency_or_attack_success_claim(record: str) -> None:
     for word in ("Transparency Rate", " TR ", "ASR", "attack success rate"):
         assert word not in record, word
+
+
+def _attempt_rows(record: str) -> dict[str, list[str]]:
+    assert "## Attempts\n" in record, "the record has no Attempts section"
+    section = record.split("## Attempts\n", 1)[1].split("\n## ", 1)[0]
+    lines = [ln for ln in section.splitlines() if re.match(r"\| \d+ \|", ln)]
+    rows = [[cell.strip() for cell in ln.strip("|").split("|")] for ln in lines]
+    return {row[0]: row for row in rows}
+
+
+def test_the_record_names_every_attempt_and_its_exit_reason(record: str) -> None:
+    rows = _attempt_rows(record)
+    assert sorted(rows) == sorted(ATTEMPT_DIRS)
+    assert rows["1"][1:4] == [
+        "`44ca5e1`, `revision.dirty` = `True`",
+        "exit 1: HTTP 401 on 15 of 15 samples, 0 tokens",
+        "none",
+    ]
+    assert rows["2"][1:4] == ["`863e3c2`, `revision.dirty` = `False`", "exit 0", "all 3"]
+    assert "run once" not in " ".join(record.split())
+    assert "The second of two attempts" in " ".join(record.split("## Setup", 1)[0].split())
+    assert "_run2" not in record  # a local folder name, not part of the public record
+
+
+def test_the_attempts_section_matches_the_raw_logs(record: str) -> None:
+    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
+        pytest.skip("the raw logs of the two attempts are not in the repo")
+    rows = _attempt_rows(record)
+    assert sorted(rows) == sorted(ATTEMPT_DIRS)
+    for attempt, name in ATTEMPT_DIRS.items():
+        logs = [read_eval_log(str(p)) for p in sorted((RAW / name / "logs").glob("*.eval"))]
+        assert sorted(log.eval.task_args["arm"] for log in logs) == sorted(ARMS)
+        revisions = [log.eval.revision for log in logs]
+        assert None not in revisions
+        ((commit, dirty),) = {(r.commit, r.dirty) for r in revisions if r is not None}
+        samples = [s for log in logs for s in log.samples or []]
+        errors = [s.error.message for s in samples if s.error is not None]
+        assert all("Error code: 401" in message for message in errors)
+        tokens = sum(u.total_tokens for s in samples for u in s.model_usage.values())
+        finished = sum(all(s.error is None for s in log.samples or []) for log in logs)
+        note = (RAW / name / "exit.txt").read_text().strip()
+        if errors:
+            note += f": HTTP 401 on {len(errors)} of {len(samples)} samples, {tokens} tokens"
+        assert rows[attempt][1:4] == [
+            f"`{commit}`, `revision.dirty` = `{dirty}`",
+            note,
+            f"all {finished}" if finished else "none",
+        ], attempt
 
 
 def test_readme_points_to_the_record_as_a_diagnostic() -> None:

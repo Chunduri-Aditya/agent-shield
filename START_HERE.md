@@ -18,7 +18,7 @@ Agent Shield tests whether a language model agent completes the user's task, fol
 
 | Area | Folder | What is in it | Entry file |
 |---|---|---|---|
-| Sources | `agent_shield/`, `evals/`, `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`, `defenses/`, `scripts/` | Runtime perimeter, Inspect tasks, attack registries, defense baseline, runners | [Makefile](Makefile) (`make help`) |
+| Sources | `agent_shield/`, `evals/`, `inputs/`, `tools/`, `psych/`, `memory/`, `exfil/`, `drift/`, `defenses/`, `scripts/` | Runtime screens (they gate no live agent call), the eval only spend governor, Inspect tasks, attack registries, defense baseline, runners | [Makefile](Makefile) (`make help`) |
 | Tests | `tests/` | Pytest suite, fixtures, delivery tests for the tool description | [tests/test_eval_scorers.py](tests/test_eval_scorers.py) |
 | Results | `results/` | Index to the run ledger, findings, erratum, S1 reports and audit reports | [results/README.md](results/README.md) |
 | Research | `research/` | Paper sources, design notes, decisions, positioning, provenance, research packages, notebook | [research/README.md](research/README.md) |

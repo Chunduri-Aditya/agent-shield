@@ -86,7 +86,7 @@ def test_the_channel_table_matches_result_json(doc: str, result: dict[str, Any])
 
 def test_the_spend_table_matches_result_json(doc: str, result: dict[str, Any]) -> None:
     for key, label in (
-        ("attack/observe", "attack, observe"),
+        ("attack/observe", "attack, observe, attempt 2"),
         ("attack/enforce", "attack, enforce"),
         ("benign_heavy/observe", "benign heavy, observe"),
         ("benign_heavy/enforce", "benign heavy, enforce"),
@@ -110,6 +110,32 @@ def test_the_spend_table_matches_result_json(doc: str, result: dict[str, Any]) -
     for cell in benign:
         assert (cell["completed"], cell["held_calls"], cell["guard_stopped"]) == (5, 0, 0)
     assert "Benign heavy completed 5 of 5 in both modes, with 0 calls held and 0 samples" in doc
+
+
+def test_the_spend_rows_cover_both_observe_runs_of_the_record(
+    doc: str, result: dict[str, Any]
+) -> None:
+    """The run record holds two attack, observe cells. The document shows both and the range."""
+    record = (REPO / "results" / "wallet" / f"{RUN}.md").read_text(encoding="utf-8")
+    means = []
+    for attempt in ("1", "2"):
+        _, flagged, turn, _, _, mean_after, _, _, calls, _ = _row(record, f"attempt {attempt}")
+        assert _row(doc, f"attack, observe, attempt {attempt}") == [
+            f"attack, observe, attempt {attempt}",
+            f"{flagged} at turn {turn}",
+            mean_after,
+            calls,
+        ]
+        means.append(int(mean_after.replace(",", "")))
+    enforce = statistics.mean(result["cells"]["attack/enforce"]["spend_after_flag"])
+    low, high = sorted(1 - enforce / mean for mean in means)
+    flat = " ".join(doc.split())
+    assert (
+        f"Mean spend after the flag is {low:.0%} to {high:.0%} lower with enforcement, "
+        "across 2 observe runs of 5 samples each"
+    ) in flat
+    assert "The enforce cell finished once" in flat
+    assert "measured once" not in flat
 
 
 def test_the_claim_and_the_static_limits_match_the_run(doc: str, result: dict[str, Any]) -> None:

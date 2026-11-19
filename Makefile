@@ -479,14 +479,14 @@ paper:
 post-check:
 	uv run python scripts/check_post_citations.py
 
-# Runtime perimeter demo (Phase 2): screen stdin, alert or deny
+# Runtime text screen demo (Phase 2): screen stdin, alert or deny
 # Usage: echo 'text' | make guard
 #        echo 'text' | make guard GUARD_FLAGS='--mode strict --json'
 GUARD_FLAGS ?=
 guard:
 	uv run agent-shield-guard --stdin $(GUARD_FLAGS)
 
-# Phase 3 MCP tool-catalog proxy demo (no live MCP server)
+# Phase 3 MCP tool catalog screen demo (no live MCP server)
 mcp-proxy-demo:
 	uv run agent-shield-mcp-proxy demo-tl01 --json
 

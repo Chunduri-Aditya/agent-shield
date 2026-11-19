@@ -977,7 +977,7 @@ None quantitative. Useful structurally: the distinction between "action authoriz
 
 **Differentiation angle**
 
-Agent Shield measures the AA01 through AA06 surface empirically. OWASP Agentic gives the vocabulary without the lab. The differentiation: Agent Shield is the first evaluation framework to map measured ASR rates onto all 10 agentic risk items simultaneously, which OWASP Agentic treats as aspirational.
+Agent Shield measures the AA01 through AA06 surface empirically. OWASP Agentic gives the vocabulary without the lab. The differentiation: Agent Shield maps its attack registry to the agentic risk ids ([MAPPINGS.md](../../MAPPINGS.md)). Measured coverage is partial, and [docs/ERRATUM.md](../../docs/ERRATUM.md) withdraws several of the preprint's ASR rows (W2, W7 to W10), so this is a mapping, not a measured result for all 10 items.
 
 **Implementation steal**
 
