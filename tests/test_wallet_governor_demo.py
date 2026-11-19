@@ -318,6 +318,8 @@ def test_run_passes_its_options_to_the_task_and_to_the_eval(
         for t in tasks
     )
     assert [e["epochs"] for e in evals] == [3, 3, 1, 1]
+    # A model call on a dead connection must end and be tried again, not wait without end.
+    assert {e["attempt_timeout"] for e in evals} == {demo.ATTEMPT_TIMEOUT} == {120}
     assert all(
         (e["cost_limit"], e["model_cost_config"], e["fail_on_error"], e["log_dir"])
         == (1.0, "prices.yaml", False, str(tmp_path))

@@ -69,6 +69,9 @@ RUN_ARMS = ("attack", "benign_heavy")
 LOOP_TOOL = "fetch_page"
 EVENT_LOG = "security_events.jsonl"
 STATIC_TURNS = 40
+# Seconds for one attempt of a model call. Inspect has no limit by default, so a call on a
+# connection that died (a laptop that slept) would wait without end.
+ATTEMPT_TIMEOUT = 120
 
 Turn = tuple[int, list[tuple[str, str]]]
 
@@ -326,6 +329,7 @@ def run(
                 fail_on_error=False,
                 cost_limit=cost_limit,
                 model_cost_config=model_cost_config,
+                attempt_timeout=ATTEMPT_TIMEOUT,
             )[0]
             key = f"{arm}/{mode}"
             samples[key] = read_eval_log(log.location).samples or []
