@@ -55,6 +55,13 @@ def record() -> str:
     return (WALLET / f"{RUN}.md").read_text(encoding="utf-8")
 
 
+@pytest.fixture(scope="module")
+def attempts() -> dict[str, Any]:
+    """What every attempt wrote, measured once from the raw logs and committed."""
+    loaded: dict[str, Any] = json.loads((WALLET / f"{RUN}.attempts.json").read_text())
+    return loaded
+
+
 def _span(values: list[int]) -> str:
     if not values:
         return "none"
@@ -244,35 +251,100 @@ def test_the_headline_is_a_range_over_every_finished_observe_cell(
     assert not re.search(r"is \d+% lower", flat)  # no figure from one observe run alone
 
 
-def test_the_attempts_section_matches_the_raw_logs(record: str) -> None:
-    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
-        pytest.skip("the raw logs of the two attempts are not in the repo")
-    attempts = _section(record, "Attempts")
+def _sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _attempts_from_raw() -> dict[str, Any]:
+    """The attempts file, measured again from the run directories outside the repo."""
+    out: list[dict[str, Any]] = []
     for attempt, name in ATTEMPT_DIRS.items():
         run = RAW / name
-        assert verify_chain(run / "logs" / demo.EVENT_LOG).ok
-        seen = channels_by_session(read_chain(run / "logs" / demo.EVENT_LOG))
-        _, log = _raw_logs(attempt)[OBSERVE]
-        revision = log.eval.revision
-        assert revision is not None and revision.dirty is False
-        assert (log.status, revision.commit) == ("success", ATTEMPT_COMMITS[attempt])
-        rows = [demo._sample_row(s, "observe", seen) for s in log.samples or []]
-        measured = _observe_row(demo._cell("attack", rows))
-        assert _row(attempts, f"attempt {attempt}")[1:] == measured, attempt
-        if attempt == "1":  # its cost is not in the record's total, its tokens are named
-            used = sum(row["tokens"] for row in rows)
-            assert f"its finished cell used {used:,} tokens" in record
-        note = (run / "exit.txt").read_text().strip()
-        assert _row(attempts, attempt)[2] == ("exit 0" if note == "0" else note)
-        assert (run / "commit.txt").read_text().startswith(ATTEMPT_COMMITS[attempt])
-    first = _raw_logs("1")
-    assert sorted(first) == ["attack/enforce", OBSERVE]  # benign heavy never started
-    assert first["attack/enforce"][1].status == "started"
-    assert not first["attack/enforce"][1].samples
-    seen = channels_by_session(read_chain(RAW / ATTEMPT_DIRS["1"] / "logs" / demo.EVENT_LOG))
-    assert [v["guard"] for k, v in seen.items() if k.startswith("enforce/")] == [1] * 5
-    assert "wrote 5 guard events, one ask per sample" in " ".join(attempts.split())
-    assert hashlib.sha256(first[OBSERVE][0].read_bytes()).hexdigest() in attempts
+        event_log = run / "logs" / demo.EVENT_LOG
+        chain = verify_chain(event_log)
+        seen = channels_by_session(read_chain(event_log))
+        logs = _raw_logs(attempt)
+        revisions = {cell: log.eval.revision for cell, (_, log) in logs.items()}
+        entry: dict[str, Any] = {
+            "attempt": int(attempt),
+            "commit": (run / "commit.txt").read_text().strip()[:7],
+            "exit": (run / "exit.txt").read_text().strip(),
+            "logs": {
+                cell: {
+                    "status": log.status,
+                    "revision_commit": None if (rev := revisions[cell]) is None else rev.commit,
+                    "revision_dirty": None if rev is None else rev.dirty,
+                    "samples": len(log.samples or []),
+                    "sha256": _sha(path),
+                }
+                for cell, (path, log) in sorted(logs.items())
+            },
+            "event_log": {
+                "records": chain.count,
+                "chain_ok": chain.ok,
+                "head": chain.head,
+                "sha256": _sha(event_log),
+                "guard_events": {
+                    mode: sum(v["guard"] for k, v in seen.items() if k.startswith(f"{mode}/"))
+                    for mode in demo.MODES
+                },
+            },
+        }
+        if attempt == "1":  # attempt 2 is the committed result.json
+            rows = [demo._sample_row(s, "observe", seen) for s in logs[OBSERVE][1].samples or []]
+            entry["cells"] = {OBSERVE: demo._cell("attack", rows)}
+            entry["samples"] = {OBSERVE: rows}
+        out.append(entry)
+    measured: dict[str, Any] = json.loads(json.dumps({"record": RUN, "attempts": out}))
+    return measured
+
+
+def test_the_attempts_section_matches_the_attempts_file(
+    record: str, attempts: dict[str, Any], result: dict[str, Any]
+) -> None:
+    section = _section(record, "Attempts")
+    first, second = attempts["attempts"]
+    assert f"[{RUN}.attempts.json]({RUN}.attempts.json)" in record
+    assert (attempts["record"], first["attempt"], second["attempt"]) == (RUN, 1, 2)
+    for entry in (first, second):
+        number = str(entry["attempt"])
+        assert entry["commit"] == ATTEMPT_COMMITS[number]
+        assert _row(section, number)[1] == f"`{entry['commit']}`"
+        note = entry["exit"]
+        assert _row(section, number)[2] == ("exit 0" if note == "0" else note)
+        for log in entry["logs"].values():
+            assert (log["revision_commit"], log["revision_dirty"]) == (entry["commit"], False)
+    # Attempt 1: the one finished cell, its tokens, its log hash and the asks of the cut cell.
+    cell = first["cells"][OBSERVE]
+    assert _row(section, "attempt 1")[1:] == _observe_row(cell)
+    assert cell == demo._cell("attack", first["samples"][OBSERVE])
+    assert f"its finished cell used {sum(cell['tokens']):,} tokens" in record
+    assert {c: (v["status"], v["samples"]) for c, v in first["logs"].items()} == {
+        "attack/enforce": ("started", 0),
+        OBSERVE: ("success", 5),
+    }
+    assert first["logs"][OBSERVE]["sha256"] in section
+    flat = " ".join(section.split())
+    events_1 = first["event_log"]
+    assert (events_1["chain_ok"], events_1["guard_events"]) == (True, {"observe": 10, "enforce": 5})
+    assert f"wrote {events_1['guard_events']['enforce']} guard events, one ask per sample" in flat
+    assert f"The event log of attempt 1 holds {events_1['records']} records" in flat
+    # Attempt 2 is result.json: the same four logs, and the same chain.
+    assert sorted(second["logs"]) == sorted(CELLS) and "cells" not in second
+    assert all((v["status"], v["samples"]) == ("success", 5) for v in second["logs"].values())
+    chain = result["chain"]
+    events_2 = second["event_log"]
+    assert (events_2["records"], events_2["head"]) == (chain["count"], chain["head"])
+    sums = (WALLET / f"{RUN}.SHA256SUMS").read_text()
+    for log in second["logs"].values():
+        assert f"{log['sha256']}  logs/" in sums
+    assert f"{events_2['sha256']}  logs/{demo.EVENT_LOG}" in sums
+
+
+def test_the_attempts_file_matches_the_raw_logs(attempts: dict[str, Any]) -> None:
+    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
+        pytest.skip("the raw logs of the two attempts are not in the repo")
+    assert _attempts_from_raw() == attempts
 
 
 def test_the_guard_table_matches_result_json(record: str, result: dict[str, Any]) -> None:

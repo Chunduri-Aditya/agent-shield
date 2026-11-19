@@ -7,7 +7,7 @@ without re reading the other.
 ## What connects
 
 Agent Shield owns the canonical, reproducible metric definitions: attack success
-rate, defense pass rate, severity weighted risk, and the novel Transparency Rate.
+rate, defense pass rate, severity weighted risk, and Transparency Rate.
 The ai_health_journal project is a local RAG app with its own security harness for
 poisoned retrieved context. Before this integration the app carried a parallel
 reimplementation of security scoring. Now there is one source of truth.

@@ -148,8 +148,11 @@ token spend, guard decisions and events only.
 
 - [DW01_governor_haiku55_2026-11-18.result.json](DW01_governor_haiku55_2026-11-18.result.json): the output of the command above. A test
   (`tests/test_wallet_governor_results.py`) recomputes the attempt 2 tables on this page from it.
-  The attempt 1 row comes from a raw log that is not in the repo. The same test file measures it
-  again on a machine that holds the logs, and skips elsewhere.
+- [DW01_governor_haiku55_2026-11-18.attempts.json](DW01_governor_haiku55_2026-11-18.attempts.json): what each attempt wrote, measured
+  from the raw logs: commit, exit note, log status, sample count and SHA256 per log, the event
+  log, and the samples of the attempt 1 cell. The same test file checks the Attempts section
+  against it on every run. On a machine that holds the raw logs it also measures the file
+  again, and it skips that one check elsewhere.
 - [DW01_governor_haiku55_2026-11-18.SHA256SUMS](DW01_governor_haiku55_2026-11-18.SHA256SUMS): SHA256 of every file of the run, with paths
   relative to the run directory. The `result.json` line is the hash of the file above. The 4
   Inspect logs and the event log are not in the repo.

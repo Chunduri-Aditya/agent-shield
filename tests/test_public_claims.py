@@ -41,6 +41,15 @@ FILES = (
     "START_HERE.md",
     "showcase/guides/company_agent_adapter.md",
     "Makefile",
+    "research/positioning/DIFFERENTIATION.md",
+    "docs/ai_health_journal_integration.md",
+    "tests/test_metrics_transparency.py",
+    "docs/paper_v2/DECISIONS.md",
+    "ETHICS.md",
+)
+S1_FROZEN = (
+    "ETHICS.md is frozen for the S1 study (scripts/v2/setup_s1.py, S1_FILES, not amendable), "
+    "so it is not edited; the priority claim is withdrawn as docs/ERRATUM.md W14"
 )
 BANNED = {
     "perimeter": re.compile(r"perimeter", re.I),
@@ -53,6 +62,74 @@ BANNED = {
 }
 # (file, term, text that the line holds, why this use is true)
 ALLOWED: tuple[tuple[str, str, str, str], ...] = (
+    ("ETHICS.md", "novel", "introduces Transparency Rate as a novel metric", S1_FROZEN),
+    ("ETHICS.md", "novel", "not just a research novelty", S1_FROZEN),
+    (
+        "ETHICS.md",
+        "novel",
+        "discovers a novel, high-severity vulnerability",
+        "a newly found vulnerability, in the disclosure policy",
+    ),
+    (
+        "ETHICS.md",
+        "novel",
+        "Novel (not already documented in the public literature)",
+        "a test for when a finding needs disclosure",
+    ),
+    (
+        "research/positioning/DIFFERENTIATION.md",
+        "first to",
+        "**Not defensible:**",
+        "names a claim the file says cannot be made",
+    ),
+    (
+        "research/positioning/DIFFERENTIATION.md",
+        "novel",
+        "Novelty threats for",
+        "a table of prior work that limits such claims",
+    ),
+    (
+        "research/positioning/DIFFERENTIATION.md",
+        "novel",
+        "Cite ADR/MIR when claiming novelty",
+        "a finished checklist item about citing prior work",
+    ),
+    (
+        "docs/ai_health_journal_integration.md",
+        "the first",
+        "reports it for the first time as a result of this integration",
+        "a sibling app that did not report the metric before",
+    ),
+    (
+        "docs/paper_v2/DECISIONS.md",
+        "the first",
+        "it resumes at the first unlabelled item",
+        "the order of items in a labelling queue",
+    ),
+    (
+        "docs/paper_v2/DECISIONS.md",
+        "the first",
+        "the number of the first disclosing block",
+        "the position of a block in a response",
+    ),
+    (
+        "docs/paper_v2/DECISIONS.md",
+        "the first",
+        "a stratified draw from the first 280 queue items",
+        "the order of items in a labelling queue",
+    ),
+    (
+        "docs/paper_v2/DECISIONS.md",
+        "the first",
+        "recommended in the first Q7",
+        "the earlier of two questions with one number",
+    ),
+    (
+        "docs/paper_v2/DECISIONS.md",
+        "the first",
+        "in the first 280 queue positions",
+        "the order of items in a labelling queue",
+    ),
     (
         "showcase/guides/company_agent_adapter.md",
         "proxy",
@@ -277,6 +354,18 @@ def test_the_rulebook_calls_itself_a_checklist_that_enforces_nothing() -> None:
     ) in text
 
 
+def test_the_rulebook_does_not_present_its_findings_as_results() -> None:
+    text = " ".join(_lines("rulebook/AGENT_SECURITY_RULEBOOK.md"))
+    assert "These are the cross-model results from Agent Shield" not in text
+    assert "treat all six as assumptions to test, not as results" in text
+
+
+def test_the_scope_note_for_transparency_rate_claims_no_priority() -> None:
+    text = " ".join(_lines("research/positioning/DIFFERENTIATION.md"))
+    assert "defensible as novel" not in text and "with an anchored CI setting" not in text
+    assert "with no priority claim (docs/ERRATUM.md W14)" in text
+
+
 def test_the_overview_does_not_read_the_alert_layer_as_transparency_rate() -> None:
     text = " ".join(_lines("docs/WHAT_AGENT_SHIELD_DOES.md"))
     assert "TR is not only a paper number" not in text
@@ -305,7 +394,7 @@ def test_the_erratum_withdraws_the_priority_claim_as_w14() -> None:
     rows = _erratum_rows()
     assert list(rows) == [f"W{n}" for n in range(1, 15)]
     row = rows["W14"]
-    assert f"\"{PRIORITY_CLAIM}\" (49\u201352)" in row  # the erratum writes ranges with an en dash
+    assert f'"{PRIORITY_CLAIM}" (49\u201352)' in row  # the erratum writes ranges with an en dash
     assert f"`{PRIOR_WORK}`" in row and "arXiv 2403.02691" in row and "(W3)" in row
     # The line the row cites says what the row says it does.
     name, number = PRIOR_WORK.split(":")

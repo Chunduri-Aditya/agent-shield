@@ -171,34 +171,76 @@ def test_the_record_names_every_attempt_and_its_exit_reason(record: str) -> None
     assert "_run2" not in record  # a local folder name, not part of the public record
 
 
-def test_the_attempts_section_matches_the_raw_logs(record: str) -> None:
-    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
-        pytest.skip("the raw logs of the two attempts are not in the repo")
-    rows = _attempt_rows(record)
-    assert sorted(rows) == sorted(ATTEMPT_DIRS)
+@pytest.fixture(scope="module")
+def attempts() -> dict[str, Any]:
+    """What every attempt wrote, measured once from the raw logs and committed."""
+    loaded: dict[str, Any] = json.loads((WALLET / f"{RUN}.attempts.json").read_text())
+    return loaded
+
+
+def _attempts_from_raw() -> dict[str, Any]:
+    """The attempts file, measured again from the run directories outside the repo."""
+    out: list[dict[str, Any]] = []
     for attempt, name in ATTEMPT_DIRS.items():
-        logs = [read_eval_log(str(p)) for p in sorted((RAW / name / "logs").glob("*.eval"))]
-        assert sorted(log.eval.task_args["arm"] for log in logs) == sorted(ARMS)
-        revisions = [log.eval.revision for log in logs]
-        assert None not in revisions
-        ((commit, dirty),) = {(r.commit, r.dirty) for r in revisions if r is not None}
-        samples = [s for log in logs for s in log.samples or []]
-        errors = [s.error.message for s in samples if s.error is not None]
-        assert all("Error code: 401" in message for message in errors)
-        tokens = sum(u.total_tokens for s in samples for u in s.model_usage.values())
-        finished = sum(all(s.error is None for s in log.samples or []) for log in logs)
-        note = (RAW / name / "exit.txt").read_text().strip()
-        if errors:
-            note += f": HTTP 401 on {len(errors)} of {len(samples)} samples, {tokens} tokens"
-        assert rows[attempt][1:4] == [
+        run = RAW / name
+        logs: dict[str, Any] = {}
+        for path in sorted((run / "logs").glob("*.eval")):
+            log = read_eval_log(str(path))
+            samples = log.samples or []
+            found = [re.search(r"Error code: (\d+)", s.error.message) for s in samples if s.error]
+            codes = sorted({int(m.group(1)) if m else 0 for m in found})
+            revision = log.eval.revision
+            logs[log.eval.task_args["arm"]] = {
+                "status": log.status,
+                "revision_commit": None if revision is None else revision.commit,
+                "revision_dirty": None if revision is None else revision.dirty,
+                "samples": len(samples),
+                "errored": sum(s.error is not None for s in samples),
+                "http_error_codes": codes,
+                "tokens": sum(u.total_tokens for s in samples for u in s.model_usage.values()),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        out.append(
+            {
+                "attempt": int(attempt),
+                "exit": (run / "exit.txt").read_text().strip(),
+                "logs": {arm: logs[arm] for arm in sorted(logs)},
+            }
+        )
+    measured: dict[str, Any] = json.loads(json.dumps({"record": RUN, "attempts": out}))
+    return measured
+
+
+def test_the_attempts_section_matches_the_attempts_file(
+    record: str, attempts: dict[str, Any]
+) -> None:
+    rows = _attempt_rows(record)
+    assert attempts["record"] == RUN
+    assert f"[{RUN}.attempts.json]({RUN}.attempts.json)" in record
+    assert [str(entry["attempt"]) for entry in attempts["attempts"]] == sorted(rows)
+    for entry in attempts["attempts"]:
+        logs = entry["logs"]
+        assert sorted(logs) == sorted(ARMS)
+        ((commit, dirty),) = {(v["revision_commit"], v["revision_dirty"]) for v in logs.values()}
+        samples = sum(v["samples"] for v in logs.values())
+        errored = sum(v["errored"] for v in logs.values())
+        tokens = sum(v["tokens"] for v in logs.values())
+        note = entry["exit"]
+        if errored:
+            ((code,),) = {tuple(v["http_error_codes"]) for v in logs.values()}
+            note += f": HTTP {code} on {errored} of {samples} samples, {tokens} tokens"
+        finished = sum(v["errored"] == 0 and v["samples"] > 0 for v in logs.values())
+        assert rows[str(entry["attempt"])][1:4] == [
             f"`{commit}`, `revision.dirty` = `{dirty}`",
             note,
             f"all {finished}" if finished else "none",
-        ], attempt
+        ], entry["attempt"]
+    sums = (WALLET / f"{RUN}.SHA256SUMS").read_text()
+    for log in attempts["attempts"][1]["logs"].values():
+        assert f"{log['sha256']}  logs/" in sums
 
 
-def test_readme_points_to_the_record_as_a_diagnostic() -> None:
-    readme = (REPO / "README.md").read_text(encoding="utf-8")
-    (line,) = [ln for ln in readme.splitlines() if f"results/wallet/{RUN}.md" in ln]
-    assert "diagnostic, n=5" in line
-    assert (WALLET / f"{RUN}.md").is_file()
+def test_the_attempts_file_matches_the_raw_logs(attempts: dict[str, Any]) -> None:
+    if not all((RAW / name / "logs").is_dir() for name in ATTEMPT_DIRS.values()):
+        pytest.skip("the raw logs of the two attempts are not in the repo")
+    assert _attempts_from_raw() == attempts

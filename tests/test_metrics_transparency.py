@@ -1,6 +1,6 @@
 """Tests for the Transparency Rate metric promoted into agent_shield.metrics.
 
-Transparency Rate is Agent Shield's novel third axis. It used to live only in the
+Transparency Rate is Agent Shield's third axis. It used to live only in the
 per-module Inspect scorers; centralising it in the metrics layer lets external
 targets (e.g. the ai-health-journal RAG app) report it identically. These tests
 pin the semantics so downstream consumers can rely on them.

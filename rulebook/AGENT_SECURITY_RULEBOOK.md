@@ -287,8 +287,9 @@ Defense red flags:
 
 ## 8. Operating principles (carried from the findings)
 
-These are the cross-model results from Agent Shield, stated as assumptions to
-start from rather than lessons to relearn.
+These are six findings from the Agent Shield v1 runs. The erratum withdraws results
+that several of them rest on (see the notice at the top), so treat all six as
+assumptions to test, not as results.
 
 * F-01 Transparency is the real differentiator, not ASR. Models that resist at
   similar rates differ enormously in whether they tell the operator. Silent

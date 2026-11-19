@@ -1,0 +1,83 @@
+{
+  "record": "DW01_haiku55_2026-11-18",
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit": "exit 1",
+      "logs": {
+        "attack": {
+          "status": "success",
+          "revision_commit": "44ca5e1",
+          "revision_dirty": true,
+          "samples": 5,
+          "errored": 5,
+          "http_error_codes": [
+            401
+          ],
+          "tokens": 0,
+          "sha256": "c5e2eed290d6a997520404f508cb1c0624a63b54cba00412e85461fb7e91a04e"
+        },
+        "benign_heavy": {
+          "status": "success",
+          "revision_commit": "44ca5e1",
+          "revision_dirty": true,
+          "samples": 5,
+          "errored": 5,
+          "http_error_codes": [
+            401
+          ],
+          "tokens": 0,
+          "sha256": "836557787dbbcdc00854e0132bf65212132aaa6e348e217b1399256dcb05ca53"
+        },
+        "control": {
+          "status": "success",
+          "revision_commit": "44ca5e1",
+          "revision_dirty": true,
+          "samples": 5,
+          "errored": 5,
+          "http_error_codes": [
+            401
+          ],
+          "tokens": 0,
+          "sha256": "4eefae23fc92b55f325bbbcc4c92d0f78af822ef965925e7fdfb066c2145638d"
+        }
+      }
+    },
+    {
+      "attempt": 2,
+      "exit": "exit 0",
+      "logs": {
+        "attack": {
+          "status": "success",
+          "revision_commit": "863e3c2",
+          "revision_dirty": false,
+          "samples": 5,
+          "errored": 0,
+          "http_error_codes": [],
+          "tokens": 66285,
+          "sha256": "7250eb6d298e1ea9d26dfe1605b8530737cff2bc7a44ea7d32c55c8138dc2e5c"
+        },
+        "benign_heavy": {
+          "status": "success",
+          "revision_commit": "863e3c2",
+          "revision_dirty": false,
+          "samples": 5,
+          "errored": 0,
+          "http_error_codes": [],
+          "tokens": 19827,
+          "sha256": "cb000b7f59599fdf48a31cab6ec7a4e49bb0bcefe7c9b739e296920c353802b0"
+        },
+        "control": {
+          "status": "success",
+          "revision_commit": "863e3c2",
+          "revision_dirty": false,
+          "samples": 5,
+          "errored": 0,
+          "http_error_codes": [],
+          "tokens": 6300,
+          "sha256": "a41575ce4713a28ac3952f889222f0cac99610227e2c8959a7cc1324ccc6f687"
+        }
+      }
+    }
+  ]
+}

@@ -20,11 +20,13 @@ tool-using / MCP agents.
 **Implication for Agent Shield:** keep citing ADR as the closest *detection*
 metric; TR remains distinct as *disclosure-to-operator* co-primary with ASR.
 
-**TR is defensible as novel only when scoped as:**
+**State TR only in this scope, with no priority claim (docs/ERRATUM.md W14):**
 
 > operator-facing *disclosure* of an external attack (stronger than internal
-> detection), reported co-primary with ASR for general tool-using / MCP agents,
-> with an anchored CI setting.
+> detection), reported co-primary with ASR for general tool-using / MCP agents.
+
+An earlier version of this note also required an anchored CI setting. The erratum
+withdraws those anchors (W3, W4), so no anchored setting backs the scope today.
 
 **Not defensible:** “first to measure whether an agent flags/detects an attack.”
 SafeEmbodAI **ADR** and Lupinacci et al. **MIR** already score detection /
