@@ -127,6 +127,15 @@ Limits already measured (FACT, static rows of the same record, scripted traces w
 The claim under test is therefore "stops the unvaried loop; hard cap is the backstop", never "stops
 denial of wallet". No adaptive attack has been run.
 
+Already published in arXiv 2609.28585 (section 6 has the numbers): the attack, a stop outside the
+model before the next call, long benign work under enforcement, and loops that dodge a rule. The
+first two static rows above are minimal scripted instances of that paper's changing payload and
+multi tool vectors, run against our rule with no model. What this run adds is the repeated content
+rule and the observe arm: the same flag stops nothing there, so the spend after it is counted.
+Section 6 lists a third point, the ask before the stop. That paper says its changing payload is
+"designed to evade defenses that rely on repeated strings". INFERENCE: our rule is a defense of
+that kind.
+
 ### B. Two channel notification
 
 Built for DW-01. `SecurityEvent` wraps an `AlertCard` and adds time, session, tool, decision,
@@ -214,12 +223,34 @@ is a signal only.
 
 ## 6. Prior work
 
-Method: six papers were read in full from the arXiv HTML text on 2026-11-18. Every line quoted to
-support a statement below was checked against that text. Other items in this section were seen as
-an abstract, a README or a search result, and are marked so.
+Method: seven papers were read in full from the arXiv PDF text on 2026-11-19 — arXiv 2602.22303,
+2608.02464, 2608.02657, 2608.27092, 2608.30686, 2609.28585 and 2407.20859. The first six were also
+read from the HTML text on 2026-11-18.
+Every line quoted to support a statement was checked against the text, 230 of 232 by script and 2
+by eye. A quote check shows that the words are in the paper. It does not prove a "has no", so each
+"has no" below also rests on a search of the full text. A local prior art table, which is not in the
+repo, holds one row per paper. Other items in this section were seen as an abstract, a README or a
+search result, and are marked so.
 
-Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691) reports a keyword rate of the
-model noticing the injection.
+Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691) reports a "sensitivity rate", a
+keyword based share of outputs that recognise the attacker's instruction as abnormal. Only that
+passage of the paper was checked.
+
+**Already published, so not ours to claim.**
+
+- The attack and a stop outside the model. arXiv 2609.28585 evaluates denial of wallet through tool
+  returns, with a paged search tool as its worked example, and a host side check that runs before
+  the next provider call. arXiv 2407.20859 makes agents loop with an injected repeat instruction,
+  also through tool output (20.0% on a mail agent).
+- Long benign work under enforcement. arXiv 2609.28585 runs 60 benign workflows of 8 to 12 steps:
+  a fixed depth cap stops 60 of 60, its growth gated successor stops 0 of 60, and 53 of 60 complete.
+- Loops that dodge a rule. The same paper runs vectors that change the payload each turn, spread
+  the loop over several tools and hug a threshold. It says the changing payload is "designed to
+  evade defenses that rely on repeated strings". INFERENCE: our `stale_repeat` rule is a defense of
+  that kind. Two of our static rows (one varying word, two tools in turn) are minimal scripted
+  instances of those vectors, with no model.
+- A detector against a self report tool. arXiv 2602.22303 records an LLM monitor and a trained
+  `report_scheming()` call on the same trajectories and shows that they catch different attacks.
 
 **Disclosure.** We know of no published evaluation that, for prompt injection, scores a system
 level notification channel (a guard or a log) separately from the acting model's own disclosure,
@@ -228,9 +259,8 @@ over all injected samples, next to attack success and utility.
 - arXiv 2608.30686 scores the model's own alert over all evaluable runs, next to attack success,
   task success and a combined safe and useful rate, with an LLM judge checked against two humans
   (kappa 0.83 on 192 traces). It scores no guard or log channel. So the model side alone is done.
-- arXiv 2602.22303 scores two channels, a trained `report_scheming()` tool call and an LLM monitor,
-  next to the undetected attack rate. The setting is a hidden side task, not prompt injection, and
-  task utility is not next to it.
+- arXiv 2602.22303 scores the two channels next to the undetected attack rate. The setting is a
+  hidden side task, not prompt injection, and task utility is not next to it.
 - arXiv 2608.27092 reports detector recall and an egress guard next to attack success. It reports
   no rate of the model telling anyone.
 
@@ -239,22 +269,27 @@ using agents, a per sample cross table of an external guard against the acting m
 structured self report, and ranks "guard fired, model silent" as a separate, higher severity
 signal.
 
-- arXiv 2602.22303 pairs a binary self report flag with a monitor score for each sample and
-  combines them with an OR rule (undetected rate 6.7% to 5.1% for one model). It prints no joint
-  counts and gives the monitor only case no severity. It is not about prompt injection.
+- arXiv 2602.22303 is the nearest. At 5% false positives its strong monitor misses 38 to 46% of the
+  attacks that the self report catches, and an OR rule moves the undetected rate from 6.7% to 5.1%
+  for one model. It prints no joint counts per sample and gives the monitor only case no severity.
+  Its model is trained to report, and its threat is not prompt injection.
 - arXiv 2608.02657 classifies 634 turns that a hidden state probe detected, by what the model's
-  reasoning shows: the class `recognition_but_no_reaction` is 298 of the 634 (47.0%). The probe is a precondition and not a
-  second axis, the signal is reasoning text and not a tool call, and no operator signal is defined.
+  reasoning shows: no deliberation on 196 (30.9%), and the class `recognition_but_no_reaction` on
+  298 (47.0%). The probe is a precondition and not a second axis, the signal is reasoning text and
+  not a tool call, and no operator signal is defined.
+- arXiv 2608.30686 names the pair "high ASR, low AR" a silent attack surface, as rates per cell.
+  arXiv 2407.20859 asks the core model whether a loop instruction is harmful and gets 0.0%
+  detection. Neither has a second channel on the same sample.
 
-**Spend.** We know of no published evaluation that reports, for a denial of wallet attack
-delivered through tool results, the token spend after a repeated content detector's flag in an
-observe only arm and in an enforce arm, together with completion of a long benign read under
-enforcement.
+**Spend.** We know of no published evaluation that runs one repeated content detector on a denial
+of wallet loop in two arms, one where the flag stops nothing and one where it holds the next call,
+and reports the token spend after the flag in each.
 
-- arXiv 2609.28585 evaluates denial of wallet attacks against four defenses built on token counts,
-  call counts and dollars. It reports spend through the first blocking turn and false stops on 60
-  benign workflows of 8 to 12 steps (60 of 60 for one depth cap, 0 of 60 for its growth gated
-  successor). No defense compares tool results, and no arm detects without stopping.
+- arXiv 2609.28585 is the nearest, and it covers most of this ground at a far larger scale: 243
+  executions on six model families, four host rules on token mass, growth, call counts and dollars,
+  spend with the defense off and with a matched full stack, and the spend through the blocking
+  turn. No rule of its four compares tool results, no arm flags without stopping, and no operator
+  is asked before a stop. Those three points are all that our run adds to it.
 - arXiv 2608.02464 reports that a loop trap exits at 10 steps in 5 of 5 runs, against 30 before a
   circuit breaker. The trap is a synthetic failure and not an attack, the unit is steps and not
   tokens, and the breaker is not defined.
@@ -273,11 +308,24 @@ rule. A defense with no adaptive row is labelled "static only" (Nasr et al., arX
 
 | Module | Adaptive attack | State |
 |---|---|---|
-| Governor | Vary a word per page, alternate two tools, put a text turn between calls, hug the threshold | Static rows only; adaptive pending |
+| Governor | V1, V2 and V5 of arXiv 2609.28585 against our rule, plus a text turn between calls | Minimal scripted rows for V1, V2 and the text turn; no run on a model |
 | Regex screener | Search with the screener as oracle: confusable characters, text split across fields, the unscreened `input_schema`, the heuristic exemptions (`agent_shield/runtime/desc_heuristics.py:70-74`, `96-99`) | Not started |
 | Classifier, if added | Black box search with score feedback under a fixed query budget | Not started |
 | Self report channel | Injected text that tells the model to stay silent, to report a benign kind, or to flood | Flood cap tested (5 a session); the rest not started |
 | Event log | Rewrite the whole chain; insert one bad line | Tested: a bad line fails; a rewrite shows only against a kept head |
+
+For the governor, the adaptive set is three vectors of arXiv 2609.28585, which evaluates all of its
+vectors on models:
+
+- V1 (changing payload): the returned content changes form and size from turn to turn.
+- V2 (multi tool spread): the loop runs over several tools, so no one tool shows all of it.
+- V5 (threshold hugging): the payload grows only while the session stays under the limit that the
+  attacker estimates from feedback. For our rule that limit is the third stale result in a row
+  from one tool (`governor.py:54`, `86`).
+
+The static rows "varying word" and "alternating tools" are minimal scripted instances of V1 and V2:
+one word changes in a fixed template, and two tools take turns. V5 has no row. The text turn
+between calls is ours.
 
 ## 8. Threats to the plugin
 

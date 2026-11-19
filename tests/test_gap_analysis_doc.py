@@ -27,6 +27,12 @@ CITATION = re.compile(r"`([A-Za-z_][\w./]*\.(?:py|md|lock))(?::(\d+)(?:-(\d+))?)
 BANNED = ("novel", "first to", "is the first", "are the first", "state of the art", "nobody has")
 PAPERS = ("2608.30686", "2602.22303", "2609.28585", "2608.02464", "2608.27092", "2608.02657")
 LOCAL_ONLY = ("/Users/", "/private/", "scratchpad/", "docs/research", "PLUGIN_AND_CREDIBILITY")
+PUBLISHED_SPEND = (
+    "the attack",
+    "a stop outside the model",
+    "long benign work under enforcement",
+    "loops that dodge a rule",
+)
 MORE_LINES = re.compile(r"`[\w./]+\.py:\d+(?:-\d+)?`((?:, `\d+(?:-\d+)?`)+)")
 
 
@@ -146,6 +152,31 @@ def test_prior_work_keeps_the_agreed_wording(doc: str) -> None:
     for paper in PAPERS:
         assert f"arXiv {paper}" in flat, paper
     assert "one diagnostic run: one model, one payload, 5 samples per cell" in flat
+
+
+def _section(doc: str, number: int) -> str:
+    start = doc.index(f"\n## {number}. ")
+    return " ".join(doc[start : doc.index(f"\n## {number + 1}. ", start)].split())
+
+
+def test_the_wedge_and_the_adaptive_plan_point_to_the_published_spend_paper(
+    doc: str, result: dict[str, Any]
+) -> None:
+    wedge, plan = _section(doc, 3), _section(doc, 7)
+    assert "Already published in arXiv 2609.28585" in wedge
+    for done in PUBLISHED_SPEND:
+        assert done in wedge, done
+    assert "What this run adds is the repeated content rule and the observe arm" in wedge
+    assert "the adaptive set is three vectors of arXiv 2609.28585" in plan
+    for vector in ("V1", "V2", "V5"):
+        assert f"{vector} (" in plan, vector
+    scripted = {row["trace"] for row in result["static"] if row["stopped_by"] == "budget"}
+    assert {"varying word", "alternating tools"} <= scripted  # the V1 and V2 traces
+    assert not any("threshold" in trace for trace in scripted)  # V5 has no trace yet
+    assert "V5 has no row" in plan
+    for section in (wedge, plan, _section(doc, 6)):  # one word and two tools are not V1 and V2
+        assert "minimal scripted instances" in section
+        assert "restate" not in section
 
 
 def test_the_document_holds_no_local_path_and_no_private_file(doc: str) -> None:
