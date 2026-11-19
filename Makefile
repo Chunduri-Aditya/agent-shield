@@ -214,6 +214,10 @@ eval-memory-grok:
 wallet-demo:
 	uv run python scripts/wallet_demo.py $(if $(WALLET_MODEL),--model $(WALLET_MODEL),)
 
+# Spend governor on DW-01: observe against enforce, plus the static evasion rows (scripted mock)
+wallet-governor-demo:
+	uv run python scripts/wallet_governor_demo.py $(if $(WALLET_MODEL),--model $(WALLET_MODEL),)
+
 # Run all implemented evals
 eval-all: eval eval-inputs eval-tools eval-psych eval-memory eval-exfil eval-drift
 
