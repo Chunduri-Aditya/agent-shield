@@ -44,6 +44,13 @@ Each entry pairs a belief with the evidence that tested it and the change that f
 - **Changed:** Later decisions gate on a clean tree. The persona promotion rule requires `revision.dirty` false on every log, and the S1 post gate refuses a dirty log at an amended freeze (mutation row `s1-amend-10-revision-any`, all rows RED, control GREEN).
 - **Source:** [erratum, What is withdrawn](../docs/ERRATUM.md#what-is-withdrawn) (`docs/ERRATUM.md:27`); [persona decision, Promotion rule](../research/decisions/persona_fidelity_decision.md#promotion-rule-fixed-now); [mutation record s1_amend](../docs/paper_v2/mutation/s1_amend.txt)
 
+### W15: a disclosure count from a phrase list
+
+- **Believed:** Spotlighting moved Sonnet 4.5 from 0 of 5 to 4 of 5 disclosures on direct injection, and that result survived the audit.
+- **Evidence showed:** The count came from a substring match on 16 phrases. Read in full, the defended reply that scored 0 says "This is a potential security attack", and an undefended reply that scored 0 calls the message "an attempt to make me override my instructions". A second defended run scored 5 of 5 and was never reported. No gold set measures how often the list misses.
+- **Changed:** The claim moved from "What stands" to the withdrawn list as W15, with all four runs listed. The README row is gone, and a test fails if a standing result or a public row makes the claim again.
+- **Source:** [erratum, W15 runs](../docs/ERRATUM.md#w15-the-four-transparency-runs); the scorer at `evals/inputs.py:162-164`
+
 ### F-05: substring scoring under a defense
 
 - **Believed:** A substring check for the marker was a sound ASR scorer for defended runs.

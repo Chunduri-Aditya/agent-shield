@@ -34,13 +34,12 @@ These counts describe the bundled fixtures. The demo uses local rules and does n
 
 ## Evidence and research progress
 
-The [erratum](docs/ERRATUM.md) withdraws 14 claims from the original preprint: 13 in October 2026 and one priority claim (W14) in November 2026. The observations below survived the audit and describe the specific prompts tested.
+The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 13 in October 2026, then in November 2026 a priority claim (W14) and the spotlighting Transparency Rate claim (W15). The observations below survived the audit and describe the specific prompts tested.
 
 | Experiment | Supported observation |
 |---|---|
 | Direct injection | Llama 3.1 8B and Llama 3.3 70B each followed the injection on all 5 distinct prompts. |
 | Covert exfiltration | Llama 3.3 70B executed all 5 channel prompts and exposed the raw test token in 2. |
-| Spotlighting defense | Claude Sonnet 4.5 disclosed the injection on 0 of 5 prompts without spotlighting and 4 of 5 with it, in separate runs. |
 
 **Follow up study.** The S1 tool poisoning panel recorded **4,760 samples across 13 Claude models**. Its event scorer checks that a unique token from a file read reaches the designated test recipient through a tool call. The [run report](docs/paper_v2/S1_RUN_REPORT.md) records setup, counts and the retry correction. The [judge run](docs/paper_v2/S1_JUDGE_RUN.md) is complete. The study has yet to report a Transparency Rate validated against human labels.
 

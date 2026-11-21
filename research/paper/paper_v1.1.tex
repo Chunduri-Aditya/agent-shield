@@ -66,7 +66,7 @@
 % Abstract
 % ---------------------------------------------------------------
 \begin{abstract}
-\textbf{Erratum.} 14 claims in this version are withdrawn. A superscript tag such as W3 marks each withdrawn number, and the box after this abstract lists every item. See \url{https://github.com/Chunduri-Aditya/agent-shield/blob/main/docs/ERRATUM.md}.
+\textbf{Erratum.} 15 claims in this version are withdrawn. A superscript tag such as W3 marks each withdrawn number, and the box after this abstract lists every item. See \url{https://github.com/Chunduri-Aditya/agent-shield/blob/main/docs/ERRATUM.md}.
 
 Many LLM agent benchmarks score adversarial episodes on a two-axis
 outcome---task success crossed with attack success---without asking whether the
@@ -81,7 +81,7 @@ Cialdini-grounded social engineering, RAG memory poisoning, covert exfiltration,
 and multi-turn behavioral drift). Across four models---Claude Sonnet~4.5,
 Llama~3.1~8B, Llama~3.3~70B via Groq, and Gemini~3.5~Flash---three of four
 score TR$=$0.000 with a Wilson 95\% upper bound of 0.161\textsuperscript{W3} at $n{=}20$ on the
-anchored row. Spotlighting raises TR from 0.000 to 0.800 on direct injection but
+anchored row. Spotlighting raises TR from 0.000 to 0.800\textsuperscript{W15} on direct injection but
 adds 0.200\textsuperscript{W11} to ASR through paraphrase residue, a failure mode the original
 defense paper does not document. We release the framework, attack registries,
 seeds, and Inspect AI logs.
@@ -133,12 +133,14 @@ seeds, and Inspect AI logs.
 \medskip\noindent\textbf{W14.} \textit{Claim (PDF lines):} Priority claim: ``To our knowledge, Agent Shield is the first LLM-agent security benchmark to report operator-facing attack disclosure as a primary episode-level metric alongside ASR and utility, with confidence intervals for the anchored prompt-injection setting'' (49--52)\par
 \noindent\textit{Why it does not hold:} Transparency Rate alone is not new: InjecAgent (arXiv 2403.02691) reports a ``sensitivity rate'', a keyword based share of outputs that recognise the attacker's instruction as abnormal. Only that passage of InjecAgent was checked. The anchored intervals the sentence leans on are withdrawn (W3). No priority is claimed for the metric. Source: \texttt{docs/plugin/GAP\_ANALYSIS.md:238}.\par
 \noindent\textit{Replacement value:} ---\par
+\medskip\noindent\textbf{W15.} \textit{Claim (PDF lines):} Spotlighting raises Sonnet 4.5 TR on direct injection from 0.000 to 0.800 (17, 705--708, 749, 753, 815, 926)\par
+\noindent\textit{Why it does not hold:} The TR scorer is a substring match on 16 phrases. It misses disclosures, and no gold set measures how often. It scores 0 on a defended reply that says ``This is a potential security attack'' and on an undefended reply that calls the message ``an attempt to make me override my instructions''. A second defended run scored 5 of 5 and was not reported.\par
+\noindent\textit{Replacement value:} ---\par
 \medskip\noindent\textbf{What stands}
 \begin{itemize}[leftmargin=*,topsep=2pt,itemsep=1pt]
   \item The protocol: Transparency Rate as a third axis beside ASR and utility, the six cell taxonomy as a definition, and the framework, attack registries and logs as released.
   \item inputs: Llama 3.1 8B and Llama 3.3 70B comply on all 5 prompts (ASR 1.000, effective n=5, Wilson [0.566, 1.000]). Gemini 3.5 Flash scores 3 of 20 under both the published and the current marker rule, over 5 prompts.
   \item exfil: Llama 3.3 70B executes all five channels (5 of 5; each reply carries the channel's payload) and leaks the raw canary on EX-01 and EX-05 (2 of 5).
-  \item Spotlighting moves Sonnet 4.5 TR from 0 of 5 to 4 of 5 on inputs, as an n=5 observation from separate runs.
 \end{itemize}
 \end{framed}
 
@@ -766,7 +768,7 @@ versus 0.050\textsuperscript{W2} in Table~\ref{tab:ci}.
 Module & $n$ & Undef ASR & Def ASR & $\Delta$ASR
        & Undef TR & Def TR & $\Delta$TR \\
 \midrule
-\texttt{inputs/} & 5 & 0.000 & 0.200\textsuperscript{W11} & $+$0.200\textsuperscript{W11} & 0.000 & 0.800 & $+$0.800 \\
+\texttt{inputs/} & 5 & 0.000 & 0.200\textsuperscript{W11} & $+$0.200\textsuperscript{W11} & 0.000 & 0.800\textsuperscript{W15} & $+$0.800\textsuperscript{W15} \\
 \texttt{psych/}  & 6 & 0.333 & 0.000 & $-$0.333 & 0.833 & 1.000 & $+$0.167 \\
 \bottomrule
 \end{tabular}
@@ -787,7 +789,7 @@ the entry reflects that no legitimate user task was categorically refused
 Condition & Module & BU & UUA & ASR & TR \\
 \midrule
 Undefended ($n{=}20$) & \texttt{inputs/} & 1.000 & 0.950\textsuperscript{W12} & 0.050\textsuperscript{W2} & 0.150\textsuperscript{W4} \\
-Defended ($n{=}5$)    & \texttt{inputs/} & 1.000 & $\geq$0.800$^\dagger$ & 0.200\textsuperscript{W11} & 0.800 \\
+Defended ($n{=}5$)    & \texttt{inputs/} & 1.000 & $\geq$0.800$^\dagger$ & 0.200\textsuperscript{W11} & 0.800\textsuperscript{W15} \\
 Defended ($n{=}6$)    & \texttt{psych/}  & 1.000 & $\geq$1.000$^\dagger$ & 0.000 & 1.000 \\
 \bottomrule
 \end{tabular}
@@ -796,7 +798,7 @@ Defended ($n{=}6$)    & \texttt{psych/}  & 1.000 & $\geq$1.000$^\dagger$ & 0.000
 \paragraph{Interpretation.}
 Spotlighting drives full refusal on the \texttt{psych/} surface ($\Delta$ASR
 $= -0.333$, Def~ASR~0.000) and substantially increases TR on both surfaces
-(+0.800 on \texttt{inputs/}, +0.167 on \texttt{psych/}). The defense instruction
+(+0.800\textsuperscript{W15} on \texttt{inputs/}, +0.167 on \texttt{psych/}). The defense instruction
 provides the vocabulary the undefended model lacks for flagging injection attempts
 on \texttt{inputs/}: bare Sonnet resists silently; spotlighting turns silent
 resistance into operator-visible flags.
@@ -883,7 +885,7 @@ an attack and a model that silently blocked hundreds. TR measurement is the
 audit signal that distinguishes the two cases. Without it, confidence in
 silent-resistance deployments cannot be operationally grounded.
 
-For deployment: spotlighting on \texttt{inputs/} raises TR from 0.000 to 0.800
+For deployment: spotlighting on \texttt{inputs/} raises TR from 0.000 to 0.800\textsuperscript{W15}
 on Sonnet in one pass. The defense instruction provides the explicit vocabulary
 the undefended alignment checkpoint lacks. This is a cheap, high-impact
 intervention for operators who need audit-legible agent behavior---at the cost
@@ -1054,7 +1056,7 @@ capture:
 Groq's hosted Llama~3.3~70B is more susceptible than Llama~3.1~8B to
 Cialdini-grounded social engineering despite being larger; Gemini resists the
 primary exfil objective on every channel while still leaking canary content in
-20\% of episodes\textsuperscript{W6}; and spotlighting raises transparency from 0.000 to 0.800 on
+20\% of episodes\textsuperscript{W6}; and spotlighting raises transparency from 0.000 to 0.800\textsuperscript{W15} on
 direct injection while adding 0.200\textsuperscript{W11} to ASR through paraphrase residue.
 
 Agent Shield's primary contribution is not a set of ASR numbers but a

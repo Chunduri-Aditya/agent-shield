@@ -2,7 +2,7 @@
 
 One row per fact. Repo paths are relative to the repository root at commit `24f148a` unless stated. `DATA/` means `../agent-shield-pilot-data/`, the pilot data folder beside the repository (outside version control). External facts were retrieved on 2026-10-13.
 
-Note (2026-11-21): E01 gives the erratum at commit `24f148a`. The erratum now holds 14 rows: W14, added in `b679104`, withdraws the paper's priority claim.
+Note (2026-11-21): E01 gives the erratum at commit `24f148a`. The erratum now holds 15 rows: W14, added in `b679104`, withdraws the paper's priority claim, and W15 withdraws the spotlighting Transparency Rate claim.
 
 ## Repo facts
 

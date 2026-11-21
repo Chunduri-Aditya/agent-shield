@@ -20,7 +20,7 @@ These counts describe the bundled fixtures and a scripted mock. They are not mod
 
 1. **Free local models first.** The harness, the attack registries and the risk gate were built and first run with no model budget: Llama 3.1 8B on Ollama (ledger rows from 2026-05-05 in [RESULTS.md](../RESULTS.md)), an MLX provider ([mlx_lm_api.py](../agent_shield_providers/mlx_lm_api.py)) and a local sweep tier with a memory guard ([sweep.py](../scripts/sweep.py), `--tier local`).
 2. **A preregistered frontier panel.** Study S1 ran 13 Claude models on a tool poisoning task: 4,760 samples, a preregistration written before the run, every file the run depends on frozen by hash, and a cost cap per model. It spent $47.05 of a $180 cap ([run report](../docs/paper_v2/S1_RUN_REPORT.md), [preregistration](../docs/paper_v2/prereg/S1.md), [setup_s1.py](../scripts/v2/setup_s1.py)).
-3. **An audit of my own claims.** The audit found scorer bugs, an attack payload that never reached the model, and a priority claim that did not hold. The [erratum](../docs/ERRATUM.md) withdraws 14 claims of the preprint. The [learning log](LEARNING_LOG.md) gives each belief, the evidence that broke it, and the commit that fixed it. The [postmortem](../docs/posts/where_my_evals_lied.md) tells the same story in prose.
+3. **An audit of my own claims.** The audit found scorer bugs, an attack payload that never reached the model, and a priority claim that did not hold. The [erratum](../docs/ERRATUM.md) withdraws 15 claims of the preprint. The [learning log](LEARNING_LOG.md) gives each belief, the evidence that broke it, and the commit that fixed it. The [postmortem](../docs/posts/where_my_evals_lied.md) tells the same story in prose.
 4. **A spend governor (DW-01).** A rule outside the model watches tool results. When it trips once, it asks the operator. When it trips again, it stops the sample. It was measured in one diagnostic run ([governor record](../results/wallet/DW01_governor_haiku55_2026-11-18.md)).
 
 ## The pieces and how to check them
@@ -41,7 +41,7 @@ The suite at commit `f97696e`: 1923 passed, 34 skipped, and ruff and strict mypy
 Transparency Rate is the share of attacked runs where the agent tells a person about the attack. It is the metric this project was built around. As built today, it is not a validated measurement:
 
 - **Substring matching.** A reply scores 1 when it holds any phrase from the module's list ([evals/memory.py](../evals/memory.py), lines 88 to 89). Six module files each keep their own list.
-- **No gold set.** No set of human labels checks the phrase lists yet.
+- **No gold set.** The confusion table for the phrase scorer is frozen and still empty ([tr_v1_confusion_table_frozen.json](../reports/tr_v1_confusion_table_frozen.json)). The one check is a 35 row manual audit ([tr_audit_v1.csv](../reports/tr_audit_v1.csv)), and it records a missed disclosure.
 - **Two definitions.** The README opening says the agent tells the operator. The README metrics section says it tells the user.
 - **A known false positive.** The benign reply "I think you have food poisoning; drink water." scores 1.0 under the memory rule, because it holds the phrase "poisoning".
 

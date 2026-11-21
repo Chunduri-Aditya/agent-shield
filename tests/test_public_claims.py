@@ -482,7 +482,7 @@ def test_no_allowance_is_left_pending() -> None:
 
 def test_the_erratum_withdraws_the_priority_claim_as_w14() -> None:
     rows = _erratum_rows()
-    assert list(rows) == [f"W{n}" for n in range(1, 15)]
+    assert list(rows) == [f"W{n}" for n in range(1, 16)]
     row = rows["W14"]
     assert f'"{PRIORITY_CLAIM}" (49\u201352)' in row  # the erratum writes ranges with an en dash
     assert f"`{PRIOR_WORK}`" in row and "arXiv 2403.02691" in row and "(W3)" in row
@@ -506,18 +506,18 @@ def test_the_paper_source_tags_the_sentence_and_keeps_its_words() -> None:
         "setting\\textsuperscript{W14}."
     ) in flat
     box = [int(n) for n in re.findall(r"\\textbf\{W(\d+)\.\}", tex)]
-    assert box == list(range(1, 15))
+    assert box == list(range(1, 16))
     used = {int(n) for n in re.findall(r"\\textsuperscript\{W(\d+)\}", tex)}
     assert 14 in used and used <= set(box)
-    assert "\\textbf{Erratum.} 14 claims in this version are withdrawn." in tex
+    assert "\\textbf{Erratum.} 15 claims in this version are withdrawn." in tex
     assert f"``{PRIORITY_CLAIM}'' (49--52)" in flat  # the box quotes the published words
 
 
-def test_the_public_count_of_withdrawn_claims_is_fourteen() -> None:
-    for name in ("README.md", "START_HERE.md"):
+def test_the_public_count_of_withdrawn_claims_is_fifteen() -> None:
+    for name in ("README.md", "START_HERE.md", "showcase/WHAT_I_BUILT.md"):
         text = " ".join(_lines(name))
-        assert "withdraws 14 claims" in text and "withdraws 13 claims" not in text, name
-    assert "`docs/ERRATUM.md` W1 to W14" in " ".join(_lines("MAPPINGS.md"))
+        assert "withdraws 15 claims" in text and "withdraws 14 claims" not in text, name
+    assert "`docs/ERRATUM.md` W1 to W15" in " ".join(_lines("MAPPINGS.md"))
 
 
 def test_the_cited_pdf_lines_hold_the_priority_claim() -> None:
@@ -529,3 +529,39 @@ def test_the_cited_pdf_lines_hold_the_priority_claim() -> None:
     # NFKC undoes ligatures. Split on newlines only, as the erratum counts lines.
     lines = unicodedata.normalize("NFKC", out.stdout).split("\n")
     assert PRIORITY_CLAIM in " ".join(lines[48:52])
+
+
+W15_LOGS = (
+    ("2026-05-20T00-59-17", "Undefended", "20", "0.150"),
+    ("2026-05-20T01-16-25", "Spotlighting", "5", "1.000"),
+    ("2026-05-20T01-41-35", "Spotlighting", "5", "0.800"),
+    ("2026-05-20T01-43-45", "Undefended", "5", "0.000"),
+)
+
+
+def _what_stands(text: str) -> str:
+    return text.split("What stands", 1)[1].split("\\end{itemize}", 1)[0].split("## Why", 1)[0]
+
+
+def test_the_erratum_withdraws_the_spotlighting_tr_claim_as_w15() -> None:
+    row = _erratum_rows()["W15"]
+    assert "16 phrases" in row and "gold set" in row
+    erratum = "\n".join(_lines("docs/ERRATUM.md"))
+    for stamp, arm, n, score in W15_LOGS:
+        (line,) = [ln for ln in erratum.splitlines() if ln.startswith(f"| `{stamp}`")]
+        assert f"| {arm} | {n} | {score}" in line, line
+    assert "W15 was added on 2026-11-21" in erratum
+
+
+def test_no_standing_result_or_public_row_keeps_the_spotlighting_tr_claim() -> None:
+    erratum = "\n".join(_lines("docs/ERRATUM.md"))
+    tex = "\n".join(_lines("research/paper/paper_v1.1.tex"))
+    for text in (_what_stands(erratum), _what_stands(tex)):
+        assert "Spotlighting" not in text
+    assert "| Spotlighting defense |" not in "\n".join(_lines("README.md"))
+    assert "4 of 5" not in "\n".join(_lines("START_HERE.md"))
+    claims = ("raises TR from 0.000 to 0.800", "raises transparency from 0.000 to 0.800",
+              "(+0.800", "& 0.000 & 0.800", "W11} & 0.800")
+    for claim in claims:
+        tagged = [ln for ln in tex.splitlines() if claim in ln]
+        assert tagged and all("W15" in ln for ln in tagged), claim

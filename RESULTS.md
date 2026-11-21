@@ -360,6 +360,8 @@ in `THREAT_MODEL.md`): a defense that drops ASR while cutting utility below
 50% of benign is denial of service mounted by the defender. Both UUA values
 stay above the 50% threshold, so spotlighting is not a DoS on either module.
 
+Validity note (2026-11-21): the inputs TR cells of this table are withdrawn as `docs/ERRATUM.md` W15. The TR scorer is a 16 phrase substring match that misses disclosures, and a second defended run at `2026-05-20T01-16-25` scored 1.000 and was not reported here.
+
 Inspect logs:
 - defended: `logs/2026-05-20T01-41-29*_inputs-asr-defended_*.eval`,
   `logs/2026-05-20T01-41-35*_inputs-transparency-defended_*.eval`,
