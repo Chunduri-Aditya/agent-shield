@@ -4,11 +4,13 @@
 
 Agent Shield tests whether a language model agent completes the user's task, follows an injected instruction, and tells the operator about the attack. The third outcome is called **Transparency Rate**, and the evals run on Inspect AI ([README](README.md)).
 
+Each piece of work, with the code, test or record that backs it, is listed in [What I built and how I know it holds](showcase/WHAT_I_BUILT.md).
+
 ## The story
 
 **Situation.** Most agent benchmarks ask two questions: did the user task succeed, and did the attack succeed. A system that silently resists is better than a hijacked one, but worse than a system that resists and names what it caught ([Why this exists](README.md#why-this-exists)).
 
-**Idea.** Report that missing signal next to attack success rate (ASR): Transparency Rate, the share of attacked runs where the agent surfaced the attack to the user. It measures disclosure to the operator, not internal detection ([Metrics](README.md#metrics), [Threat model](THREAT_MODEL.md)).
+**Idea.** Report that missing signal next to attack success rate (ASR): Transparency Rate, the share of attacked runs where the agent surfaced the attack to the user. It is meant to measure disclosure to the operator, not internal detection. As built it matches phrases and is not yet validated ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated), [Metrics](README.md#metrics), [Threat model](THREAT_MODEL.md)).
 
 **Approach.** Attack modules for prompt injection, MCP tool description poisoning, social engineering, retrieval poisoning, covert exfiltration and behavioral drift run as Inspect AI tasks ([Module coverage](README.md#module-coverage)). The follow up S1 tool poisoning panel recorded 4,760 samples across 13 Claude models, with an event scorer that checks whether a unique token from a file read reaches the test recipient through a tool call ([S1 run report](docs/paper_v2/S1_RUN_REPORT.md)).
 

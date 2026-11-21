@@ -1,8 +1,10 @@
 # Agent Shield
 
-Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. It runs on [Inspect AI](https://inspect.aisi.org.uk). **Transparency Rate** measures the third outcome.
+Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. It runs on [Inspect AI](https://inspect.aisi.org.uk). **Transparency Rate** is the metric defined for the third outcome. It is not validated yet: it matches phrases, and no human labelled set checks it ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated)).
 
-[Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md) · [Map of the repo](START_HERE.md)
+One person built and audited this repository. [What I built and how I know it holds](showcase/WHAT_I_BUILT.md) links each piece of work to its code, a test or a record, and marks where the evidence is weak.
+
+[What I built](showcase/WHAT_I_BUILT.md) · [Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md) · [Map of the repo](START_HERE.md)
 
 ## Try it in 30 seconds
 

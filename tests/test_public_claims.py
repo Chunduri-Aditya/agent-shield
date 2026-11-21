@@ -60,6 +60,7 @@ FILES = (
     "research/design/attack_disclosure_matrix.md",
     "research/design/company_organizational_transparency_design.md",
     "research/design/runtime_aggressive_testing_research.md",
+    "showcase/WHAT_I_BUILT.md",
 )
 # Dated records keep their words. Each one carries DATED_NOTE near the top instead.
 DATED_RECORDS = (

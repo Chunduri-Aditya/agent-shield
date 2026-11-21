@@ -2,6 +2,7 @@
 
 | File | What is in it |
 |---|---|
+| [WHAT_I_BUILT.md](WHAT_I_BUILT.md) | Each piece of work linked to its code, test or record, with the weak evidence marked |
 | [LEARNING_LOG.md](LEARNING_LOG.md) | What was believed, what the evidence showed, and what changed, one entry per lesson |
 | [DEMO.md](DEMO.md) | The zero install demo commands and their expected output |
 | [WHAT_AGENT_SHIELD_DOES.md](../docs/WHAT_AGENT_SHIELD_DOES.md) | Plain language overview of the project |
