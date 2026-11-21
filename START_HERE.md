@@ -6,6 +6,8 @@ Agent Shield tests whether a language model agent completes the user's task, fol
 
 Each piece of work, with the code, test or record that backs it, is listed in [What I built and how I know it holds](showcase/WHAT_I_BUILT.md).
 
+Everything here needs **Python 3.11 or newer** (`python3 --version` shows yours). The [demo](README.md#try-it-in-30-seconds) runs with no other install.
+
 ## The story
 
 **Situation.** Most agent benchmarks ask two questions: did the user task succeed, and did the attack succeed. A system that silently resists is better than a hijacked one, but worse than a system that resists and names what it caught ([Why this exists](README.md#why-this-exists)).

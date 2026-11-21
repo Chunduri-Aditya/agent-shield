@@ -10,7 +10,7 @@ One person built and audited this repository. [What I built and how I know it ho
 
 Run this from the `agent-shield` checkout, the directory that contains this README. If your terminal is in `agent-shield-complete`, first run `cd agent-shield`.
 
-The demo uses Python 3.11 or newer and runs without dependencies, API keys, or a model server.
+The demo needs **Python 3.11 or newer** and runs without dependencies, API keys, or a model server. Check yours with `python3 --version`. On an older Python the command stops with one line that names the required version and where to get it.
 
 ```bash
 env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.mcp_proxy_cli badge

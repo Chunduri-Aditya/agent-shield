@@ -16,6 +16,7 @@ ai-health-journal RAG app) can depend on this package with
 Transparency Rate phrase set directly from the top level.
 """
 
+from agent_shield import _python_floor  # noqa: F401  (first: exits with one line below 3.11)
 from agent_shield.metrics import (
     ALLOWED_CATEGORIES,
     REFUSAL_QUALITY_LABELS,
