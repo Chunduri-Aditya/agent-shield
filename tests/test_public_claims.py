@@ -46,6 +46,12 @@ FILES = (
     "tests/test_metrics_transparency.py",
     "docs/paper_v2/DECISIONS.md",
     "ETHICS.md",
+    "agent_shield/runtime/proof_cli.py",
+    "agent_shield/runtime/proof_metrics.py",
+    "agent_shield/runtime/cli.py",
+    "agent_shield/runtime/gate.py",
+    "agent_shield/runtime/mcp_proxy.py",
+    "agent_shield/runtime/pipeline.py",
 )
 S1_FROZEN = (
     "ETHICS.md is frozen for the S1 study (scripts/v2/setup_s1.py, S1_FILES, not amendable), "

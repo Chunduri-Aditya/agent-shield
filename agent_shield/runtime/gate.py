@@ -8,7 +8,7 @@ from agent_shield.research import ContentScreenResult, RiskLevel
 
 
 class GuardAction(StrEnum):
-    """What the perimeter does with the text after screening."""
+    """What the gate decides for the text after screening."""
 
     ALLOW = "allow"
     ALERT_PROCEED = "alert_proceed"

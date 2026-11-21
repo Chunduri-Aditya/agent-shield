@@ -1,4 +1,4 @@
-"""CLI: agent-shield-guard — AdBlock-style stdin perimeter demo."""
+"""CLI: agent-shield-guard — screen stdin text once and print the decision (demo)."""
 
 from __future__ import annotations
 

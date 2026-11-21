@@ -1,4 +1,4 @@
-"""Phase 4 proof metrics — FP, alert rate, disable rate for the runtime perimeter.
+"""Phase 4 proof metrics — FP, alert rate, disable rate for the runtime screens.
 
 Deterministic: all scoring in Python. Inputs are fixtures / JSONL session logs.
 Does not call models or the network.
@@ -25,7 +25,7 @@ from agent_shield.runtime.pipeline import guard_text
 
 @dataclass(frozen=True)
 class ProofMetrics:
-    """Aggregate proof numbers for a guard / proxy measurement pass."""
+    """Aggregate proof numbers for one text screen or catalog screen measurement pass."""
 
     n_benign: int
     n_attack: int
@@ -109,8 +109,8 @@ def measure_tool_catalog(
 ) -> dict[str, Any]:
     """``labels[name]=True`` means the tool description is an attack (poison)."""
 
-    proxy = McpToolProxy(mode=mode)
-    result = proxy.screen_catalog(tools)
+    screener = McpToolProxy(mode=mode)
+    result = screener.screen_catalog(tools)
     fp_q = 0
     n_benign = 0
     n_attack = 0

@@ -13,7 +13,7 @@ call is gated today. The screens:
 
 1. Screen untrusted text (docs, tool results, paste) before the model trusts it.
 2. Quarantine poisoned **tool descriptions** before they enter the tool catalog.
-3. Surface operator-visible alerts (Transparency Rate as a product signal).
+3. Surface operator visible alerts. An alert is a screen result. It is not a Transparency Rate measurement, which scores what a model tells the user in an eval.
 4. Kill switch: `AGENT_SHIELD_GUARD_OFF=1` or `McpToolProxy(..., off=True)`.
 
 Install from this repo (editable) until a published package exists:

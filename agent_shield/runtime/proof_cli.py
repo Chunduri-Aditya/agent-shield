@@ -20,7 +20,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="agent-shield-proof",
         description=(
             "Compute false positive, alert, and kill-switch disable rates for the "
-            "runtime perimeter (no model calls)."
+            "runtime screens (no model calls)."
         ),
     )
     parser.add_argument("--cases", type=Path, default=_DEFAULT_CASES)

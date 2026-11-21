@@ -15,7 +15,7 @@ KILL_SWITCH_ENV = "AGENT_SHIELD_GUARD_OFF"
 
 @dataclass
 class GuardCounters:
-    """Local session counters (AdBlock-style badge inputs)."""
+    """Local session counters (badge inputs)."""
 
     allowed: int = 0
     alerted: int = 0

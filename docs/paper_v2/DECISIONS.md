@@ -2,6 +2,8 @@
 
 Note (2026-11-11): the session prompt files and research_prompts/ named in this document moved to the private pilot data repository. They are not part of this public repository.
 
+Note (2026-11-21): D14 lists W1 to W13, the erratum rows when it was decided. W14, added in `b679104`, withdraws the paper's priority claim.
+
 Confirmed by Aditya on 2026-10-13. Each id maps to the grilling question of the same number (Q6 and Q29 were revised: D06 and D29 record the revised answers). Evidence ids (E..) point to `EVIDENCE.md`; literature ids (L..) to `LITERATURE.md`.
 
 ## A. Purpose and publishing

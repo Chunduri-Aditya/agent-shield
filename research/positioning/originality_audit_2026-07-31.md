@@ -1,5 +1,7 @@
 # Adversarial Prior-Art & Novelty Audit: "Agent Shield" (Zenodo 10.5281/zenodo.20789431)
 
+Note (2026-11-21): this audit is a dated record, kept as written, and its verdict is superseded. Erratum item W14 (`b679104`, `docs/ERRATUM.md`) withdraws the paper's priority claim. Public wording is now "we know of no published evaluation that...".
+
 ## 1. Executive Verdict (≤200 words)
 
 **Transparency Rate (TR) as a co-primary, ASR-comparable *disclosure* metric is still defensible as novel among mainstream agent-security benchmarks — but only if scoped precisely, and it is NOT novel as a generic "agent detects an attack" metric.** Leading with Phase 1: **R-Judge (Yuan et al., EMNLP Findings 2024) does not measure disclosure.** It scores whether an LLM, acting as an external judge over a *completed* trajectory, correctly labels it safe/unsafe (F1 primary; GPT-4o = 74.42%, vs. human 89.07% and random-baseline F1 56.34%) — retrospective risk *judgment*, not the agent telling its own operator mid-task that it was attacked. No mainstream suite (AgentDojo, InjecAgent, ASB, AgentHarm, WASP) scores user-notification at all.

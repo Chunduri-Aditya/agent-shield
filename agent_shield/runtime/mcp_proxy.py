@@ -1,9 +1,9 @@
-"""MCP / tool-catalog proxy — Phase 3 installable MVP.
+"""MCP tool catalog screen — Phase 3 installable MVP. Runs once per catalog, when a host calls it.
 
 Screens tool **descriptions** (L2 poison surface) and tool **results** through
 ``guard_text``, plus MCP-specific description heuristics for TL-01-style
 compliance directives that the research web screener does not cover (those
-patterns are intentionally separate — bump proxy heuristics here, not
+patterns are intentionally separate — bump catalog heuristics here, not
 ``CONTENT_RULESET_VERSION``).
 
 Poisoned descriptions are quarantined from the model (rewritten to a safe stub)
@@ -119,7 +119,7 @@ class CatalogScreenResult:
 
         ``to_dict()["tools"]`` deliberately keeps ``original_description`` for the
         operator drawer, so serializing that array into a prompt reinstates the
-        payload the proxy just quarantined. Consumers embedding Agent Shield in
+        payload the screen just quarantined. Consumers embedding Agent Shield in
         their own agent expose this instead.
 
         **Known gap:** only the tool *description* is screened. ``input_schema``
@@ -152,7 +152,7 @@ class CatalogScreenResult:
 
 @dataclass
 class McpToolProxy:
-    """Session-scoped proxy with AdBlock-style counters."""
+    """Session scoped catalog screen with badge counters."""
 
     mode: str = "product"
     off: bool = False
