@@ -13,7 +13,7 @@ Keep separate:
 
 - per-agent TR (acting agent → its user channel)  
 - OTR (episode → designated human role)  
-- perimeter / host alerts  
+- runtime screen / host alerts  
 
 ## Seed workflows
 

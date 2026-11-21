@@ -89,7 +89,7 @@ build/tooling hygiene found during an engineering audit. Full evidence in
   proof_metrics.py`, `agent_shield/tr_holdout.py`,
   `agent_shield/external_corpus/dedupe.py`). Fixing those is the next item.
 - [ ] **mypy `files` excludes `agent_shield/` itself** (the shipped runtime
-  perimeter package) and `psych/ exfil/ drift/ defenses/ scripts/
+  runtime screens package) and `psych/ exfil/ drift/ defenses/ scripts/
   report_generator.py risk_registry.py`. Only `evals/inputs/tools/memory`
   get strict typing today. Decide scope, extend, fix what surfaces.
 - [ ] **No dependency or secret scanning**: no `dependabot.yml`, no
@@ -149,9 +149,9 @@ touch before v1.0.0.
 - [ ] `dos/` module — adversarial DoS attacks against agents. Currently
   tracked as a metric in v1 threat model, not mitigated. Post-sprint this
   could be its own study.
-- [x] **Credibility hardening + local runtime perimeter (“AdBlock for agents”).**
-  Track A credibility + Track B MVP (guard / MCP catalog proxy / proof) landed
-  2026-07-31. ROADMAP updated: optional local perimeter, not hosted product.
+- [x] **Credibility hardening + local runtime screens.**
+  Track A credibility + Track B MVP (guard / MCP catalog screen / proof) landed
+  2026-07-31. ROADMAP updated: optional local screens, not hosted product.
   Company wiring: [`showcase/guides/company_agent_adapter.md`](../../showcase/guides/company_agent_adapter.md).
   Still open: Chrome/Cursor Phase 5, Loom URL, blog publish, Gemini tools n=20.
 - [x] **Runtime aggressive miss corpus** (research plan ready).
@@ -208,7 +208,7 @@ sit with them, revise doc.
 - [ ] Q10: What's the causal identification for Middle A outcome (defense-caused vs task-difficulty)?
 - [ ] Q11: Utility drop threshold for "defender-mounted DoS" — pick a number.
 - [ ] Q13: "Detection of what?" — injection content, attacker goal, or unexpected tool call. Specify.
-- [ ] Q15: Sample size for defense-conditioned ASR matrix 95% CI at ±5%. Compute before the first cross-model sweep.
+- [ ] Q15: Sample size for defense-conditioned ASR matrix 95% CI at ±5%. Compute before any cross-model sweep.
 - [ ] Q21: Where did 30% recall / 10% FP come from for behavior-baseline detector? Ground or revise.
 - [ ] Q23: What specific finding breaks this doc and forces v2 from scratch?
 - [ ] Q24: Transparency scorer paraphrase coverage. Sonnet called one prompt
@@ -256,4 +256,4 @@ backlog item into the active sprint must update this file in the same
 commit, with a one-line reason for the swap.
 
 Last reviewed: initial entry
-Next review: before the first `THREAT_MODEL.md` v2 pass
+Next review: before the `THREAT_MODEL.md` v2 pass starts

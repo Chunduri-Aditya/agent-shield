@@ -10,7 +10,7 @@ Two threads run here and they are not independent:
 * **Thread B — external eval.** Ship one self contained Transparency Rate eval over a
   canonical public benchmark, in UK AISI `inspect_evals` conventions, named CandorBench.
 
-Thread A gates Thread B on exactly one point: if CanaryBench is real, the CLR novelty
+Thread A gates Thread B on exactly one point: if CanaryBench is real, the CLR priority
 claim falls, and the framing of what CandorBench contributes changes with it.
 
 ---
@@ -104,7 +104,7 @@ as a suspected fabrication, the probe proves nothing and Stage 1 stops.
 
 **Outcomes.**
 
-* All four resolve → CanaryBench is real. Cite it. Demote CLR from novel metric to
+* All four resolve → CanaryBench is real. Cite it. Demote CLR from new metric to
   adaptation of an existing metric family to the agent tool call setting. Correct
   `CHANGES_v1.1.md:10`, which is now a recorded error. Proceed to Stage 1.
 * `2601.18834` 404s → the newer audit is unreliable on sources. Keep `paper_v1.1.tex` as is,
@@ -137,7 +137,7 @@ The 2026-09-18 audit was run against `paper.tex`, the superseded draft, not
 
 1. `paper_v1.1.tex:262` — prose reads "for Agentic Applications~2026" while the bibkey and
    bibitem are `owasp_agentic_2025`. Prose and reference disagree. One line fix.
-2. `paper_v1.1.tex:396-401` — CLR novelty framing. Blocked on G0.
+2. `paper_v1.1.tex:396-401` — CLR priority framing. Blocked on G0.
 3. Dual process lineage. Kahneman 2011 is cited as the System 1 / System 2 source; the
    distinction predates it (Wason and Evans 1975, Stanovich and West 2000, Evans 2003).
    Optional completeness addition, not an error.
@@ -212,7 +212,7 @@ modules.
 `docs/tr_v2_judge_design.md` and the preregistration card, is not the scorer that produced
 any published number in `RESULTS.md`.** Promoting TR-v2 against it would compare a
 challenger to a baseline that was never run, and the recall margin of 3pp locked in
-`research/design/tr_holdout_preregistration.md:6` would be measured against the wrong incumbent.
+`research/design/tr_holdout_preregistration.md:8` would be measured against the wrong incumbent.
 
 This must be resolved before any holdout annotation begins. Annotating against the wrong
 frozen baseline wastes the human labeling budget, which the preregistration sizes at 200
@@ -302,7 +302,7 @@ unconditionally passes the whole suite. The bare word `malicious` currently fire
 scorer, so ordinary security prose is at risk. Build a benign corpus: security engineering
 writing, tool call narration, refusals with no attack present. Report FP with numerator
 and denominator printed, per the False Disclosure Rate naming locked in
-`research/design/tr_holdout_preregistration.md:7`.
+`research/design/tr_holdout_preregistration.md:9`.
 
 **2d. Prove 2b and 2c can fail.**
 Mutate `flag_transparency` to return `True` always, then `False` always. Show each turning
@@ -326,7 +326,7 @@ Both clones are already local. No acquisition step.
 * `~/Desktop/inspect_evals` — v0.9.0, 135 evals, includes `tests/agentdojo`
 * `~/Desktop/agentdojo`
 
-Read the TR construct boundary at `research/design/tr_holdout_preregistration.md:19` first:
+Read the TR construct boundary at `research/design/tr_holdout_preregistration.md:21` first:
 
 > TR = acting agent operator visible disclosure of a security relevant concern.
 > Not perimeter alerts, not mere refusal, not ADR/MIR/R-Judge detection.
@@ -406,7 +406,7 @@ No summaries of activity. Numbers and failures.
    tampering are different mechanisms and the right answer decides the fix.
 4. **Scope.** Does CandorBench ship as an `inspect_evals` pull request only, or also as a
    module inside this repo? Two consumers of one scorer is how the Stage 2a divergence
-   happened in the first place.
+   happened at all.
 
 ---
 

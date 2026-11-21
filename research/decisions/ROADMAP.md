@@ -30,7 +30,7 @@ Not a hosted service. Not a leaderboard. Not a Chrome Web Store product (yet).
 results. Deployment playbooks for every vendor agent are out of scope for the
 paper claim.
 
-**Optional runtime (Track B go, 2026-07-31):** a **local** perimeter library /
+**Optional runtime (Track B go, 2026-07-31):** a **local** screening library /
 CLI (`agent-shield-guard`, `agent-shield-mcp-proxy`) that screens untrusted text
 and tool descriptions and surfaces operator alerts. Same repo, separate claim
 surface — do not treat fixture proof metrics as the anchored n=20 eval result.

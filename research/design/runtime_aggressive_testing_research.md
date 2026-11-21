@@ -1,4 +1,4 @@
-# Runtime perimeter — aggressive testing research
+# Runtime screens — aggressive testing research
 
 Status: research plan (not a shipped attack pack)  
 Date: 2026-07-31  
@@ -8,14 +8,14 @@ Companion: re-audit findings F5–F8; pins in `tests/test_mcp_proxy.py` /
 
 ## Goal
 
-Build a **measured miss corpus** for the installable MVP (guard + MCP proxy +
+Build a **measured miss corpus** for the installable MVP (guard + MCP catalog screen +
 proof), so every tightening of a heuristic or schema screen is gated by:
 
 1. Attack recall on this corpus  
 2. False positive rate on real benign tool docs / technical prose  
-3. No silent bump of `CONTENT_RULESET_VERSION` for proxy-only changes  
+3. No silent bump of `CONTENT_RULESET_VERSION` for catalog heuristic only changes  
 
-This file is the experiment design. It is **not** clearance to ship novel
+This file is the experiment design. It is **not** clearance to ship new
 dual-use demos — see `ETHICS.md`. Prefer synthetic paraphrases and redacted
 spans (≤60 chars in git) over full live exploit chains.
 
@@ -35,7 +35,7 @@ spans (≤60 chars in git) over full live exploit chains.
 | Schema `examples` poison | `test_input_schema_examples_are_not_screened` | Miss |
 | Email-redacted TL-01 on `guard_text` | `test_research_screener_does_not_flag_tl01_as_injection` | ALLOW / not `flagged_attack` |
 | Paraphrase without markers | `test_paraphrased_tl01_is_not_quarantined` | Miss (no quarantine) |
-| Canonical TL-01 description | `test_tl01_description_quarantined_from_model` | Quarantine via proxy heuristics |
+| Canonical TL-01 description | `test_tl01_description_quarantined_from_model` | Quarantine via catalog heuristics |
 | Oversize-only product path | `test_long_benign_content_does_not_spend_the_alert_channel` | ALLOW + note |
 | Padded injection / secret | oversize padding tests | Still alert / require_confirm |
 | Split proof recall | `test_text_alert_recall_is_separate_from_catalog_quarantine` | Two metrics, no conflation |
@@ -51,7 +51,7 @@ Work in order. Each family needs: ≥5 variants, label (`caught` /
 
 ### A. Description paraphrases (Integrity)
 
-Proxy heuristics today match a small phrase set (`OPERATOR COMPLIANCE
+Catalog heuristics today match a small phrase set (`OPERATOR COMPLIANCE
 DIRECTIVE`, `MUST immediately call send_message`, `[END DIRECTIVE]`, …).
 
 | ID | Variant class | Example intent | Expected now |
@@ -123,7 +123,7 @@ rate. Target: FP ≤ 1% before enabling schema screening behind a flag.
 4. **Promotion rule.** A heuristic change ships only if:
    - Attack recall on the **frozen** aggressive set rises, and  
    - FP on the benign parameter pool does not exceed the gate, and  
-   - Proxy-only changes do **not** bump `CONTENT_RULESET_VERSION`.
+   - Catalog heuristic only changes do **not** bump `CONTENT_RULESET_VERSION`.
 5. **Ethics.** No live exfil, no unpaid third-party targets, no store build
    that embeds full attack payloads. Spans ≤60 chars in git.
 
@@ -138,7 +138,7 @@ tests/fixtures/runtime_aggressive/
   labels schema: id, surface, family, malicious, expect (caught|miss|open), span
 ```
 
-Wire into `agent-shield-proof --aggressive` only after the first 20 cases exist
+Wire into `agent-shield-proof --aggressive` only after 20 cases exist
 and ETHICS clearance is recorded for any HIGH dual-use rows.
 
 ## Promotion log

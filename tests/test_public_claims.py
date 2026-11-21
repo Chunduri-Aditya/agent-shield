@@ -52,7 +52,30 @@ FILES = (
     "agent_shield/runtime/gate.py",
     "agent_shield/runtime/mcp_proxy.py",
     "agent_shield/runtime/pipeline.py",
+    "agent_shield_providers/cli_api.py",
+    "agent_shield/disclosure/__init__.py",
+    "research/decisions/BACKLOG.md",
+    "research/decisions/CANDORBENCH_BUILD_PLAN.md",
+    "research/decisions/ROADMAP.md",
+    "research/design/attack_disclosure_matrix.md",
+    "research/design/company_organizational_transparency_design.md",
+    "research/design/runtime_aggressive_testing_research.md",
 )
+# Dated records keep their words. Each one carries DATED_NOTE near the top instead.
+DATED_RECORDS = (
+    "research/design/tr_holdout_preregistration.md",
+    "research/packages/2026-07-31_external_benchmark/agent_shield_differentiation_report.md",
+    "research/packages/2026-07-31_external_benchmark/agent_shield_external_test_acquisition_plan.md",
+    "research/packages/2026-07-31_external_benchmark/agent_shield_repository_census.md",
+    "research/packages/2026-07-31_research_findings/01_tr_validation_false_disclosure_findings.md",
+    "research/packages/2026-07-31_research_findings/03_transparency_suppression_findings.md",
+    "research/packages/2026-07-31_research_findings/06_alert_fatigue_kill_switch_findings.md",
+    "research/packages/2026-07-31_research_findings/07_tool_result_trust_findings.md",
+    "research/packages/2026-07-31_research_findings/08_encoding_evasions_findings.md",
+    "research/packages/2026-07-31_research_findings/11_attack_disclosure_matrix_findings.md",
+    "results/audit_reports/audit_2026-08-25.md",
+)
+DATED_NOTE = "Note (2026-11-21): this is a dated record, kept as written."
 S1_FROZEN = (
     "ETHICS.md is frozen for the S1 study (scripts/v2/setup_s1.py, S1_FILES, not amendable), "
     "so it is not edited; the priority claim is withdrawn as docs/ERRATUM.md W14"
@@ -287,6 +310,60 @@ ALLOWED: tuple[tuple[str, str, str, str], ...] = (
         "published v1.1 text, kept as published and withdrawn as docs/ERRATUM.md W14: the "
         "sentence carries the W14 tag and the erratum box quotes it",
     ),
+    (
+        "agent_shield_providers/cli_api.py",
+        "AdBlock",
+        "the read blocked until",
+        "the words read and blocked in a comment, not the product name",
+    ),
+    (
+        "agent_shield/disclosure/__init__.py",
+        "perimeter",
+        "perimeter_alert: bool",
+        "the name of a field in the episode schema, cited as code",
+    ),
+    (
+        "agent_shield/disclosure/__init__.py",
+        "perimeter",
+        '"perimeter_alert": self.perimeter_alert',
+        "the name of a field in the episode schema, cited as code",
+    ),
+    (
+        "agent_shield/disclosure/__init__.py",
+        "perimeter",
+        "perimeter_alert_rate: float",
+        "the name of a field in the episode schema, cited as code",
+    ),
+    (
+        "research/decisions/CANDORBENCH_BUILD_PLAN.md",
+        "novel",
+        'It contains no "novel" or "we introduce"',
+        "states that the paper text holds no priority claim",
+    ),
+    (
+        "research/decisions/CANDORBENCH_BUILD_PLAN.md",
+        "perimeter",
+        "Not perimeter alerts, not mere refusal",
+        "quotes the TR boundary of the dated preregistration card, line 21",
+    ),
+    (
+        "research/decisions/ROADMAP.md",
+        "the first",
+        "Existing benchmarks measure the first three",
+        "counts the items of the list above it",
+    ),
+    (
+        "research/decisions/ROADMAP.md",
+        "the first",
+        "The first tool is the attack surface",
+        "the tool the agent reads before any user instruction",
+    ),
+    (
+        "research/design/runtime_aggressive_testing_research.md",
+        "proxy",
+        "Live stdio/SSE MCP transport proxy",
+        "a stated non goal: says the thing is not built",
+    ),
 )
 
 
@@ -314,6 +391,12 @@ def test_every_allowance_names_a_line_that_exists_and_gives_its_reason() -> None
         assert name in FILES and len(reason.split()) >= 4, (name, text)
         used = [ln for ln in _lines(name) if text in ln and BANNED[term].search(ln)]
         assert used, f"stale allowance: {name}: {text}"
+
+
+def test_every_dated_record_carries_the_wording_note() -> None:
+    assert not set(DATED_RECORDS) & set(FILES)
+    missing = [name for name in DATED_RECORDS if DATED_NOTE not in "\n".join(_lines(name)[:12])]
+    assert not missing, "\n" + "\n".join(missing)
 
 
 def test_the_readme_and_the_overview_say_that_no_live_call_is_gated() -> None:

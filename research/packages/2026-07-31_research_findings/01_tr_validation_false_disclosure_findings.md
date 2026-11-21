@@ -1,5 +1,7 @@
 # 01 — TR Validation and False Disclosure Rate Findings
 
+Note (2026-11-21): this is a dated record, kept as written. Where it says perimeter, AdBlock or proxy, read a local screen that runs once when a host calls it: no tracked code gates a live tool call. Erratum item W14 (`docs/ERRATUM.md`) withdraws the priority claim. The current wording rules are in `tests/test_public_claims.py`.
+
 Status: research design, not an Agent Shield result. The current published scorer remains TR v1. TR v2 is a challenger until every gate below passes.
 
 Local evidence basis: [ship line](../../decisions/SHIP_LINE.md).

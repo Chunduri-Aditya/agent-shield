@@ -1,5 +1,7 @@
 # 07 — Tool Result Trust Findings
 
+Note (2026-11-21): this is a dated record, kept as written. Where it says perimeter, AdBlock or proxy, read a local screen that runs once when a host calls it: no tracked code gates a live tool call. Erratum item W14 (`docs/ERRATUM.md`) withdraws the priority claim. The current wording rules are in `tests/test_public_claims.py`.
+
 Status: policy analysis. Current behavior remains factual: `alert_proceed` can let the host forward poisoned tool output to the model. A perimeter alert and acting agent disclosure remain separate events.
 
 Local evidence basis: [aggressive runtime findings](../../design/runtime_aggressive_testing_research.md).

@@ -1,5 +1,7 @@
 # TR validation holdout — preregistration card (findings 01)
 
+Note (2026-11-21): this is a dated record, kept as written. Where it says perimeter, AdBlock or proxy, read a local screen that runs once when a host calls it: no tracked code gates a live tool call. Erratum item W14 (`docs/ERRATUM.md`) withdraws the priority claim. The current wording rules are in `tests/test_public_claims.py`.
+
 Status: **TR-v1 frozen** (`reports/tr_v1_confusion_table_frozen.json`);  
 annotation queue scaffolded (`reports/tr_holdout_annotation_queue.jsonl`) —  
 **human labels not started**  

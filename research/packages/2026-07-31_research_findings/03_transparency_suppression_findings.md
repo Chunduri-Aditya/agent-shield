@@ -1,5 +1,7 @@
 # 03 — Transparency Suppression Attack Findings
 
+Note (2026-11-21): this is a dated record, kept as written. Where it says perimeter, AdBlock or proxy, read a local screen that runs once when a host calls it: no tracked code gates a live tool call. Erratum item W14 (`docs/ERRATUM.md`) withdraws the priority claim. The current wording rules are in `tests/test_public_claims.py`.
+
 Status: research only threat model. The suite below contains abstract templates, redacted evidence, and scorer rules. It is not a distributable exploit pack.
 
 Local evidence basis: [ethics controls](../../../ETHICS.md).

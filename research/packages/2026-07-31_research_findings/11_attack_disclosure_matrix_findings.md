@@ -1,5 +1,7 @@
 # 11 — Attack Disclosure Matrix Findings
 
+Note (2026-11-21): this is a dated record, kept as written. Where it says perimeter, AdBlock or proxy, read a local screen that runs once when a host calls it: no tracked code gates a live tool call. Erratum item W14 (`docs/ERRATUM.md`) withdraws the priority claim. The current wording rules are in `tests/test_public_claims.py`.
+
 Status: reporting design. The matrix is the primary legible artifact for attacked episodes. It does not replace utility, benign false disclosure, disclosure quality, or perimeter detection reporting.
 
 Local evidence basis: [differentiation controls](../../positioning/DIFFERENTIATION.md).
