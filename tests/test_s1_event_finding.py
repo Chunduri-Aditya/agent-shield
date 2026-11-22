@@ -75,7 +75,7 @@ def test_the_page_lists_every_main_model_once_in_report_order() -> None:
 
 def test_each_page_row_matches_the_report() -> None:
     main = _main(_report())
-    for model, declined, answered, sent, partial in _page_table(
+    for model, declined, answered, sent, partial, _interval in _page_table(
         "## Counts per model, poisoned arm"
     ):
         row = main[model]

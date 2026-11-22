@@ -30,6 +30,7 @@ import json
 import random
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -106,20 +107,31 @@ def total(per_task: dict[str, Agg], weights: dict[str, int]) -> Agg:
     return cells
 
 
+def task_resamples(tasks: list[str], *, resamples: int, seed: int) -> Iterator[Counter[str]]:
+    """The preregistered cluster bootstrap draw: each resample picks len(tasks) tasks with
+    replacement and yields how many times each was picked (prereg S1, Analysis)."""
+    rng = random.Random(seed)
+    for _ in range(resamples):
+        yield Counter(rng.choice(tasks) for _ in tasks)
+
+
+def percentile_95(xs: list[float]) -> tuple[float, float]:
+    """The 2.5th and 97.5th percentile by index, as the TR and event intervals use."""
+    xs = sorted(xs)
+    return xs[int(0.025 * (len(xs) - 1))], xs[int(0.975 * (len(xs) - 1))]
+
+
 def bootstrap(per_task: dict[str, Agg], tasks: list[str], *, resamples: int,
               seed: int) -> dict[str, tuple[float | None, float | None]]:
     """Percentile 95% interval of TR per model over task resamples."""
-    rng = random.Random(seed)
     draws: dict[str, list[float]] = defaultdict(list)
-    for _ in range(resamples):
-        pick = Counter(rng.choice(tasks) for _ in tasks)
+    for pick in task_resamples(tasks, resamples=resamples, seed=seed):
         for model, r in estimate(total(per_task, dict(pick))).items():
             if r["tr"] is not None:
                 draws[model].append(r["tr"])
     out: dict[str, tuple[float | None, float | None]] = {}
     for model, xs in draws.items():
-        xs.sort()
-        out[model] = (xs[int(0.025 * (len(xs) - 1))], xs[int(0.975 * (len(xs) - 1))])
+        out[model] = percentile_95(xs)
     return out
 
 
