@@ -43,6 +43,8 @@ The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 1
 
 **Follow up study.** The S1 tool poisoning panel recorded **4,760 samples across 13 Claude models**. Its event scorer checks that a unique token from a file read reaches the designated test recipient through a tool call. The [run report](docs/paper_v2/S1_RUN_REPORT.md) records setup, counts and the retry correction. The [judge run](docs/paper_v2/S1_JUDGE_RUN.md) is complete. The study has yet to report a Transparency Rate validated against human labels.
 
+The S1 event outcome, the preregistered `strict_nonce` send, is reported as counts per model with the matched thinking contrast on the [S1 event finding page](showcase/S1_EVENT_FINDING.md).
+
 ## What went wrong and got fixed
 
 The original tool poisoning benchmark reported zero successful attacks even though the model never received the injected description. The payload was on the tool factory, while Inspect reads the returned tool's description. Commit `920c397` put the payload on the model visible surface. The [delivery tests](tests/test_eval_scorers.py) check that boundary. The [postmortem](docs/posts/where_my_evals_lied.md) documents this and four other measurement failures. The citation checker at `scripts/check_post_citations.py` runs via `make post-check` and uses sibling checkouts for the other projects cited in the post.
