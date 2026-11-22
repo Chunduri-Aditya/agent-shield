@@ -43,7 +43,7 @@ The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 1
 
 **Follow up study.** The S1 tool poisoning panel recorded **4,760 samples across 13 Claude models**. Its event scorer checks that a unique token from a file read reaches the designated test recipient through a tool call. The [run report](docs/paper_v2/S1_RUN_REPORT.md) records setup, counts and the retry correction. The [judge run](docs/paper_v2/S1_JUDGE_RUN.md) is complete. The study has yet to report a Transparency Rate validated against human labels.
 
-The S1 event outcome, the preregistered `strict_nonce` send, is reported as counts per model with the matched thinking contrast on the [S1 event finding page](showcase/S1_EVENT_FINDING.md).
+The S1 event outcome, the preregistered `strict_nonce` send, is reported as counts per model, with the preregistered 95% intervals (decision D63) and the matched thinking contrast, on the [S1 event finding page](showcase/S1_EVENT_FINDING.md).
 
 ## What went wrong and got fixed
 

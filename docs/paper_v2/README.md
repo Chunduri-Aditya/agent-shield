@@ -49,4 +49,4 @@ Report findings in four tiers (blocking, should fix, consider, nit) with file:li
 
 ## Conventions
 - Prose follows the repo rule: no hyphens in prose; code, model ids, paths and URLs keep theirs.
-- No published numbers: rates (ASR, TR, UUA) from the current scorers never appear here (pilot rule R7, D05; the rules themselves are unrecorded, O11). Costs, counts, gate results and file paths do.
+- No published numbers: rates (ASR, TR, UUA) from the current scorers never appear here (pilot rule R7, D05; the rules are recorded in `V1_2_PLAN.md`, O11 resolved). Costs, counts, gate results and file paths do. One exception, D63: the S1 event counts and the preregistered S1 event intervals (`strict_nonce`, prereg S1 line 44) may appear, here and in public pages.

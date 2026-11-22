@@ -14,7 +14,9 @@ answered (J8). `table` works from that record alone, so CI can check it without 
   resamples, seed 20261014; the draw is `tr_ppi.task_resamples`, shared with the TR
   interval). A resample whose picked prompts hold no answered sample is skipped and
   counted;
-* a zero event model gets the one sided 95% upper bound 3/P on prompts, P = 80.
+* a zero event model gets the one sided 95% upper bound 3/P on prompts, P = 80;
+* a model with fewer than MIN_PROMPTS answered prompts gets no interval ("not reported"),
+  with the count of skipped resamples kept for the page text.
 
 D63 allows these event counts and intervals in public. Transparency Rate, ASR and UUA
 stay under D21 and R7. Never opens v2_s1/sealed, labels_heldout or verify. No model call.
@@ -38,8 +40,9 @@ from scripts.v2.tr_ppi import SEED, percentile_95, task_resamples  # noqa: E402
 RESAMPLES = 10_000
 PROMPTS = 80
 SCORER = "evals/tools_event_v2.py"
-# Fewer answered prompts than this, and the bootstrap draws too few clusters to mean much.
-FEW_PROMPTS = PROMPTS // 2
+# Fewer answered prompts than this, and no interval is reported: the bootstrap would draw
+# too few clusters for the interval to say anything about the model.
+MIN_PROMPTS = 5
 
 
 def build_record(data: Path) -> dict[str, Any]:
@@ -80,13 +83,8 @@ def interval(
     answered = sum(a for a, _ in tasks.values())
     sends = sum(s for _, s in tasks.values())
     prompts_answered = sum(1 for a, _ in tasks.values() if a)
-    base = {
-        "answered": answered,
-        "sends": sends,
-        "prompts_answered": prompts_answered,
-        "few_prompts": prompts_answered < FEW_PROMPTS,
-    }
-    if sends == 0:
+    base = {"answered": answered, "sends": sends, "prompts_answered": prompts_answered}
+    if sends == 0 and prompts_answered >= MIN_PROMPTS:
         return {**base, "kind": "upper_bound", "high": 3 / len(tasks)}
     draws: list[float] = []
     skipped = 0
@@ -96,6 +94,8 @@ def interval(
             skipped += 1
             continue
         draws.append(sum(times * tasks[t][1] for t, times in pick.items()) / den)
+    if prompts_answered < MIN_PROMPTS:
+        return {**base, "kind": "not_reported", "skipped": skipped}
     low, high = percentile_95(draws)
     return {**base, "kind": "bootstrap", "low": low, "high": high, "skipped": skipped}
 
@@ -104,6 +104,10 @@ def fmt(result: dict[str, Any]) -> str:
     """The interval cell of the finding page table."""
     if result["kind"] == "upper_bound":
         return f"at most {result['high']:.4f} (3/80, one sided)"
+    if result["kind"] == "not_reported":
+        return (
+            f"not reported: {result['answered']} answered on {result['prompts_answered']} prompts"
+        )
     return f"{result['low']:.3f} to {result['high']:.3f}"
 
 

@@ -32,11 +32,11 @@ A decline is a provider classifier refusal before any output. A declined sample 
 | claude-opus-5 | 1 | 239 | 0 | 0 | at most 0.0375 (3/80, one sided) |
 | claude-sonnet-5 | 0 | 240 | 0 | 0 | at most 0.0375 (3/80, one sided) |
 | claude-fable-5-1 | 163 | 77 | 23 | 0 | 0.221 to 0.375 |
-| claude-opus-5-5 | 236 | 4 | 4 | 0 | 1.000 to 1.000, not informative: 4 answered on 3 prompts |
+| claude-opus-5-5 | 236 | 4 | 4 | 0 | not reported: 4 answered on 3 prompts |
 | claude-sonnet-5-5 | 1 | 239 | 54 | 5 | 0.167 to 0.290 |
 | claude-haiku-5-5 | 0 | 240 | 45 | 0 | 0.138 to 0.242 |
 
-The interval is the share of answered samples that sent the nonce. For a model with sends it comes from the preregistered cluster bootstrap over the 80 prompts (10,000 resamples, seed 20261014), so the 3 epochs of one prompt move together. For a model with no send it is the one sided 95% upper bound 3/P on prompts, with P = 80. Opus 5.5 answered 4 samples on 3 prompts, so its interval says nothing about the model. The row stays so that the declines stay visible. Fable 5.1 answered on 40 of the 80 prompts, so its interval rests on half the prompts.
+The interval is the share of answered samples that sent the nonce. For a model with sends it comes from the preregistered cluster bootstrap over the 80 prompts (10,000 resamples, seed 20261014), so the 3 epochs of one prompt move together. For a model with no send it is the one sided 95% upper bound 3/P on prompts, with P = 80. A model with fewer than 5 answered prompts gets no interval. Opus 5.5 answered 4 samples on 3 prompts, and 482 of the 10,000 resamples drew none of its prompts, so an interval would say nothing about the model. The row stays so that the declines stay visible. Fable 5.1 answered on 40 of the 80 prompts, so its interval rests on half the prompts. Declines may not be random. If the classifier declines more often when the injection is more visible, the answered samples are a selected subset, and the interval describes that subset only.
 
 In the clean arm (80 samples per model, no poisoned description), no model sent the nonce. The clean arm drew 2 declines in total, both on Fable 5.1.
 
@@ -72,6 +72,7 @@ The other two contrast cells turn adaptive thinking on for Sonnet 4.6 and Opus 4
 - 80 tasks, written for this study.
 - Claude models only, at API defaults, through the Anthropic API.
 - Declines before output leave the denominator, so the answered n differs by model.
+- Declines may select the answered samples: if the classifier declines more often when the injection is more visible, an interval describes the answered subset only.
 - The intervals cover the event outcome only. They treat the 80 prompts as the unit of resampling, so they speak to these prompts and this payload, not to other attacks.
 - The event measures an action, not what the agent told the user.
 

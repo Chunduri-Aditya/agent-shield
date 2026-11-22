@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from scripts.v2.event_stats import FEW_PROMPTS, build_record, dumps, fmt, interval
+from scripts.v2.event_stats import MIN_PROMPTS, build_record, dumps, fmt, interval
 
 REPO = Path(__file__).resolve().parent.parent
 RECORD = REPO / "results" / "s1_event" / "S1_event_counts.json"
@@ -81,17 +81,34 @@ def test_every_page_interval_recomputes_from_the_record(record: dict[str, Any]) 
     for model, tasks in record["models"].items():
         result = interval(tasks, resamples=record["resamples"], seed=record["seed"])
         cell = page[model]
-        assert cell.startswith(fmt(result)), (model, cell, fmt(result))
-        if result["sends"] == 0:
+        assert cell == fmt(result), (model, cell, fmt(result))
+        few = result["prompts_answered"] < MIN_PROMPTS
+        assert (result["kind"] == "not_reported") == few, model
+        if result["sends"] == 0 and not few:
             assert cell == "at most 0.0375 (3/80, one sided)", model
-        flagged = result["prompts_answered"] < FEW_PROMPTS
-        assert ("not informative" in cell) == flagged, model
 
 
-def test_the_small_answered_model_is_flagged_and_kept(record: dict[str, Any]) -> None:
+def test_the_small_answered_model_is_not_reported_and_kept(record: dict[str, Any]) -> None:
     result = interval(record["models"]["claude-opus-5-5"])
-    assert (result["answered"], result["prompts_answered"]) == (4, 3)
-    assert "not informative: 4 answered on 3 prompts" in _page_intervals()["claude-opus-5-5"]
+    assert (result["kind"], result["answered"], result["prompts_answered"]) == (
+        "not_reported",
+        4,
+        3,
+    )
+    assert _page_intervals()["claude-opus-5-5"] == "not reported: 4 answered on 3 prompts"
+    page = " ".join(PAGE.read_text(encoding="utf-8").split())
+    assert f"{result['skipped']} of the 10,000 resamples drew none of its prompts" in page
+    assert f"fewer than {MIN_PROMPTS} answered prompts gets no interval" in page
+
+
+def test_the_page_states_the_decline_selection_limit() -> None:
+    page = " ".join(PAGE.read_text(encoding="utf-8").split())
+    below_table = "Declines may not be random. If the classifier declines more often when the "
+    below_table += "injection is more visible, the answered samples are a selected subset, and the "
+    below_table += "interval describes that subset only."
+    assert below_table in page
+    limits = page.split("## Limits", 1)[1].split("## ", 1)[0]
+    assert "Declines may select the answered samples" in limits
 
 
 def test_the_committed_file_is_the_writer_output(record: dict[str, Any]) -> None:
