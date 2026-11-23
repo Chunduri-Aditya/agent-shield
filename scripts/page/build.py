@@ -22,7 +22,10 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, NoReturn
 
-if sys.version_info < (3, 14):
+# The first Python version whose zipfile reads a zstd compressed zip without a patch package.
+ZSTD_NATIVE_PYTHON = (3, 14)
+
+if sys.version_info < ZSTD_NATIVE_PYTHON:
     # Python before this version reads a zstd compressed zip only after this package patches
     # zipfile. It is a locked dependency (inspect-ai needs it). Later versions read zstd natively.
     import zipfile_zstd  # type: ignore[import-untyped]  # noqa: F401
@@ -43,6 +46,9 @@ PAYLOAD_NAME = "TL_01_POISONING_PAYLOAD"
 EVENT_SCORER = "evals/tools_event_v2.py"
 FINDING = "showcase/S1_EVENT_FINDING.md"
 RUN_REPORT = "docs/paper_v2/S1_RUN_REPORT.md"
+RUN_REPORT_STEPS = "## How it went"
+DEVIATION_ANCHOR = "a recorded deviation from prereg S1"
+AMENDMENTS = "docs/paper_v2/prereg/S1_AMENDMENTS.md"
 S1_RECORD = "results/s1_event/S1_event_counts.json"
 WALLET_DETECTOR = "results/wallet/DW01_haiku55_2026-11-18.result.json"
 WALLET_GOVERNOR = "results/wallet/DW01_governor_haiku55_2026-11-18.result.json"
@@ -55,9 +61,10 @@ MULTITURN_DRAFT = "results/multiturn/PREREG_DRAFT.md"
 SELF = "scripts/page/build.py"
 
 STATUSES = ("preregistered", "completed", "preliminary", "diagnostic", "pending")
-IN_THE_TEXT = "in the text"
 SEE_PREREG = "see the preregistration"
 SCORER = "tools_asr_scorer"
+# The columns of the S1 counts table that hold counts, then one column of intervals follows.
+MODEL_HEAD = ("Model", "Declined", "Answered", "Sent the nonce", "Partial send")
 
 
 def fail(where: str, anchor: str) -> NoReturn:
@@ -333,8 +340,8 @@ def collect_s1(reads: Reads) -> dict[str, Any]:
 
     (recomputed,) = first(r"recomputed on (\d{4}-\d{2}-\d{2})", page, FINDING)
     panel = first(
-        r"Panel: (\d+) Claude models\. The poisoned arm runs (\d+) tasks \u00d7 (\d+) epochs "
-        r"\((\d+) samples per model\)\.",
+        r"Panel: (\d+) Claude models\. The poisoned arm runs (\d+) tasks "
+        r"\N{MULTIPLICATION SIGN} (\d+) epochs \((\d+) samples per model\)\.",
         page,
         FINDING,
     )
@@ -345,21 +352,21 @@ def collect_s1(reads: Reads) -> dict[str, Any]:
         FINDING,
         "of the counts per model",
         lambda h: (
-            len(h) == 6
-            and h[:5] == ["Model", "Declined", "Answered", "Sent the nonce", "Partial send"]
-            and h[5].endswith("interval of the send share")
+            len(h) == len(MODEL_HEAD) + 1
+            and h[:-1] == list(MODEL_HEAD)
+            and h[-1].endswith("interval of the send share")
         ),
     )
     models: list[dict[str, Any]] = []
     for row in model_rows:
         if len(row) != len(models_header):
             fail(FINDING, f"counts row has {len(row)} cells: {row!r}")
-        counts = [to_int(c, FINDING, "count") for c in row[1:5]]
+        counts = [to_int(c, FINDING, "count") for c in row[1:-1]]
         models.append(
             dict(
                 zip(
                     ("model", "declined", "answered", "sent", "partial", "interval"),
-                    [row[0], *counts, row[5]],
+                    [row[0], *counts, row[-1]],
                     strict=True,
                 )
             )
@@ -374,13 +381,14 @@ def collect_s1(reads: Reads) -> dict[str, Any]:
     for row in contrast_rows:
         if len(row) != len(contrast_header):
             fail(FINDING, f"contrast row has {len(row)} cells: {row!r}")
+        model, thinking, samples, sent, tasks_with_send = row
         contrast.append(
             {
-                "model": row[0],
-                "thinking": row[1],
-                "samples": to_int(row[2], FINDING, "samples"),
-                "sent": to_int(row[3], FINDING, "sent"),
-                "tasks_with_send": row[4],
+                "model": model,
+                "thinking": thinking,
+                "samples": to_int(samples, FINDING, "samples"),
+                "sent": to_int(sent, FINDING, "sent"),
+                "tasks_with_send": tasks_with_send,
             }
         )
 
@@ -496,9 +504,20 @@ def attempt_of(reads: Reads, stem: str, commit: str) -> str:
 
 
 def result_row(**fields: str) -> dict[str, str]:
+    """A row of the results table. The field `note` is optional."""
     if fields["status"] not in STATUSES:
         fail(fields["id"], f"unknown status {fields['status']!r}")
     return fields
+
+
+def limits_note(reads: Reads, md: str) -> str:
+    """The first paragraph under the Limits heading of a record, quoted with its path."""
+    paragraphs = [
+        p for p in re.split(r"\n\s*\n", section(reads.text(md), md, "## Limits")) if p.strip()
+    ]
+    if not paragraphs:
+        fail(md, "a paragraph under the heading '## Limits'")
+    return f'Limits, from {md}: "{" ".join(paragraphs[0].split())}"'
 
 
 def wallet_rows(reads: Reads) -> list[dict[str, str]]:
@@ -518,6 +537,7 @@ def wallet_rows(reads: Reads) -> list[dict[str, str]]:
             f"{arm}: detector fired on {need(v, 'fired', where)} of {need(v, 'samples', where)}"
             for arm, v in arms.items()
         ),
+        note=limits_note(reads, source),
         source=source,
     )
     where = WALLET_GOVERNOR
@@ -537,6 +557,7 @@ def wallet_rows(reads: Reads) -> list[dict[str, str]]:
             f"flagged {need(c, 'flagged', where)} of {need(c, 'samples', where)}"
             for name, c in cells.items()
         ),
+        note=limits_note(reads, source),
         source=source,
     )
     return [detector, governor]
@@ -561,11 +582,12 @@ def absolute_claim_row(reads: Reads) -> dict[str, str]:
         id="absolute-claim",
         title="Rule tuning for the unqualified absolute claim label",
         status="preregistered",
-        n=", ".join(counts),
+        n="denominators in the result table: " + ", ".join(counts),
         runs="half A scored, half B never scored",
-        date="not recorded in the result file",
+        date="not recorded",
         commit=commit.group(1),
         finding=verdict[0],
+        note=f"The commit is the preregistration commit that {ABSOLUTE_CLAIM} names.",
         source=ABSOLUTE_CLAIM,
     )
 
@@ -581,7 +603,7 @@ def optional_entries(repo: Path, reads: Reads | None = None) -> dict[str, list[d
             result_row(
                 id="sectune",
                 title="Security preference tuning (DPO with LoRA)",
-                status="completed" if done else "pending",
+                status="preregistered" if done else "pending",
                 n=SEE_PREREG,
                 runs=SEE_PREREG,
                 date=SEE_PREREG,
@@ -592,14 +614,15 @@ def optional_entries(repo: Path, reads: Reads | None = None) -> dict[str, list[d
                 source=SECTUNE_PREREG,
             )
         )
-        not_done.append(
-            {
-                "id": "sectune",
-                "title": "Security preference tuning",
-                "quote": "Result written." if done else "Preregistered. Result pending.",
-                "source": SECTUNE_PREREG,
-            }
-        )
+        if not done:
+            not_done.append(
+                {
+                    "id": "sectune",
+                    "title": "Security preference tuning",
+                    "quote": "Preregistered. Result pending.",
+                    "source": SECTUNE_PREREG,
+                }
+            )
     for item_id, title, rel in (
         ("autoredteam", "Adaptive injection rewriting", AUTOREDTEAM_DRAFT),
         ("multiturn", "Real multi turn drift task", MULTITURN_DRAFT),
@@ -709,6 +732,15 @@ def collect_reproduce(reads: Reads) -> list[dict[str, str]]:
     return out
 
 
+def deviation_note(reads: Reads) -> str:
+    """The sentence of the run report that records the deviation, and where the amendments are."""
+    sentence = sentence_with(
+        section(reads.text(RUN_REPORT), RUN_REPORT, RUN_REPORT_STEPS), RUN_REPORT, DEVIATION_ANCHOR
+    )
+    reads.data(AMENDMENTS)
+    return f'Recorded deviation, from {RUN_REPORT}: "{sentence}" Amendments: {AMENDMENTS}.'
+
+
 def collect(repo: Path) -> dict[str, Any]:
     reads = Reads(repo)
     episode, url = collect_episode(reads)
@@ -726,6 +758,7 @@ def collect(repo: Path) -> dict[str, Any]:
             f"{s1['models_without_sends']} of {s1['panel_models']} models sent the nonce in none "
             f"of their answered samples. {s1['models_with_sends']} models sent it."
         ),
+        note=deviation_note(reads),
         source=where,
     )
     cell_sizes = {c["samples"] for c in s1["contrast"]}
@@ -745,20 +778,6 @@ def collect(repo: Path) -> dict[str, Any]:
         ),
         source=where,
     )
-    stands = [
-        result_row(
-            id=f"preprint-stands-{k}",
-            title="Preprint claim that stands",
-            status="preliminary",
-            n=IN_THE_TEXT,
-            runs=IN_THE_TEXT,
-            date=IN_THE_TEXT,
-            commit=IN_THE_TEXT,
-            finding=bullet,
-            source=ERRATUM,
-        )
-        for k, bullet in enumerate(bullets(reads.text(ERRATUM), ERRATUM, "## What stands"), 1)
-    ]
     optional = optional_entries(repo, reads)
     return {
         "repository": {"url": url},
@@ -769,7 +788,6 @@ def collect(repo: Path) -> dict[str, Any]:
             contrast,
             *wallet_rows(reads),
             absolute_claim_row(reads),
-            *stands,
             *optional["results"],
         ],
         "erratum": collect_erratum(reads),
@@ -885,6 +903,17 @@ def block_s1_senders(data: dict[str, Any]) -> str:
 
 def block_s1_limits(data: dict[str, Any]) -> str:
     return "<ul>" + "".join(f"<li>{inline(x)}</li>" for x in data["s1"]["limits"]) + "</ul>"
+
+
+def block_results_notes(data: dict[str, Any]) -> str:
+    """One entry under the results table for each row that has a note."""
+    items = "".join(
+        f'<li><p class="item-title">{inline(r["title"])}</p>'
+        f'<p class="note">{inline(r["note"])}</p></li>'
+        for r in data["results"]
+        if "note" in r
+    )
+    return f'<ul class="plain">{items}</ul>'
 
 
 def block_results_table(data: dict[str, Any]) -> str:
@@ -1005,6 +1034,7 @@ BLOCKS: dict[str, Callable[[dict[str, Any]], str]] = {
     "s1_senders": block_s1_senders,
     "s1_limits": block_s1_limits,
     "results_table": block_results_table,
+    "results_notes": block_results_notes,
     "s1_models_table": block_s1_models_table,
     "s1_contrast_table": block_s1_contrast_table,
     "erratum_table": block_erratum_table,

@@ -12,11 +12,13 @@ import html
 import json
 import re
 import shutil
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
 import pytest
+from inspect_ai.log import read_eval_log
 
 from scripts.page import build
 from tests.test_public_claims import BANNED
@@ -28,6 +30,11 @@ TEMPLATE = REPO / "scripts" / "page" / "template.html"
 SCRIPT = REPO / "scripts" / "page" / "build.py"
 RECORD = REPO / "results" / "s1_event" / "S1_event_counts.json"
 ERRATUM = REPO / "docs" / "ERRATUM.md"
+FINDING = REPO / "showcase" / "S1_EVENT_FINDING.md"
+EPISODE_LOG = REPO / "tests" / "fixtures" / "pilot_gate" / "anthropic_haiku_smoke.eval"
+WALLET_DETECTOR = REPO / "results" / "wallet" / "DW01_haiku55_2026-11-18.result.json"
+WALLET_GOVERNOR = REPO / "results" / "wallet" / "DW01_governor_haiku55_2026-11-18.result.json"
+ABSOLUTE_CLAIM = REPO / "results" / "absolute_claim" / "RESULT.md"
 
 # Identifiers that may hold a digit in the template text and in the script's constants.
 IDENTIFIER = re.compile(r"(?<![a-z0-9])(?:s1|tl[-_]?01|dw[-_]?01)(?![a-z0-9])", re.I)
@@ -35,6 +42,14 @@ IDENTIFIER = re.compile(r"(?<![a-z0-9])(?:s1|tl[-_]?01|dw[-_]?01)(?![a-z0-9])", 
 ALLOWED_DIGIT_CONSTANTS = (
     ("sha256", "the key name the data shape fixes for the file hash, and the hash algorithm"),
 )
+# (name of a module level constant of build.py, why it may hold a number other than 0, 1 or 2).
+ALLOWED_NUMERIC_CONSTANTS = (
+    ("SHA_PREFIX_LENGTH", "the count of hash characters shown next to a source file name"),
+    ("ZSTD_NATIVE_PYTHON", "the Python version from which zipfile reads zstd without a patch"),
+)
+SMALL_NUMBERS = (0, 1, 2)
+# Regex tokens that may hold a digit or the letter d: a digit class and a quantifier.
+REGEX_DIGIT_TOKENS = re.compile(r"\\d|\{\d+(?:,\d*)?\}")
 
 
 def _data() -> dict[str, Any]:
@@ -138,11 +153,11 @@ def test_the_template_text_holds_no_hand_typed_number() -> None:
     assert not re.search(r"\d", text), re.findall(r".{20}\d.{20}", text)
 
 
-def test_the_script_holds_no_hand_typed_number() -> None:
+def _digit_strings(source: str) -> list[str]:
+    """String constants with a digit, other than an allowed one, a file path or a regex token."""
     allowed = {value for value, _why in ALLOWED_DIGIT_CONSTANTS}
-    assert all(len(why.split()) >= 4 for _value, why in ALLOWED_DIGIT_CONSTANTS)
     bad: list[str] = []
-    for node in ast.walk(ast.parse(SCRIPT.read_text(encoding="utf-8"))):
+    for node in ast.walk(ast.parse(source)):
         if not (isinstance(node, ast.Constant) and isinstance(node.value, str)):
             continue
         value = node.value
@@ -152,9 +167,56 @@ def test_the_script_holds_no_hand_typed_number() -> None:
             continue
         if "\\" in value:
             re.compile(value)
-            continue
+            if not re.search(r"\d", REGEX_DIGIT_TOKENS.sub("", IDENTIFIER.sub("", value))):
+                continue
         bad.append(f"line {node.lineno}: {value!r}")
-    assert not bad, "\n".join(bad)
+    return bad
+
+
+def test_the_script_holds_no_hand_typed_number() -> None:
+    assert all(len(why.split()) >= 4 for _value, why in ALLOWED_DIGIT_CONSTANTS)
+    assert _digit_strings(SCRIPT.read_text(encoding="utf-8")) == []
+    # A regex may hold digit classes and quantifiers. A digit outside them is refused.
+    assert _digit_strings('A = r"\\d{4}-\\d{2}"\n') == []
+    assert _digit_strings('A = r"(\\d+) rows of 240"\n') == ["line 1: '(\\\\d+) rows of 240'"]
+    assert _digit_strings('A = "count is 240"\n') == ["line 1: 'count is 240'"]
+
+
+def _unnamed_numbers(source: str) -> list[str]:
+    """Numbers other than 0, 1 and 2 that are not the value of an allowed named constant."""
+    allowed = {name for name, _why in ALLOWED_NUMERIC_CONSTANTS}
+    tree = ast.parse(source)
+    named: set[int] = set()
+    for stmt in tree.body:
+        if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
+            target, value = stmt.targets[0], stmt.value
+        elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+            target, value = stmt.target, stmt.value
+        else:
+            continue
+        if not (isinstance(target, ast.Name) and target.id in allowed):
+            continue
+        assert target.id.isupper(), target.id
+        parts = value.elts if isinstance(value, ast.Tuple) else [value]
+        named.update(id(part) for part in parts if isinstance(part, ast.Constant))
+    return [
+        f"line {node.lineno}: {node.value!r}"
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, (int, float))
+        and not isinstance(node.value, bool)
+        and node.value not in SMALL_NUMBERS
+        and id(node) not in named
+    ]
+
+
+def test_the_script_holds_no_hand_typed_numeric_literal() -> None:
+    assert all(len(why.split()) >= 4 for _name, why in ALLOWED_NUMERIC_CONSTANTS)
+    assert _unnamed_numbers(SCRIPT.read_text(encoding="utf-8")) == []
+    # The check refuses a number in a function or under another name, and accepts a named one.
+    assert _unnamed_numbers("def f(row):\n    return row[5]\n") == ["line 2: 5"]
+    assert _unnamed_numbers("OTHER = 12\n") == ["line 1: 12"]
+    assert _unnamed_numbers("SHA_PREFIX_LENGTH = 12\nX = -1\nY = 0.5\n") == ["line 3: 0.5"]
 
 
 def test_the_template_wording() -> None:
@@ -192,8 +254,9 @@ def test_optional_entries_follow_their_files(tmp_path: Path) -> None:
 
     (sectune / "RESULT.md").write_text("# Result\n", encoding="utf-8")
     done = build.optional_entries(tmp_path)
-    assert done["results"][0]["status"] == "completed"
-    assert done["not_done"][0]["quote"] == "Result written."
+    assert ids(done) == (["sectune"], [])
+    assert done["results"][0]["status"] == "preregistered"
+    assert done["results"][0]["finding"] == "Result written. See results/sectune/RESULT.md."
 
     for folder, name in (("autoredteam", "PREREG_DRAFT.md"), ("multiturn", "PREREG_DRAFT.md")):
         path = tmp_path / "results" / folder
@@ -202,9 +265,9 @@ def test_optional_entries_follow_their_files(tmp_path: Path) -> None:
             "# Draft\n\nStatus: DRAFT,\nnot frozen.\n\nStatus: second line.\n", encoding="utf-8"
         )
     drafts = build.optional_entries(tmp_path)
-    assert ids(drafts)[1] == ["sectune", "autoredteam", "multiturn"]
+    assert ids(drafts)[1] == ["autoredteam", "multiturn"]
+    assert drafts["not_done"][0]["quote"] == "Status: DRAFT, not frozen."
     assert drafts["not_done"][1]["quote"] == "Status: DRAFT, not frozen."
-    assert drafts["not_done"][2]["quote"] == "Status: DRAFT, not frozen."
 
     only_drafts = tmp_path / "drafts_only"
     (only_drafts / "results" / "autoredteam").mkdir(parents=True)
@@ -258,3 +321,236 @@ def test_reproduce_commands_are_in_their_sources() -> None:
             continue
         source = (REPO / entry["source"]).read_text(encoding="utf-8")
         assert entry["command"] in source, entry["command"]
+
+
+# ---------------------------------------------------------------- independent checks
+# Each test below reads a tracked source with code written here and compares the result with
+# site/data.json and site/index.html. None of them calls a parser of scripts/page/build.py.
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _page_inline(text: str) -> str:
+    """The page form of a text: escaped, link text only, code spans, strong text."""
+    return _inline(re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text))
+
+
+def _md_table(path: Path, heading: str) -> list[list[str]]:
+    """The body rows of the first table under a heading line, as cell lists."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    rows: list[list[str]] = []
+    for line in lines[lines.index(heading) + 1 :]:
+        if line.startswith("|"):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+        elif rows:
+            break
+    return rows[2:]
+
+
+def _result_row(row_id: str) -> dict[str, str]:
+    (row,) = [r for r in _data()["results"] if r["id"] == row_id]
+    assert isinstance(row, dict)
+    return row
+
+
+def test_s1_every_count_field_matches_the_record_and_the_finding_page() -> None:
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    per_model = record["prompts"] * record["epochs"]
+    page_rows = {r[0]: r for r in _md_table(FINDING, "## Counts per model, poisoned arm")}
+    models = _data()["s1"]["models"]
+    assert sorted(m["model"] for m in models) == sorted(record["models"]) == sorted(page_rows)
+    page = _index()
+    for m in models:
+        pairs = record["models"][m["model"]].values()
+        answered = sum(pair[0] for pair in pairs)
+        sent = sum(pair[1] for pair in pairs)
+        assert (m["answered"], m["sent"], m["declined"]) == (answered, sent, per_model - answered)
+        cells = page_rows[m["model"]]
+        assert [m[k] for k in ("declined", "answered", "sent", "partial")] == [
+            int(c) for c in cells[1:5]
+        ]
+        assert m["interval"] == cells[5]
+        shown = (
+            f'<th scope="row">{html.escape(m["model"])}</th>'
+            + "".join(f'<td class="num">{cell}</td>' for cell in cells[1:5])
+            + f'<td class="">{html.escape(cells[5])}</td>'
+        )
+        assert shown in page, m["model"]
+
+
+def test_s1_contrast_cells_match_the_finding_page_and_stay_within_the_record() -> None:
+    # The tracked record holds the main cell only. The thinking off cells and the 50 matched
+    # task ids are in logs that are not tracked, so a contrast cell is compared with the
+    # finding page, and a thinking on cell is bounded by the record.
+    record = json.loads(RECORD.read_text(encoding="utf-8"))["models"]
+    cells = _data()["s1"]["contrast"]
+    expected = _md_table(FINDING, "## Thinking on against thinking off, on matched tasks")
+    assert len(cells) == len(expected) > 0
+    page = _index()
+    for cell, row in zip(cells, expected, strict=True):
+        assert [cell["model"], cell["thinking"], cell["samples"], cell["sent"]] == [
+            row[0],
+            row[1],
+            int(row[2]),
+            int(row[3]),
+        ]
+        assert cell["tasks_with_send"] == row[4]
+        if cell["thinking"].startswith("on"):
+            assert cell["sent"] <= sum(pair[1] for pair in record[cell["model"]].values())
+        assert f'<td class="num">{row[2]}</td><td class="num">{row[3]}</td>' in page
+
+
+def test_wallet_rows_hold_the_counts_of_their_result_files() -> None:
+    page = _index()
+    detector = json.loads(WALLET_DETECTOR.read_text(encoding="utf-8"))["headline"]["arms"]
+    row = _result_row("dw01-detector")
+    found = dict(re.findall(r"(\w+): detector fired on (\d+ of \d+)", row["finding"]))
+    assert set(found) == set(detector) and len(detector) > 0
+    for arm, values in detector.items():
+        assert found[arm] == f"{values['fired']} of {values['samples']}", arm
+    assert _inline(row["finding"]) in page
+
+    cells = json.loads(WALLET_GOVERNOR.read_text(encoding="utf-8"))["cells"]
+    row = _result_row("dw01-governor")
+    found = {
+        name: tuple(int(x) for x in rest)
+        for name, *rest in re.findall(
+            r"([\w/]+): mean (\d+) tokens, flagged (\d+) of (\d+)", row["finding"]
+        )
+    }
+    assert set(found) == set(cells) and len(cells) > 0
+    for name, cell in cells.items():
+        mean = round(sum(cell["tokens"]) / len(cell["tokens"]))
+        assert found[name] == (mean, cell["flagged"], cell["samples"]), name
+    assert _inline(row["finding"]) in page
+
+
+def test_absolute_claim_row_is_the_verdict_line_of_its_result_file() -> None:
+    verdicts = [
+        ln
+        for ln in ABSOLUTE_CLAIM.read_text(encoding="utf-8").splitlines()
+        if ln.startswith("Verdict:")
+    ]
+    assert len(verdicts) == 1
+    assert "FAIL at selection (P3)" in verdicts[0]
+    row = _result_row("absolute-claim")
+    assert row["finding"] == verdicts[0]
+    assert row["n"].startswith("denominators in the result table: ")
+    named = re.search(
+        r"Preregistration: `PREREG\.md` \(commit (\w+)\)",
+        ABSOLUTE_CLAIM.read_text(encoding="utf-8"),
+    )
+    assert named is not None and row["commit"] == named.group(1)
+    assert row["note"] == (
+        "The commit is the preregistration commit that results/absolute_claim/RESULT.md names."
+    )
+    assert _page_inline(verdicts[0]) in _index()
+
+
+def test_erratum_rows_equal_the_file_cell_by_cell() -> None:
+    lines = ERRATUM.read_text(encoding="utf-8").splitlines()
+    parsed = [
+        dict(zip(("id", "claim", "why", "evidence"), found.groups(), strict=True))
+        for found in (re.fullmatch(r"\| (W\d+) \| (.+) \| (.+) \| (.+) \|", ln) for ln in lines)
+        if found is not None
+    ]
+    assert [r["id"] for r in parsed] == [f"W{k}" for k in range(1, 16)]
+    assert _data()["erratum"]["rows"] == parsed
+    page = _index()
+    for row in parsed:
+        for column in ("claim", "why", "evidence"):
+            assert _inline(row[column]) in page, (row["id"], column)
+
+
+def test_every_not_done_quote_is_in_its_source_file() -> None:
+    items = _data()["not_done"]
+    assert items
+    for item in items:
+        # A quote that sits in a markdown blockquote has its line start marks removed in the file.
+        source = _flat(
+            re.sub(r"(?m)^>\s?", "", (REPO / item["source"]).read_text(encoding="utf-8"))
+        )
+        assert _flat(item["quote"]) in source, item["id"]
+
+
+def test_the_episode_equals_the_log_read_by_the_inspect_reader() -> None:
+    log = read_eval_log(str(EPISODE_LOG))
+    assert log.samples is not None and len(log.samples) == 1
+    sample = log.samples[0]
+    episode = _data()["episode"]
+    assert episode["model"] == log.eval.model == "anthropic/claude-haiku-5-5"
+    assert episode["samples"] == len(log.samples)
+    calls = [call for m in sample.messages if m.role == "assistant" for call in m.tool_calls or []]
+    assert episode["calls"] == [{"function": c.function, "arguments": c.arguments} for c in calls]
+    assert [c["function"] for c in episode["calls"]] == ["read_file"]
+    assert episode["calls"][0]["arguments"] == {"path": "report.txt"}
+    assert sample.scores is not None
+    score = sample.scores["tools_asr_scorer"]
+    assert episode["score"]["value"] == score.value == 0.0
+    assert episode["score"]["explanation"] == score.explanation
+
+
+def test_the_episode_commit_is_not_on_the_main_branch() -> None:
+    log = read_eval_log(str(EPISODE_LOG), header_only=True)
+    assert log.eval.revision is not None
+    commit = log.eval.revision.commit
+    assert commit == _data()["episode"]["commit"] or str(commit).startswith(
+        _data()["episode"]["commit"]
+    )
+    # A missing object also gives a non zero code, and that is the intended pass.
+    done = subprocess.run(
+        ["git", "-C", str(REPO), "merge-base", "--is-ancestor", str(commit), "HEAD"],
+        capture_output=True,
+        check=False,
+        timeout=30,
+    )
+    assert done.returncode != 0
+    assert "That commit is not on the main branch." in " ".join(_template_text().split())
+
+
+def test_the_notes_are_quoted_from_their_source_files() -> None:
+    noted = [r for r in _data()["results"] if "note" in r]
+    assert sorted(r["id"] for r in noted) == [
+        "absolute-claim",
+        "dw01-detector",
+        "dw01-governor",
+        "s1-poisoned",
+    ]
+    page = _index()
+    for row in noted:
+        assert f'<p class="note">{_page_inline(row["note"])}</p>' in page, row["id"]
+    # Wallet rows: the first paragraph under the Limits heading of their own record.
+    for row_id, record in (
+        ("dw01-detector", WALLET_DETECTOR),
+        ("dw01-governor", WALLET_GOVERNOR),
+    ):
+        md = record.with_suffix("").with_suffix(".md")
+        text = md.read_text(encoding="utf-8")
+        found = re.search(r"^## Limits\n\n(.+?)(?:\n\n|\Z)", text, re.S | re.M)
+        assert found is not None
+        rel = md.relative_to(REPO).as_posix()
+        assert _result_row(row_id)["note"] == f'Limits, from {rel}: "{_flat(found.group(1))}"'
+    # The S1 row: one sentence of the run report, and the amendments file.
+    note = _result_row("s1-poisoned")["note"]
+    found = re.fullmatch(r'Recorded deviation, from (\S+): "(.+)" Amendments: (\S+)\.', note)
+    assert found is not None
+    report, sentence, amendments = found.groups()
+    assert sentence.endswith("(a recorded deviation from prereg S1).")
+    assert _flat(sentence) in _flat((REPO / report).read_text(encoding="utf-8"))
+    assert (REPO / amendments).is_file()
+
+
+def test_rows_without_a_note_render_without_one() -> None:
+    results = _data()["results"]
+    assert not [r for r in results if r["id"].startswith("preprint-stands")]
+    region = re.search(r"<caption>Results recorded.*?</table>", _index(), re.S)
+    assert region is not None
+    assert '<p class="note">' not in region.group(0)
+    notes = re.search(r"<h3>Limits and deviations of the rows above</h3>.*?</ul>", _index(), re.S)
+    assert notes is not None
+    assert notes.group(0).count('<p class="note">') == len([r for r in results if "note" in r])
+    assert notes.group(0).count("<li>") == len([r for r in results if "note" in r])
+    stands = _data()["erratum"]["stands"]
+    assert stands and all(_inline(x) in _index() for x in stands)

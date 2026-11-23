@@ -193,7 +193,7 @@ summary { cursor: pointer; }
 <h2 id="episode-h">How one episode works</h2>
 <p class="here">Recorded run, not live.</p>
 <div class="prose">
-<p>The run is the log <code>{{episode.log}}</code>: model {{episode.model}}, created {{episode.created}}, commit <code>{{episode.commit}}</code>, sample count {{episode.samples}}.</p>
+<p>The run is the log <code>{{episode.log}}</code>: model {{episode.model}}, created {{episode.created}}, sample count {{episode.samples}}. The log records the commit <code>{{episode.commit}}</code>. That commit is not on the main branch.</p>
 <p>No S1 transcript is tracked in this repository. This is a run of the earlier TL-01 task with the same tool description. The outcome of this one run is in the last step. The S1 counts are in the results below.</p>
 </div>
 {{block:episode_steps}}
@@ -208,9 +208,9 @@ summary { cursor: pointer; }
 <div class="prose">
 <dl class="legend">
 <dt><span class="tag tag-preregistered">preregistered</span></dt>
-<dd>the design and the analysis were committed before the run, and the run is complete.</dd>
+<dd>the design and the analysis were committed before the run, and a result is recorded. A recorded deviation is in the notes under the table.</dd>
 <dt><span class="tag tag-completed">completed</span></dt>
-<dd>the run is complete and was not preregistered.</dd>
+<dd>a result is recorded, with no preregistration.</dd>
 <dt><span class="tag tag-preliminary">preliminary</span></dt>
 <dd>a small or exploratory measurement that a new study must confirm.</dd>
 <dt><span class="tag tag-diagnostic">diagnostic</span></dt>
@@ -218,9 +218,11 @@ summary { cursor: pointer; }
 <dt><span class="tag tag-pending">pending</span></dt>
 <dd>registered or planned, with no result yet.</dd>
 </dl>
-<p>RESULTS.md in the repository holds the older logged rows. Read it together with the erratum below.</p>
+<p>RESULTS.md in the repository holds the older logged rows. Read it together with the erratum below. The preprint claims that still stand are listed under the erratum.</p>
 </div>
 {{block:results_table}}
+<h3>Limits and deviations of the rows above</h3>
+{{block:results_notes}}
 {{block:s1_models_table}}
 {{block:s1_contrast_table}}
 </section>
@@ -228,7 +230,7 @@ summary { cursor: pointer; }
 <section id="erratum" aria-labelledby="erratum-h">
 <h2 id="erratum-h">Erratum</h2>
 <div class="prose">
-<p>The preprint has {{erratum.count}} withdrawn claims, {{erratum.first_id}} to {{erratum.last_id}}. Each row gives the claim, why it does not hold, and the evidence.</p>
+<p>The preprint has {{erratum.count}} withdrawn claims, {{erratum.first_id}} to {{erratum.last_id}}. Each row gives the claim, why it does not hold, and the evidence. The text of each row is copied from docs/ERRATUM.md. A phrase such as "below" points into that file.</p>
 </div>
 {{block:erratum_table}}
 <h3>What stands</h3>
