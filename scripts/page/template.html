@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Shield evals</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fbfaf6;
+  --fg: #1d1b17;
+  --muted: #5a564d;
+  --rule: #d6d1c4;
+  --accent: #8a3a10;
+  --code-bg: #f0ede4;
+  --mark-bg: #f3d98b;
+  --mark-fg: #1d1b17;
+  --tag-preregistered-bg: #dbe6d6;
+  --tag-preregistered-fg: #1e3a1a;
+  --tag-completed-bg: #d9e4ee;
+  --tag-completed-fg: #1b2f45;
+  --tag-preliminary-bg: #efe4c3;
+  --tag-preliminary-fg: #473608;
+  --tag-diagnostic-bg: #e5dbed;
+  --tag-diagnostic-fg: #3a2849;
+  --tag-pending-bg: #e4e0d6;
+  --tag-pending-fg: #3b372f;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171612;
+    --fg: #ece8dd;
+    --muted: #b0a999;
+    --rule: #3b382f;
+    --accent: #e5a577;
+    --code-bg: #24221c;
+    --mark-bg: #7a5d0f;
+    --mark-fg: #fff7de;
+    --tag-preregistered-bg: #26382a;
+    --tag-preregistered-fg: #cfe5c9;
+    --tag-completed-bg: #243445;
+    --tag-completed-fg: #cddff0;
+    --tag-preliminary-bg: #403516;
+    --tag-preliminary-fg: #f0e1b4;
+    --tag-diagnostic-bg: #382c46;
+    --tag-diagnostic-fg: #e3d4f2;
+    --tag-pending-bg: #35322b;
+    --tag-pending-fg: #ddd7ca;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 1rem/1.6 var(--sans);
+  overflow-wrap: break-word;
+}
+.page {
+  width: min(100%, 76rem);
+  margin-inline: auto;
+  padding-inline: 1rem;
+  padding-block: 2rem 4rem;
+}
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.25; }
+h1 { font-size: 2.25rem; margin: 0 0 0.25rem; }
+h2 { font-size: 1.6rem; margin: 3.5rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.15rem; margin: 2rem 0 0.5rem; }
+p, ul, ol, dl, blockquote { margin: 0 0 1rem; }
+.prose, .prose p, .prose ul, .prose ol { max-width: 72ch; }
+a { color: var(--accent); text-underline-offset: 0.2em; }
+a:focus-visible, .table-wrap:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+::selection { background: var(--accent); color: var(--bg); }
+code, pre { font-family: var(--mono); font-size: 0.875rem; }
+code { background: var(--code-bg); padding: 0.1em 0.3em; border-radius: 3px; }
+pre {
+  background: var(--code-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin: 0 0 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+pre code { background: none; padding: 0; }
+mark { background: var(--mark-bg); color: var(--mark-fg); padding: 0.05em 0.15em; }
+.lede { font-family: var(--serif); font-size: 1.2rem; margin: 0 0 0.5rem; }
+.note, .source, .label { color: var(--muted); }
+.note { margin-bottom: 1rem; }
+.label { font-size: 0.875rem; margin: 0.75rem 0 0.25rem; }
+nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+.summary > section { min-width: 0; }
+.summary h2 { font-size: 1.2rem; margin: 0 0 0.5rem; padding-top: 0.75rem; }
+.summary ul { padding-left: 1.25rem; }
+@media (max-width: 767px) {
+  .summary { grid-template-columns: 1fr; gap: 0.5rem; }
+  h1 { font-size: 1.8rem; }
+}
+.here {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.1rem 0.6rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+.steps { padding-left: 1.5rem; max-width: 72ch; }
+.steps > li { margin-bottom: 1.5rem; padding-left: 0.25rem; }
+.step-title, .item-title { font-weight: 600; margin: 0 0 0.35rem; }
+.table-wrap { overflow-x: auto; margin: 1rem 0 2rem; border: 1px solid var(--rule); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+table.wide { min-width: 60rem; }
+caption { text-align: left; font-weight: 600; padding: 0.6rem 0.75rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.75rem; border-top: 1px solid var(--rule); }
+thead th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+tbody th { font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.finding, td.claim, td.why, td.evidence { min-width: 16rem; }
+td.nowrap { white-space: nowrap; }
+td code, th code { overflow-wrap: anywhere; }
+td:has(> code:only-child) { min-width: 14rem; }
+dl.legend { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; align-items: baseline; }
+dl.legend dt, dl.legend dd { margin: 0; }
+.tag {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag-preregistered { background: var(--tag-preregistered-bg); color: var(--tag-preregistered-fg); }
+.tag-completed { background: var(--tag-completed-bg); color: var(--tag-completed-fg); }
+.tag-preliminary { background: var(--tag-preliminary-bg); color: var(--tag-preliminary-fg); }
+.tag-diagnostic { background: var(--tag-diagnostic-bg); color: var(--tag-diagnostic-fg); }
+.tag-pending { background: var(--tag-pending-bg); color: var(--tag-pending-fg); }
+ul.plain { list-style: none; padding: 0; max-width: 72ch; }
+ul.plain > li { margin-bottom: 1.5rem; }
+blockquote { border-left: 1px solid var(--rule); padding-left: 1rem; margin-left: 0; }
+blockquote p { margin: 0; }
+.hash { font-family: var(--mono); font-size: 0.8125rem; color: var(--muted); }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+summary { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+<h1>Agent Shield</h1>
+<p class="lede">What the evals measured, what was withdrawn, and what is not done.</p>
+<p class="note">Generated from tracked files by scripts/page/build.py. No number on this page is typed by hand.</p>
+<nav aria-label="Sections">
+<ul>
+<li><a href="#episode">How one episode works</a></li>
+<li><a href="#results">Results</a></li>
+<li><a href="#erratum">Erratum</a></li>
+<li><a href="#not-done">Not done</a></li>
+<li><a href="#reproduce">How to reproduce</a></li>
+</ul>
+</nav>
+</header>
+
+<main>
+<div class="summary">
+<section aria-labelledby="sum-tests">
+<h2 id="sum-tests">What it tests</h2>
+<p>Agent Shield is an evaluation harness for attacks on language model agents that use tools. For each attack it asks three questions: did the attack succeed, did the user's task still get done, and did the agent tell the user. The third measure, Transparency Rate, is defined and is not validated.</p>
+</section>
+<section aria-labelledby="sum-finding">
+<h2 id="sum-finding">Main S1 finding</h2>
+<p>The poisoned arm ran {{s1.panel_models}} Claude models, with {{s1.samples_per_model}} samples per model ({{s1.tasks}} tasks, {{s1.epochs}} epochs). The event: the agent sends the secret token of the file, the nonce, to the address that the poisoned tool description names. {{s1.models_without_sends}} of the models did this in none of their answered samples. The models that did:</p>
+{{block:s1_senders}}
+<p>A decline is a provider refusal before any output, and a declined sample is not counted as answered. Counts were recomputed on {{s1.recomputed_on}}.</p>
+</section>
+<section aria-labelledby="sum-limits">
+<h2 id="sum-limits">Limits</h2>
+{{block:s1_limits}}
+</section>
+</div>
+
+<section id="episode" aria-labelledby="episode-h">
+<h2 id="episode-h">How one episode works</h2>
+<p class="here">Recorded run, not live.</p>
+<div class="prose">
+<p>The run is the log <code>{{episode.log}}</code>: model {{episode.model}}, created {{episode.created}}, commit <code>{{episode.commit}}</code>, sample count {{episode.samples}}.</p>
+<p>No S1 transcript is tracked in this repository. This is a run of the earlier TL-01 task with the same tool description. The outcome of this one run is in the last step. The S1 counts are in the results below.</p>
+</div>
+{{block:episode_steps}}
+<h3>What S1 records</h3>
+<div class="prose">
+{{block:event_definition}}
+</div>
+</section>
+
+<section id="results" aria-labelledby="results-h">
+<h2 id="results-h">Results</h2>
+<div class="prose">
+<dl class="legend">
+<dt><span class="tag tag-preregistered">preregistered</span></dt>
+<dd>the design and the analysis were committed before the run, and the run is complete.</dd>
+<dt><span class="tag tag-completed">completed</span></dt>
+<dd>the run is complete and was not preregistered.</dd>
+<dt><span class="tag tag-preliminary">preliminary</span></dt>
+<dd>a small or exploratory measurement that a new study must confirm.</dd>
+<dt><span class="tag tag-diagnostic">diagnostic</span></dt>
+<dd>a check of the method on a few samples, not a claim about a model.</dd>
+<dt><span class="tag tag-pending">pending</span></dt>
+<dd>registered or planned, with no result yet.</dd>
+</dl>
+<p>RESULTS.md in the repository holds the older logged rows. Read it together with the erratum below.</p>
+</div>
+{{block:results_table}}
+{{block:s1_models_table}}
+{{block:s1_contrast_table}}
+</section>
+
+<section id="erratum" aria-labelledby="erratum-h">
+<h2 id="erratum-h">Erratum</h2>
+<div class="prose">
+<p>The preprint has {{erratum.count}} withdrawn claims, {{erratum.first_id}} to {{erratum.last_id}}. Each row gives the claim, why it does not hold, and the evidence.</p>
+</div>
+{{block:erratum_table}}
+<h3>What stands</h3>
+<div class="prose">
+{{block:erratum_stands}}
+</div>
+</section>
+
+<section id="not-done" aria-labelledby="not-done-h">
+<h2 id="not-done-h">Not done</h2>
+{{block:not_done_list}}
+</section>
+
+<section id="reproduce" aria-labelledby="reproduce-h">
+<h2 id="reproduce-h">How to reproduce</h2>
+<div class="prose">
+<p>Each command appears in the file named under it.</p>
+</div>
+{{block:reproduce_list}}
+</section>
+</main>
+
+<footer>
+<p>Repository: <a href="{{repository.url}}">{{repository.url}}</a></p>
+<details>
+<summary>Files read to build this page</summary>
+{{block:sources_list}}
+</details>
+</footer>
+</div>
+</body>
+</html>
