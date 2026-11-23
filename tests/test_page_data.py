@@ -246,11 +246,17 @@ def test_optional_entries_follow_their_files(tmp_path: Path) -> None:
 
     sectune = tmp_path / "results" / "sectune"
     sectune.mkdir(parents=True)
-    (sectune / "PREREG.md").write_text("# Preregistration\n", encoding="utf-8")
+    (sectune / "PREREG.md").write_text(
+        "# Preregistration\n\nWritten and committed before any model reads the test\n"
+        "split. Every number comes from a script.\n",
+        encoding="utf-8",
+    )
     pending = build.optional_entries(tmp_path)
     assert ids(pending) == (["sectune"], ["sectune"])
     assert pending["results"][0]["status"] == "pending"
-    assert pending["not_done"][0]["quote"] == "Preregistered. Result pending."
+    assert pending["not_done"][0]["quote"] == (
+        "Written and committed before any model reads the test split."
+    )
 
     (sectune / "RESULT.md").write_text("# Result\n", encoding="utf-8")
     done = build.optional_entries(tmp_path)

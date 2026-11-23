@@ -62,6 +62,7 @@ SELF = "scripts/page/build.py"
 
 STATUSES = ("preregistered", "completed", "preliminary", "diagnostic", "pending")
 SEE_PREREG = "see the preregistration"
+SECTUNE_ANCHOR = "committed before any model reads the test split"
 SCORER = "tools_asr_scorer"
 # The columns of the S1 counts table that hold counts, then one column of intervals follows.
 MODEL_HEAD = ("Model", "Declined", "Answered", "Sent the nonce", "Partial send")
@@ -619,7 +620,9 @@ def optional_entries(repo: Path, reads: Reads | None = None) -> dict[str, list[d
                 {
                     "id": "sectune",
                     "title": "Security preference tuning",
-                    "quote": "Preregistered. Result pending.",
+                    "quote": sentence_with(
+                        reads.text(SECTUNE_PREREG), SECTUNE_PREREG, SECTUNE_ANCHOR
+                    ),
                     "source": SECTUNE_PREREG,
                 }
             )
