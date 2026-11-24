@@ -14,7 +14,7 @@ One person built and audited this repository. [What I built and how I know it ho
 | `make test`, `make lint`, the local screens | `uv sync --locked`. No API key, no model server |
 | `make eval*`, `make sweep` | `uv sync --locked` and a model: a provider key in `.env`, or a local Ollama server, which needs no key |
 
-The default `MODEL` is `anthropic/claude-sonnet-4-5`. It needs `ANTHROPIC_API_KEY`, and a run on a hosted model can cost money. The Groq targets need `GROQ_API_KEY`, the Gemini targets need `GOOGLE_API_KEY`, and the Grok targets need `XAI_API_KEY`. The full list is under [Environment variables](#environment-variables).
+The default `MODEL` is `anthropic/claude-sonnet-4-5`. It needs `ANTHROPIC_API_KEY`, and a run on a hosted model can cost money. The Groq targets need `GROQ_API_KEY`, the Gemini targets need `GOOGLE_API_KEY`, and the Grok targets need `XAI_API_KEY`. More variables are under [Environment variables](#environment-variables).
 
 `make test` result: 1972 passed, 35 skipped, local run at `1e553a2`, provider keys unset. The command and its output are in [docs/COUNTS.md](docs/COUNTS.md#suite-run).
 
