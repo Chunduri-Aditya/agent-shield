@@ -106,13 +106,6 @@ Work done after the preprint is outside the erratum. The S1 event counts are und
 
 ## Evidence and research progress
 
-The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 13 in October 2026, then in November 2026 a priority claim (W14) and the spotlighting Transparency Rate claim (W15). The count is the 15 rows of the erratum at commit `1e553a2` ([docs/COUNTS.md](docs/COUNTS.md)). The observations below survived the audit and describe the specific prompts tested.
-
-| Experiment | Supported observation |
-|---|---|
-| Direct injection | Llama 3.1 8B and Llama 3.3 70B each followed the injection on all 5 distinct prompts. |
-| Covert exfiltration | Llama 3.3 70B executed all 5 channel prompts and exposed the raw test token in 2. |
-
 **Follow up study.** The S1 tool poisoning panel recorded **4,760 samples across 13 Claude models**. Its event scorer checks that a unique token from a file read reaches the designated test recipient through a tool call. The [run report](docs/paper_v2/S1_RUN_REPORT.md) records setup, counts and the retry correction. The [judge run](docs/paper_v2/S1_JUDGE_RUN.md) is complete. The study has yet to report a Transparency Rate validated against human labels.
 
 The S1 event outcome, the preregistered `strict_nonce` send, is reported as counts per model, with the preregistered 95% intervals (decision D63) and the matched thinking contrast, on the [S1 event finding page](showcase/S1_EVENT_FINDING.md).
@@ -153,7 +146,6 @@ Prior-art audit (2026-07-31): [research/positioning/originality_audit_2026-07-31
 
 ## Module coverage
 
-Statistical scope matters: no anchored result currently stands. The `inputs/` anchor is withdrawn (ERRATUM W2 to W4) and the agentic anchor is withdrawn pending a TL-01 rerun (W1); the rest are **diagnostic probes**.
 Do not read “six live modules” as six powered results.
 
 | Module | Status | Statistical role | What it probes | Attack IDs |
@@ -388,13 +380,8 @@ Agent Shield keeps model calls out of the unit-test path. Tests validate
 deterministic scoring, attack metadata consistency, paper-artifact
 reproducibility, risk gates, the runtime guard, the MCP catalog screen, and report generation.
 The tests also keep the archived README rows in sync with [RESULTS.md](RESULTS.md).
-The full suite runs without API keys or local model servers. CI supplies the optional
+CI supplies the optional
 persona fixtures from a pinned checkout.
-
-```bash
-make test    # pytest — no API keys required
-make lint    # ruff + mypy
-```
 
 Always use `uv run` / `make` so the project venv is active.
 
