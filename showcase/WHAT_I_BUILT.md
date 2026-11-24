@@ -34,7 +34,7 @@ These counts describe the bundled fixtures and a scripted mock. They are not mod
 | Runtime screens | Local rules that screen untrusted text and an MCP tool catalog once | The commands above; [mcp_proxy.py](../agent_shield/runtime/mcp_proxy.py) | Fixture counts only |
 | Claim discipline | A test fails when an audited file says more than the code enforces | [test_public_claims.py](../tests/test_public_claims.py) | Test |
 
-The suite at commit `f97696e`: 1923 passed, 34 skipped, and ruff and strict mypy pass. CI runs the same three checks.
+The suite: 1972 passed, 35 skipped, local run at `1e553a2`, provider keys unset. Ruff and strict mypy pass at the same commit. CI runs the same three checks. The commands and their output are in [docs/COUNTS.md](../docs/COUNTS.md).
 
 ## Transparency Rate: defined, not yet validated
 
