@@ -90,7 +90,7 @@ git grep -o 'The gate needs at least 140 blind human labels and has not passed.'
 1e553a2:MAPPINGS.md:The gate needs at least 140 blind human labels and has not passed.
 ```
 
-No file on `main` at `1e553a2` states how many labels exist. The count is in `research/decisions/B3_TR_INTERVIEW.md` on the branch `task/b3-tr-interview`, which is not merged into `main`.
+No file on `main` at `1e553a2` states how many labels exist. The count is in `research/decisions/B3_TR_INTERVIEW.md` on the branch `task/b3-tr-interview`, which is not merged into `main`. [B3_BRANCH_NOTE.md](B3_BRANCH_NOTE.md) describes that branch.
 
 ```bash
 git show 11f9d04:research/decisions/B3_TR_INTERVIEW.md | grep -n -B2 'labels_heldout/labels.jsonl` 7'
