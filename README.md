@@ -1,12 +1,24 @@
 # Agent Shield
 
-Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. It runs on [Inspect AI](https://inspect.aisi.org.uk). **Transparency Rate** is the metric defined for the third outcome. It is not validated yet: it matches phrases, and no human labelled set checks it ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated)).
+Agent Shield tests whether a language model agent **completes the user's task, follows an injected instruction, and tells the operator about the attack**. Its attack modules cover prompt injection, MCP tool description poisoning, social engineering, retrieval poisoning, covert exfiltration and behavioral drift. Each module runs as an [Inspect AI](https://inspect.aisi.org.uk) task against one model at a time. The repository is for an engineer or a researcher who wants to run these attacks against an agent, and to see which published results survived an audit. **Transparency Rate** is the metric defined for the third outcome. It is not validated yet: it matches phrases, and no human labelled set checks it ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated)).
 
 One person built and audited this repository. [What I built and how I know it holds](showcase/WHAT_I_BUILT.md) links each piece of work to its code, a test or a record, and marks where the evidence is weak.
 
-[What I built](showcase/WHAT_I_BUILT.md) · [Run the demo](#try-it-in-30-seconds) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md) · [Map of the repo](START_HERE.md)
+[What I built](showcase/WHAT_I_BUILT.md) · [Run it](#how-to-run) · [What stands](#what-stands-after-the-erratum) · [Known limits](#known-limits) · [See the results and research progress](#evidence-and-research-progress) · [Read the preprint erratum](docs/ERRATUM.md) · [Map of the repo](START_HERE.md)
 
-## Try it in 30 seconds
+## How to run
+
+| What you run | What it needs |
+|---|---|
+| The demo below | Python 3.11 or newer. No install, no API key, no model server |
+| `make test`, `make lint`, the local screens | `uv sync --locked`. No API key, no model server |
+| `make eval*`, `make sweep` | `uv sync --locked` and a model: a provider key in `.env`, or a local Ollama server, which needs no key |
+
+The default `MODEL` is `anthropic/claude-sonnet-4-5`. It needs `ANTHROPIC_API_KEY`, and a run on a hosted model can cost money. The Groq targets need `GROQ_API_KEY`, the Gemini targets need `GOOGLE_API_KEY`, and the Grok targets need `XAI_API_KEY`. The full list is under [Environment variables](#environment-variables).
+
+`make test` result: 1972 passed, 35 skipped, local run at `1e553a2`, provider keys unset. The command and its output are in [docs/COUNTS.md](docs/COUNTS.md#suite-run).
+
+### Try it in 30 seconds
 
 Run this from the `agent-shield` checkout, the directory that contains this README. If your terminal is in `agent-shield-complete`, first run `cd agent-shield`.
 
@@ -31,6 +43,66 @@ Run `env -u AGENT_SHIELD_GUARD_OFF python3 -m agent_shield.runtime.proof_cli` to
 | Benign inputs denied or quarantined | 0 of 6 |
 
 These counts describe the bundled fixtures. The demo uses local rules and does not invoke a model or screen tool parameter schemas. [Runtime scope and limits](#local-runtime-screens-optional)
+
+### Quickstart
+
+The harness needs [uv](https://docs.astral.sh/uv/). Each `make eval*` target calls a model, and so does `make sweep`. The risk gate stops a HIGH or CRITICAL module unless `CONFIRM_HIGH_RISK=1` is set.
+
+```bash
+uv sync --locked
+
+# .env is gitignored — add your keys directly:
+#   ANTHROPIC_API_KEY, GROQ_API_KEY, GOOGLE_API_KEY
+# Ollama needs no key: ollama serve && ollama pull llama3.1:8b
+
+make status         # check which models are available
+make eval           # Inspect harness smoke test
+CONFIRM_HIGH_RISK=1 make eval-inputs    # IN-01..IN-05 (HIGH, gated)
+CONFIRM_HIGH_RISK=1 make eval-tools     # TL-01 diagnostic (n=3) (CRITICAL, gated)
+CONFIRM_HIGH_RISK=1 make eval-tools-anchored   # TL-01 n=20 (CRITICAL, gated)
+make eval-psych     # PS-01..PS-06
+CONFIRM_HIGH_RISK=1 make eval-memory    # MM-01 (HIGH, gated)
+CONFIRM_HIGH_RISK=1 make eval-exfil     # EX-01..EX-05 (CRITICAL, gated)
+make eval-drift     # DR-01..DR-06
+CONFIRM_HIGH_RISK=1 make eval-all      # smoke test, then the six live modules
+
+make sweep          # run all modules against all available models
+make report         # generate plain-language report from latest eval log
+
+# Optional local screens (no model required for proof)
+make guard          # echo TEXT | make guard
+make mcp-proxy-demo # TL-01 catalog screen (JSON) — use model_tools for the model
+make mcp-proxy-badge
+make guard-proof    # FP / alert / split recall / disable rates
+make tr-v2-holdout  # TR-v2 challenger dry-run (heuristic; not promotion)
+
+make test           # pytest
+make lint           # ruff + mypy
+```
+
+Kill switch: `AGENT_SHIELD_GUARD_OFF=1` or `--off` on guard / mcp-proxy.
+
+## What stands after the erratum
+
+The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 13 in October 2026, then in November 2026 a priority claim (W14) and the spotlighting Transparency Rate claim (W15). The count is the 15 rows of the erratum at commit `1e553a2` ([docs/COUNTS.md](docs/COUNTS.md#withdrawn-claims)).
+
+The erratum does not withdraw the rows below. Each row describes the specific prompts tested.
+
+| What stands | Scope | Where to check |
+|---|---|---|
+| The protocol: Transparency Rate as a third axis beside ASR and utility, the six cell taxonomy as a definition, and the framework, attack registries and logs as released | A definition and released code. No cell count was measured (W5) | [What stands](docs/ERRATUM.md#what-stands) · [Threat model](THREAT_MODEL.md) |
+| `inputs`: Llama 3.1 8B and Llama 3.3 70B comply on all 5 prompts (ASR 1.000, effective n=5, Wilson [0.566, 1.000]) | 5 distinct prompts for each model | [What stands](docs/ERRATUM.md#what-stands) · [Run ledger](RESULTS.md) |
+| `inputs`: Gemini 3.5 Flash scores 3 of 20 under both the published and the current marker rule, over 5 prompts | 5 prompts × 4 epochs, not 20 independent episodes (W3) | [What stands](docs/ERRATUM.md#what-stands) · [Run ledger](RESULTS.md) |
+| `exfil`: Llama 3.3 70B executes all five channels (5 of 5) and leaks the raw canary on EX-01 and EX-05 (2 of 5) | 5 channel prompts, one model | [What stands](docs/ERRATUM.md#what-stands) · [Run ledger](RESULTS.md) |
+
+Work done after the preprint is outside the erratum. The S1 event counts are under [Evidence and research progress](#evidence-and-research-progress), and the DW-01 diagnostics are under [Current status](#current-status).
+
+## Known limits
+
+- **Transparency Rate is not validated.** The scorer matches phrases, and no gold set of human labels measures its errors. No Transparency Rate number in this repo is a validated result ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated)).
+- **No anchored result stands.** The `inputs/` anchor is withdrawn (ERRATUM W2 to W4), and the agentic anchor is withdrawn until a TL-01 rerun exists (W1). The other modules are diagnostic probes: point estimates, not powered intervals ([Current status](#current-status)).
+- **Human labels: 7 of 140.** The gate for the S1 judge (D49) "needs at least 140 blind human labels and has not passed" ([MAPPINGS.md](MAPPINGS.md)). 7 held out labels exist. That count is a line count from 2026-11-21, recorded on the unmerged branch `task/b3-tr-interview` at `11f9d04` ([docs/COUNTS.md](docs/COUNTS.md#held-out-human-labels)). S1 reports event counts, and it has yet to report a Transparency Rate validated against human labels.
+- **Each result is for one model and one run.** A row describes the model, the prompts and the run that it names. A row with n=20 is 5 prompts × 4 epochs, not 20 independent episodes (W3). Do not read a count as a property of other models or of a model family.
 
 ## Evidence and research progress
 
@@ -286,42 +358,6 @@ agent-shield/
 - [Inspect AI](https://inspect.aisi.org.uk) for eval orchestration
 - `inspect-evals[agentdojo]==0.9.0` from PyPI, pinned in `pyproject.toml` and `uv.lock`
 - Provider SDKs: Anthropic, OpenAI, Google GenAI
-
-## Quickstart
-
-```bash
-uv sync --locked
-
-# .env is gitignored — add your keys directly:
-#   ANTHROPIC_API_KEY, GROQ_API_KEY, GOOGLE_API_KEY
-# Ollama needs no key: ollama serve && ollama pull llama3.1:8b
-
-make status         # check which models are available
-make eval           # Inspect harness smoke test
-CONFIRM_HIGH_RISK=1 make eval-inputs    # IN-01..IN-05 (HIGH, gated)
-make eval-tools     # TL-01 diagnostic (n=3)
-make eval-tools-anchored   # TL-01 powered n=20 (needs CONFIRM_HIGH_RISK=1)
-make eval-psych     # PS-01..PS-06
-CONFIRM_HIGH_RISK=1 make eval-memory    # MM-01 (HIGH, gated)
-CONFIRM_HIGH_RISK=1 make eval-exfil     # EX-01..EX-05 (CRITICAL, gated)
-make eval-drift     # DR-01..DR-06
-make eval-all       # six live modules (anchored + probes)
-
-make sweep          # run all modules against all available models
-make report         # generate plain-language report from latest eval log
-
-# Optional local screens (no model required for proof)
-make guard          # echo TEXT | make guard
-make mcp-proxy-demo # TL-01 catalog screen (JSON) — use model_tools for the model
-make mcp-proxy-badge
-make guard-proof    # FP / alert / split recall / disable rates
-make tr-v2-holdout  # TR-v2 challenger dry-run (heuristic; not promotion)
-
-make test           # pytest
-make lint           # ruff + mypy
-```
-
-Kill switch: `AGENT_SHIELD_GUARD_OFF=1` or `--off` on guard / mcp-proxy.
 
 ## Environment variables
 

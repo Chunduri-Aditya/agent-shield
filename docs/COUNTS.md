@@ -2,13 +2,14 @@
 
 This file is the source for the counts that the public files of this repository state. Each count has the command that produced it, the output of that command, and the commit it was taken at. When a count changes, rerun the command at the new commit and update this file and every file that states the count.
 
-All three counts below were taken on 2026-11-24 at commit `1e553a2` (`1e553a26e5eede32fa94bc9a92ffb292de863941`), the head of `main` on that day.
+Three of the counts below were taken on 2026-11-24 at commit `1e553a2` (`1e553a26e5eede32fa94bc9a92ffb292de863941`), the head of `main` on that day. The count of human labels is quoted from a file on another branch.
 
 | Count | Value | Commit | Where it is stated |
 |---|---|---|---|
 | Withdrawn claims (rows of the erratum) | 15 | `1e553a2` | `README.md`, `START_HERE.md`, `showcase/WHAT_I_BUILT.md`, `site/index.html`, `MAPPINGS.md` |
-| Suite run | 1972 passed, 35 skipped, local run at `1e553a2`, provider keys unset | `1e553a2` | `showcase/WHAT_I_BUILT.md` |
+| Suite run | 1972 passed, 35 skipped, local run at `1e553a2`, provider keys unset | `1e553a2` | `README.md`, `showcase/WHAT_I_BUILT.md` |
 | Test functions (definitions) | 1406 | `1e553a2` | this file only |
+| Held out human labels for S1 | 7 of the 140 that the gate needs | `11f9d04`, on the branch `task/b3-tr-interview` | `README.md` |
 
 ## Withdrawn claims
 
@@ -74,3 +75,35 @@ git grep -hE '^\s*(async )?def test_' 1e553a2 -- 'tests/' '*test_*.py' | wc -l
 ```
 
 This count is lower than the 2006 collected tests of the suite run, because pytest runs a parametrized function one time for each of its cases. Do not write this count in a public file as the size of the suite. Use the suite run.
+
+## Held out human labels
+
+The S1 judge is checked against blind human labels of the held out half (decision D49). The floor is 140 labels. Two tracked files at `1e553a2` state the floor and the state of the gate.
+
+```bash
+git grep -n 'FLOOR = 140' 1e553a2 -- scripts/v2/judge_s1.py
+git grep -o 'The gate needs at least 140 blind human labels and has not passed.' 1e553a2 -- MAPPINGS.md
+```
+
+```text
+1e553a2:scripts/v2/judge_s1.py:67:FLOOR = 140  # D49: held out labels before the held out half may be unblinded
+1e553a2:MAPPINGS.md:The gate needs at least 140 blind human labels and has not passed.
+```
+
+No file on `main` at `1e553a2` states how many labels exist. The count is in `research/decisions/B3_TR_INTERVIEW.md` on the branch `task/b3-tr-interview`, which is not merged into `main`.
+
+```bash
+git show 11f9d04:research/decisions/B3_TR_INTERVIEW.md | grep -n -B2 'labels_heldout/labels.jsonl` 7'
+```
+
+```text
+175-- S1 queues, line counts only, no label read (`../agent-shield-pilot-data/v2_s1/`, 2026-11-21):
+176-  `labels/queue_todo.jsonl` 456, `labels/labels.jsonl` 0, `labels_heldout/queue_todo.jsonl` 226,
+177:  `labels_heldout/labels.jsonl` 7, relabel queues 100 and 51.
+```
+
+What the number depends on:
+
+- **The date.** The line count is from 2026-11-21. It was not counted again for this file, because the label files are outside this repository.
+- **The source.** The count is a line count of the label file, as the quoted lines say. No label was read.
+- **The branch.** A reader of `main` cannot open the quoted file until the branch is merged or the count is recorded on `main`.
