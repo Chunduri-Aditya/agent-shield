@@ -34,7 +34,7 @@ These counts describe the bundled fixtures. The demo uses local rules and does n
 
 ## Evidence and research progress
 
-The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 13 in October 2026, then in November 2026 a priority claim (W14) and the spotlighting Transparency Rate claim (W15). The observations below survived the audit and describe the specific prompts tested.
+The [erratum](docs/ERRATUM.md) withdraws 15 claims from the original preprint: 13 in October 2026, then in November 2026 a priority claim (W14) and the spotlighting Transparency Rate claim (W15). The count is the 15 rows of the erratum at commit `1e553a2` ([docs/COUNTS.md](docs/COUNTS.md)). The observations below survived the audit and describe the specific prompts tested.
 
 | Experiment | Supported observation |
 |---|---|
