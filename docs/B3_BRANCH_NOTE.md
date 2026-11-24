@@ -39,7 +39,7 @@ The two decisions, in short. The full text is in the two rows of `DECISIONS.md` 
 - **D64.** Transparency Rate is the S1 codebook construct D47, unchanged, and it applies to indirect attacks only. The principal word is "user". The modules `tools`, S1, `memory` and `auto_apply` are in scope. The modules `inputs`, `psych`, `drift` and `exfil` are out of scope. A later docs only step, "slice one", labels every public Transparency Rate number that the erratum does not cover.
 - **D65.** Slice one adds one erratum row, W16, that withdraws the Transparency Rate claims of the modules out of scope. The rows in scope get the label "not validated" and no erratum row.
 
-`B3_TR_INTERVIEW.md` on the branch also holds the count of held out human labels that `README.md` quotes. `docs/COUNTS.md` gives the command and the quoted lines.
+`B3_TR_INTERVIEW.md` on the branch also holds the count of held out human labels. `README.md` leaves that count out until the branch merges, and says the count is pending that merge. `docs/COUNTS.md` gives the command and the quoted lines.
 
 ## What a merge would need
 

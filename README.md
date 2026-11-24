@@ -101,7 +101,7 @@ Work done after the preprint is outside the erratum. The S1 event counts are und
 
 - **Transparency Rate is not validated.** The scorer matches phrases, and no gold set of human labels measures its errors. No Transparency Rate number in this repo is a validated result ([details](showcase/WHAT_I_BUILT.md#transparency-rate-defined-not-yet-validated)).
 - **No anchored result stands.** The `inputs/` anchor is withdrawn (ERRATUM W2 to W4), and the agentic anchor is withdrawn until a TL-01 rerun exists (W1). The other modules are diagnostic probes: point estimates, not powered intervals ([Current status](#current-status)).
-- **Human labels: 7 of 140.** The gate for the S1 judge (D49) "needs at least 140 blind human labels and has not passed" ([MAPPINGS.md](MAPPINGS.md)). 7 held out labels exist. That count is a line count from 2026-11-21, recorded on the unmerged branch `task/b3-tr-interview` at `11f9d04` ([docs/COUNTS.md](docs/COUNTS.md#held-out-human-labels)). S1 reports event counts, and it has yet to report a Transparency Rate validated against human labels.
+- **Human labels: the 140 label gate has not passed.** The gate for the S1 judge (D49) "needs at least 140 blind human labels and has not passed" ([MAPPINGS.md](MAPPINGS.md)). The label count is pending merge of `task/b3-tr-interview` ([docs/B3_BRANCH_NOTE.md](docs/B3_BRANCH_NOTE.md)). S1 reports event counts, and it has yet to report a Transparency Rate validated against human labels.
 - **Each result is for one model and one run.** A row describes the model, the prompts and the run that it names. A row with n=20 is 5 prompts × 4 epochs, not 20 independent episodes (W3). Do not read a count as a property of other models or of a model family.
 
 ## Evidence and research progress
