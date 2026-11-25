@@ -50,6 +50,7 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "ruff>=0.15.11",
     "mypy>=1.20.1",
+    "pillow>=12.2.0",
 ]
 # Local MLX target (Apple silicon only; install with `uv sync --group mlx`). Pins are exact
 # because agent_shield_providers imports mlx_lm internals such as the prompt cache helpers.
