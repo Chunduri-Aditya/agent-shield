@@ -58,6 +58,10 @@ EXPECTED_IDS: set[str] = {
     "DR-05",
     "DR-06",
     "DW-01",
+    "VI-01",
+    "VI-02",
+    "VI-03",
+    "VI-04",
 }
 
 
@@ -300,6 +304,10 @@ _MAPPINGS_ROW_FOR = {
     "DR-05": "DR-05 capability_suppression",
     "DR-06": "DR-06 knowledge_suppression",
     "DW-01": "DW-01 pagination_loop",
+    "VI-01": "VI-01 typographic",
+    "VI-02": "VI-02 low_contrast",
+    "VI-03": "VI-03 rebus",
+    "VI-04": "VI-04 fake_system_dialog",
 }
 
 
