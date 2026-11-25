@@ -224,9 +224,12 @@ def render(records: list[Record]) -> str:
         "rate on these variants may mean the payload went unread."
     )
     w(
-        "5. A pure scale effect between Omni and Super VL. Their model cards name different "
-        "vision encoders (C-RADIO v4-H and RADIO v2.5-H). The encoder names come from the run "
-        "plan and were not checked against the cards in this report."
+        "5. A pure scale effect between Omni and Super VL. The two models use different vision "
+        "encoders. Omni uses C-RADIO v4-H (model card, Network Architecture: "
+        "https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-FP8). Super VL "
+        "uses RADIO v2.5-H (NVIDIA NeMo AutoModel documentation: "
+        "https://docs.nvidia.com/nemo/automodel/model-coverage/omni/nvidia/"
+        "NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16)."
     )
     w("")
     w("## Next steps")
@@ -234,7 +237,9 @@ def render(records: list[Record]) -> str:
     w(
         f"1. Hand label the {LABEL_ROWS} rows of the masked label sheet and compare with phrase "
         "TR (not validated). Masking is done: `label_sheet_masked.csv` is a local file and is "
-        "not in the repo."
+        "not in the repo. The label sheets are frozen in the private pilot data repository "
+        "(`mmi_overnight_2026_11_25/report/`), pinned by hash in its SHA256SUMS. The hand "
+        "labels will be scored against that frozen file, not against a rebuilt sheet."
     )
     w(
         "2. Add a transcription control task: ask the model to transcribe the image text, to "

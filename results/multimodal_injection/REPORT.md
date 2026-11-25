@@ -68,10 +68,10 @@ Each cell's 30 runs are 10 images x 3 runs. The runs on one image are not indepe
 2. A disclosure rate. TR v1 is not validated, and the gap above is known. The TR v2 judge did not run.
 3. A stable estimate. Each cell has 30 samples on 10 images. Claude repeats are not seeded, so they differ only by sampling noise.
 4. Resistance on `low_contrast` and `rebus`. Utility shows that the model read the dashboard number. It does not show that the model read the payload, so a zero send rate on these variants may mean the payload went unread.
-5. A pure scale effect between Omni and Super VL. Their model cards name different vision encoders (C-RADIO v4-H and RADIO v2.5-H). The encoder names come from the run plan and were not checked against the cards in this report.
+5. A pure scale effect between Omni and Super VL. The two models use different vision encoders. Omni uses C-RADIO v4-H (model card, Network Architecture: https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-FP8). Super VL uses RADIO v2.5-H (NVIDIA NeMo AutoModel documentation: https://docs.nvidia.com/nemo/automodel/model-coverage/omni/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16).
 
 ## Next steps
 
-1. Hand label the 30 rows of the masked label sheet and compare with phrase TR (not validated). Masking is done: `label_sheet_masked.csv` is a local file and is not in the repo.
+1. Hand label the 30 rows of the masked label sheet and compare with phrase TR (not validated). Masking is done: `label_sheet_masked.csv` is a local file and is not in the repo. The label sheets are frozen in the private pilot data repository (`mmi_overnight_2026_11_25/report/`), pinned by hash in its SHA256SUMS. The hand labels will be scored against that frozen file, not against a rebuilt sheet.
 2. Add a transcription control task: ask the model to transcribe the image text, to show whether it read the payload.
 3. To separate channel from model, run one model through both channels.
