@@ -125,9 +125,7 @@ def _base(spec: ImageSpec) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     return img, d
 
 
-def _note(
-    d: ImageDraw.ImageDraw, spec: ImageSpec, text: str, color: Color, bar: bool
-) -> None:
+def _note(d: ImageDraw.ImageDraw, spec: ImageSpec, text: str, color: Color, bar: bool) -> None:
     """Draw instruction text in the top or bottom strip, by the parity of the layout."""
     y = TOP_STRIP_Y if spec.layout % 2 == 0 else BOTTOM_STRIP_Y
     font = _font(16)
@@ -155,8 +153,11 @@ def render_low_contrast(spec: ImageSpec) -> Image.Image:
 
 
 def _icon_document(d: ImageDraw.ImageDraw, x: int, y: int) -> None:
-    d.polygon([(x + 6, y), (x + 36, y), (x + 50, y + 14), (x + 50, y + 56), (x + 6, y + 56)],
-              fill=(255, 255, 255), outline=INK)
+    d.polygon(
+        [(x + 6, y), (x + 36, y), (x + 50, y + 14), (x + 50, y + 56), (x + 6, y + 56)],
+        fill=(255, 255, 255),
+        outline=INK,
+    )
     d.polygon([(x + 36, y), (x + 36, y + 14), (x + 50, y + 14)], fill=(210, 215, 225), outline=INK)
     for k in range(3):
         d.line((x + 14, y + 26 + 8 * k, x + 42, y + 26 + 8 * k), fill=INK, width=2)
@@ -189,8 +190,9 @@ def render_rebus(spec: ImageSpec) -> Image.Image:
     font = _font(18)
     if spec.layout < 5:  # horizontal chain
         x0, y0 = 430 + 20 * (spec.layout % 3), 70 + 105 * spec.layout
-        d.rounded_rectangle((x0, y0, x0 + 470, y0 + 90), radius=10, fill=PANEL,
-                            outline=PANEL_EDGE, width=2)
+        d.rounded_rectangle(
+            (x0, y0, x0 + 470, y0 + 90), radius=10, fill=PANEL, outline=PANEL_EDGE, width=2
+        )
         x, y = x0 + 16, y0 + 17
         first(d, x, y)
         _arrow(d, x + 62, y + 8 - 8, vertical=False)
@@ -202,8 +204,9 @@ def render_rebus(spec: ImageSpec) -> Image.Image:
     else:  # vertical chain
         k = spec.layout - 5
         x0, y0 = 430 + 100 * k, 130 + 30 * k
-        d.rounded_rectangle((x0, y0, x0 + 190, y0 + 330), radius=10, fill=PANEL,
-                            outline=PANEL_EDGE, width=2)
+        d.rounded_rectangle(
+            (x0, y0, x0 + 190, y0 + 330), radius=10, fill=PANEL, outline=PANEL_EDGE, width=2
+        )
         x, y = x0 + 66, y0 + 14
         first(d, x, y)
         _arrow(d, x - 2, y + 58, vertical=True)
@@ -224,8 +227,12 @@ def render_fake_system_dialog(spec: ImageSpec) -> Image.Image:
     d.rectangle((x0 + 8, y0 + 8, x0 + w + 8, y0 + h + 8), fill=(170, 175, 185))  # shadow
     d.rectangle((x0, y0, x0 + w, y0 + h), fill=(246, 246, 248), outline=(90, 95, 105), width=2)
     d.rectangle((x0, y0, x0 + w, y0 + 34), fill=(70, 80, 100))  # title bar
-    d.text((x0 + 14, y0 + 7), DIALOG_TITLES[spec.layout % len(DIALOG_TITLES)],
-           font=_font(18), fill=(255, 255, 255))
+    d.text(
+        (x0 + 14, y0 + 7),
+        DIALOG_TITLES[spec.layout % len(DIALOG_TITLES)],
+        font=_font(18),
+        fill=(255, 255, 255),
+    )
     cx, cy = x0 + w - 28, y0 + 9  # close glyph
     d.line((cx, cy, cx + 16, cy + 16), fill=(255, 255, 255), width=3)
     d.line((cx, cy + 16, cx + 16, cy), fill=(255, 255, 255), width=3)
@@ -237,8 +244,12 @@ def render_fake_system_dialog(spec: ImageSpec) -> Image.Image:
         d.text((x0 + 80, y0 + 52 + 22 * k), line, font=font, fill=INK)
     d.rectangle((x0 + w - 220, y0 + h - 52, x0 + w - 130, y0 + h - 16), fill=ACCENT)  # OK
     d.text((x0 + w - 190, y0 + h - 43), "OK", font=_font(18), fill=(255, 255, 255))
-    d.rectangle((x0 + w - 116, y0 + h - 52, x0 + w - 20, y0 + h - 16), fill=(255, 255, 255),
-                outline=(90, 95, 105), width=2)
+    d.rectangle(
+        (x0 + w - 116, y0 + h - 52, x0 + w - 20, y0 + h - 16),
+        fill=(255, 255, 255),
+        outline=(90, 95, 105),
+        width=2,
+    )
     d.text((x0 + w - 106, y0 + h - 43), "Cancel", font=_font(18), fill=INK)
     return img
 
