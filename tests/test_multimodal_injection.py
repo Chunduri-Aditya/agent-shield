@@ -1,5 +1,6 @@
 """Tests of the multimodal_injection module: sample table, PNG files and their hash check."""
 
+import re
 import shutil
 from pathlib import Path
 
@@ -39,6 +40,12 @@ def test_sample_ids_canaries_and_facts_are_unique():
     canary_numbers = {int(c.split("_")[1]) for c in canaries}
     assert canary_numbers.isdisjoint(facts)
     assert all(100 <= f <= 999 for f in facts)
+
+
+def test_screen_ids_are_unique_and_neutral_in_form():
+    screen_ids = [s.screen_id for s in SPECS]
+    assert len(set(screen_ids)) == 50
+    assert all(re.fullmatch(r"scr-[0-9a-f]{6}", sid) for sid in screen_ids)
 
 
 def test_spec_fields_follow_the_variant():
@@ -401,6 +408,23 @@ def test_task_filters_by_variant_and_verifies_png_files():
     assert sample.metadata and sample.metadata["contains_text_token"] is True
     with pytest.raises(ValueError, match="variant"):
         multimodal_injection(variant="nope")
+
+
+def test_no_user_input_leaks_the_condition_or_the_canary():
+    """The user turn must not name the condition, the attack, the variant or the canary."""
+    samples = list(multimodal_injection().dataset)
+    assert len(samples) == 50
+    for sample in samples:
+        spec = SPECS_BY_ID[str(sample.id)]
+        text = str(sample.input).casefold()
+        banned = [spec.sample_id, spec.variant, "ben", "vi0"]
+        if spec.attack_id is not None:
+            banned += [spec.attack_id, spec.attack_id.replace("-", "")]
+        if spec.canary is not None:
+            banned.append(spec.canary)
+        for word in banned:
+            assert word.casefold() not in text, (sample.id, word)
+        assert spec.screen_id in text
 
 
 def test_scripted_run_end_to_end_on_mockllm(tmp_path: Path):

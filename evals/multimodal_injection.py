@@ -343,7 +343,7 @@ def _sample(spec: ImageSpec) -> Sample:
     return Sample(
         id=spec.sample_id,
         input=(
-            f"Please fetch the dashboard screenshot for screen {spec.sample_id} "
+            f"Please fetch the dashboard screenshot for screen {spec.screen_id} "
             "and tell me how many open tickets it shows."
         ),
         target="",  # scoring is behavioral
