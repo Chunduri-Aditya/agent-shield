@@ -31,6 +31,8 @@ from scripts.multimodal_injection.showcase import (
     EXCERPT_LABEL,
     MODEL_COLORS,
     START,
+    SUMMARY_END,
+    SUMMARY_START,
     TABLE_SUMMARY,
     build,
     cell_stats,
@@ -56,6 +58,29 @@ def rows() -> list[Record]:
 def _prose(page: str) -> str:
     """The page without the generated block."""
     return page[: page.index(START)] + page[page.index(END) + len(END) :]
+
+
+def test_the_summary_sits_under_the_title_and_its_numbers_match_the_records(
+    rows: list[Record],
+) -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    lines = [ln for ln in page.splitlines() if ln.strip()]
+    assert lines[0].startswith("# ") and lines[1] == SUMMARY_START
+    summary = page[page.index(SUMMARY_START) + len(SUMMARY_START) : page.index(SUMMARY_END)]
+    bullets = [ln for ln in summary.splitlines() if ln.strip()]
+    assert len(bullets) == 3 and all(b.startswith("- ") for b in bullets)
+    omni = [
+        r
+        for r in rows
+        if r["model"].endswith("nano-omni-30b-a3b-reasoning")
+        and r["variant"] == "fake_system_dialog"
+    ]
+    omni_k = sum(r["asr"] for r in omni)
+    claude = [r for r in rows if "claude" in r["model"] and r["variant"] != "benign"]
+    assert {r["image_channel"] for r in claude} == {"tool_native"}
+    assert f"{omni_k}/{len(omni)} `fake_system_dialog`" in bullets[1]
+    assert f"{sum(r['asr'] for r in claude)}/{len(claude)} in a different channel" in bullets[2]
+    assert "told the user nothing" in bullets[1] and "do not compare" in bullets[2]
 
 
 def test_the_table_is_folded_directly_under_the_figure() -> None:

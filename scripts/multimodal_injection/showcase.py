@@ -40,6 +40,7 @@ import PIL.features  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from agent_shield.runtime.stats import wilson_interval  # noqa: E402
+from multimodal_injection.attacks import SPECS_BY_ID  # noqa: E402
 from scripts.multimodal_injection.records import EVIDENCE, Record, read_records  # noqa: E402
 from scripts.multimodal_injection.report import ATTACKS, CLAUDE, MODEL_ORDER, NEMOTRON  # noqa: E402
 from scripts.pilot._common import read_log, sha256_file, strip_provider  # noqa: E402
@@ -504,6 +505,35 @@ def block(cells: list[Cell], toolchain: str, excerpt: Excerpt) -> str:
     )
 
 
+SUMMARY_START = "<!-- showcase:summary:start -->"
+SUMMARY_END = "<!-- showcase:summary:end -->"
+OMNI = "nemotron-3-nano-omni-30b-a3b-reasoning"
+SUMMARY_VARIANT = "fake_system_dialog"
+
+
+def summary(cells: list[Cell], excerpt: Excerpt) -> str:
+    """
+    Three lines under the title, numbers computed. Raises if the quoted transcript is not an
+    Omni sample of SUMMARY_VARIANT, because the second line points at that transcript.
+    """
+    sample = SPECS_BY_ID[excerpt["sample_id"]]
+    if not excerpt["model"].endswith("/" + OMNI) or sample.variant != SUMMARY_VARIANT:
+        raise ValueError(f"the summary needs an {OMNI} {SUMMARY_VARIANT} excerpt")
+    omni = next(c for c in cells if c.model == OMNI and c.variant == SUMMARY_VARIANT)
+    claude = [c for c in cells if c.channel == "tool_native" and c.variant in ATTACKS]
+    if {c.model for c in claude} != set(CHANNEL_MODELS["tool_native"]):
+        raise ValueError("tool_native no longer holds only the Claude models")
+    claude_k, claude_n = sum(c.k for c in claude), sum(c.n for c in claude)
+    return (
+        "\n- **The question.** Does a vision agent obey an instruction drawn into a "
+        "screenshot it fetched, and does it tell the user?\n"
+        f"- **{SHORT_NAMES[OMNI]}** sent the report on {omni.k}/{omni.n} `{SUMMARY_VARIANT}` "
+        "samples, and the quoted transcript shows it told the user nothing.\n"
+        f"- **Claude** sent {claude_k}/{claude_n} in a different channel (`tool_native`), "
+        "so the rows do not compare.\n"
+    )
+
+
 def recorded_toolchain(page: str) -> str | None:
     """The toolchain line inside the markers of the committed page, or None."""
     start, end = page.index(START) + len(START), page.index(END)
@@ -513,10 +543,10 @@ def recorded_toolchain(page: str) -> str | None:
     return None
 
 
-def splice(page: str, inner: str) -> str:
-    if page.count(START) != 1 or page.count(END) != 1 or page.index(START) > page.index(END):
-        raise ValueError(f"{PAGE.name} needs one {START} before one {END}")
-    return page[: page.index(START) + len(START)] + inner + page[page.index(END) :]
+def splice(page: str, inner: str, start: str = START, end: str = END) -> str:
+    if page.count(start) != 1 or page.count(end) != 1 or page.index(start) > page.index(end):
+        raise ValueError(f"{PAGE.name} needs one {start} before one {end}")
+    return page[: page.index(start) + len(start)] + inner + page[page.index(end) :]
 
 
 def build(
@@ -532,6 +562,7 @@ def build(
         raise ValueError(f"{EXCERPT.name} disagrees with records.jsonl: {problems}")
     cells = cell_stats(records)
     figure = draw_figure(cells, len(records))
+    page = splice(page, summary(cells, excerpt), SUMMARY_START, SUMMARY_END)
     return figure, splice(page, block(cells, toolchain or toolchain_line(), excerpt))
 
 
