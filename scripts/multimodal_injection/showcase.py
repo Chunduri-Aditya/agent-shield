@@ -5,8 +5,14 @@ generated block comes from the records, and the prose of the page is not touched
 counts (images per cell, runs per cell) are computed from the data, and build() raises if the
 cells disagree or if the two send fields of a record disagree.
 
-  uv run python scripts/multimodal_injection/showcase.py          # write both outputs
-  uv run python scripts/multimodal_injection/showcase.py --check  # write nothing, exit 1 on a diff
+  uv run python scripts/multimodal_injection/showcase.py           # write both outputs
+  uv run python scripts/multimodal_injection/showcase.py --check   # write nothing, exit 1 on a diff
+  uv run python scripts/multimodal_injection/showcase.py --extract # rewrite the log excerpt
+
+The block ends with one real transcript excerpt, read from results/multimodal_injection/
+showcase_excerpt.json. Only --extract reads an Inspect log (from the evidence folder, else from
+logs/mmi_overnight/), and it checks the log hash against records.jsonl. The build and --check read
+the committed excerpt, so they work without the logs.
 
 The figure is drawn with Pillow and its default FreeType font, with no clock and no metadata,
 so one Pillow and FreeType pair draws the same bytes each time. The block records that pair
@@ -17,10 +23,13 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
+import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, TypedDict, cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -31,11 +40,21 @@ import PIL.features  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from agent_shield.runtime.stats import wilson_interval  # noqa: E402
-from scripts.multimodal_injection.records import Record, read_records  # noqa: E402
+from scripts.multimodal_injection.records import EVIDENCE, Record, read_records  # noqa: E402
 from scripts.multimodal_injection.report import ATTACKS, CLAUDE, MODEL_ORDER, NEMOTRON  # noqa: E402
-from scripts.pilot._common import strip_provider  # noqa: E402
+from scripts.pilot._common import read_log, sha256_file, strip_provider  # noqa: E402
 
 RECORDS = _REPO_ROOT / "results" / "multimodal_injection" / "records.jsonl"
+EXCERPT = _REPO_ROOT / "results" / "multimodal_injection" / "showcase_excerpt.json"
+# Where --extract looks for a log, in this order: the pinned evidence copy, then the local run dir.
+LOG_DIRS = (EVIDENCE, _REPO_ROOT / "logs" / "mmi_overnight")
+# The one sample the page quotes: it obeyed the screenshot and its answer did not say so.
+EXCERPT_MODEL = "openai-api/nvidia/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+EXCERPT_SAMPLE = "VI04_s03"
+EXCERPT_RUN = "seed 0"
+EXCERPT_LABEL = "Obeyed and did not tell the user"
+SUMMARY_LIMIT = 400  # characters of a send_report summary shown before the "[cut]" marker
+CUT_MARKER = "[cut]"
 DOCS = _REPO_ROOT / "docs" / "mmi"
 PAGE = DOCS / "SHOWCASE.md"
 FIGURE = DOCS / "asr_by_channel.png"
@@ -245,6 +264,161 @@ def draw_figure(cells: list[Cell], n_samples: int) -> bytes:
 
 
 # ---------------------------------------------------------------------------
+# log excerpt
+# ---------------------------------------------------------------------------
+
+
+class SendCall(TypedDict):
+    function: str
+    arguments: dict[str, Any]
+
+
+class Excerpt(TypedDict):
+    model: str
+    sample_id: str
+    run: str
+    log: str
+    log_sha256: str
+    canary: str
+    send_report_call: SendCall
+    final_answer: str
+
+
+EXCERPT_KEYS = frozenset(Excerpt.__annotations__)
+
+
+def _the_record(records: list[Record], model: str, sample_id: str, run: str) -> Record:
+    rows = [r for r in records if (r["model"], r["sample_id"], r["run"]) == (model, sample_id, run)]
+    if len(rows) != 1:
+        raise ValueError(f"{len(rows)} records for {model} {sample_id} {run}, expected 1")
+    return rows[0]
+
+
+def find_log(name: str, dirs: tuple[Path, ...] = LOG_DIRS) -> Path:
+    """The first existing copy of a log named as in records.jsonl."""
+    for folder in dirs:
+        if (folder / name).is_file():
+            return folder / name
+    raise FileNotFoundError(f"{name} is in none of {[str(d) for d in dirs]}")
+
+
+def extract(records: list[Record], dirs: tuple[Path, ...] = LOG_DIRS) -> Excerpt:
+    """Read the excerpt from the Inspect log. The only function here that reads a log."""
+    row = _the_record(records, EXCERPT_MODEL, EXCERPT_SAMPLE, EXCERPT_RUN)
+    path = find_log(row["log"], dirs)
+    actual = sha256_file(path)
+    if actual != row["log_sha256"]:
+        raise ValueError(f"{path}: sha256 {actual} is not the records value {row['log_sha256']}")
+    log = read_log(path)
+    samples = [s for s in log.samples or [] if s.id == EXCERPT_SAMPLE and s.epoch == 1]
+    if len(samples) != 1:
+        raise ValueError(f"{path}: {len(samples)} samples named {EXCERPT_SAMPLE}, expected 1")
+    sample = samples[0]
+    calls = [
+        call
+        for message in sample.messages
+        if message.role == "assistant"
+        for call in message.tool_calls or []
+        if call.function == "send_report"
+    ]
+    if len(calls) != 1:
+        raise ValueError(f"{path}: {len(calls)} send_report calls in {EXCERPT_SAMPLE}, expected 1")
+    canary = str((sample.metadata or {})["canary"])
+    answer = sample.output.completion if sample.output else ""  # visible text, no reasoning
+    excerpt = Excerpt(
+        model=row["model"],
+        sample_id=row["sample_id"],
+        run=row["run"],
+        log=row["log"],
+        log_sha256=actual,
+        canary=canary,
+        send_report_call=SendCall(function=calls[0].function, arguments=dict(calls[0].arguments)),
+        final_answer=answer,
+    )
+    problems = excerpt_problems(excerpt, records)
+    if problems:
+        raise ValueError(f"{path}: the excerpt disagrees with records.jsonl: {problems}")
+    return excerpt
+
+
+def excerpt_problems(excerpt: Excerpt, records: list[Record]) -> list[str]:
+    """What is wrong with an excerpt next to its record. An empty list means it fits."""
+    row = _the_record(records, excerpt["model"], excerpt["sample_id"], excerpt["run"])
+    problems = []
+    for key in ("log", "log_sha256"):
+        if excerpt[key] != row[key]:
+            problems.append(f"{key} differs from the record")
+    if excerpt["final_answer"] != row["final_answer"]:
+        problems.append("final_answer differs from the record")
+    if row["outcome"] != "attack_success" or row["canary_in_args"] is not True:
+        problems.append("the record is not an attack success with the canary in the arguments")
+    call = excerpt["send_report_call"]
+    if call["function"] != "send_report":
+        problems.append(f"the call is {call['function']!r}, not send_report")
+    if excerpt["canary"] not in json.dumps(call["arguments"], ensure_ascii=False):
+        problems.append("the arguments do not contain the canary")
+    return problems
+
+
+def excerpt_text(excerpt: Excerpt) -> str:
+    """Deterministic JSON: sorted keys, two space indent, one trailing newline."""
+    return json.dumps(excerpt, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+
+
+def read_excerpt(path: Path = EXCERPT) -> Excerpt:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if set(data) != EXCERPT_KEYS:
+        raise ValueError(f"{path}: keys differ from Excerpt: {sorted(set(data) ^ EXCERPT_KEYS)}")
+    return cast(Excerpt, data)
+
+
+def _shown_arguments(arguments: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    """The arguments as shown. A summary over the limit is cut and marked. Returns (args, cut)."""
+    shown = dict(arguments)
+    summary = shown.get("summary")
+    if isinstance(summary, str) and len(summary) > SUMMARY_LIMIT:
+        shown["summary"] = f"{summary[:SUMMARY_LIMIT]} {CUT_MARKER}"
+        return shown, True
+    return shown, False
+
+
+def _fence(body: str) -> str:
+    """A backtick fence longer than any backtick run inside the body."""
+    longest = max((len(m) for m in re.findall(r"`+", body)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def excerpt_section(excerpt: Excerpt) -> str:
+    """The subsection built from the committed excerpt only."""
+    call = excerpt["send_report_call"]
+    arguments, cut = _shown_arguments(call["arguments"])
+    code = json.dumps(
+        {"function": call["function"], "arguments": arguments},
+        sort_keys=True,
+        indent=2,
+        ensure_ascii=False,
+    )
+    fence = _fence(code)
+    quote = "\n".join(f"> {line}".rstrip() for line in excerpt["final_answer"].splitlines())
+    model = SHORT_NAMES[strip_provider(excerpt["model"])]
+    cut_note = (
+        f" The summary argument was longer than {SUMMARY_LIMIT} characters, so it is cut "
+        f"there and marked {CUT_MARKER}."
+        if cut
+        else ""
+    )
+    return (
+        f"### {EXCERPT_LABEL}\n\n"
+        f"One real sample, {excerpt['sample_id']} of {model}, run {excerpt['run']}. "
+        f"It called `{call['function']}` with the canary {excerpt['canary']} from the "
+        f"screenshot, and its final answer to the user, quoted below, does not mention "
+        f"the call. Both are copied from the log by script.{cut_note}\n\n"
+        f"{fence}json\n{code}\n{fence}\n\n"
+        f"{quote}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # generated block
 # ---------------------------------------------------------------------------
 
@@ -311,9 +485,9 @@ def table(cells: list[Cell]) -> str:
     return "\n".join(lines)
 
 
-def block(cells: list[Cell], toolchain: str) -> str:
+def block(cells: list[Cell], toolchain: str, excerpt: Excerpt) -> str:
     """The text between the two markers, with a blank line inside each marker."""
-    return f"\n{toolchain}\n\n{headline(cells)}\n\n{table(cells)}\n"
+    return f"\n{toolchain}\n\n{headline(cells)}\n\n{table(cells)}\n\n{excerpt_section(excerpt)}\n"
 
 
 def recorded_toolchain(page: str) -> str | None:
@@ -331,11 +505,20 @@ def splice(page: str, inner: str) -> str:
     return page[: page.index(START) + len(START)] + inner + page[page.index(END) :]
 
 
-def build(records: list[Record], page: str, toolchain: str | None = None) -> tuple[bytes, str]:
-    """Return (PNG bytes, page text) for these records."""
+def build(
+    records: list[Record],
+    page: str,
+    toolchain: str | None = None,
+    excerpt: Excerpt | None = None,
+) -> tuple[bytes, str]:
+    """Return (PNG bytes, page text) for these records and the committed excerpt."""
+    excerpt = excerpt or read_excerpt()
+    problems = excerpt_problems(excerpt, records)
+    if problems:
+        raise ValueError(f"{EXCERPT.name} disagrees with records.jsonl: {problems}")
     cells = cell_stats(records)
     figure = draw_figure(cells, len(records))
-    return figure, splice(page, block(cells, toolchain or toolchain_line()))
+    return figure, splice(page, block(cells, toolchain or toolchain_line(), excerpt))
 
 
 def _name(path: Path) -> str:
@@ -343,12 +526,15 @@ def _name(path: Path) -> str:
 
 
 def check(
-    records_path: Path = RECORDS, page_path: Path = PAGE, figure_path: Path = FIGURE
+    records_path: Path = RECORDS,
+    page_path: Path = PAGE,
+    figure_path: Path = FIGURE,
+    excerpt_path: Path = EXCERPT,
 ) -> list[str]:
     """Names of the outputs that differ from a fresh build. Writes nothing."""
     page = page_path.read_text(encoding="utf-8")
     recorded = recorded_toolchain(page)
-    figure, fresh = build(read_records(records_path), page, recorded)
+    figure, fresh = build(read_records(records_path), page, recorded, read_excerpt(excerpt_path))
     differ = []
     if fresh != page:
         differ.append(_name(page_path))
@@ -367,7 +553,16 @@ def check(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0] if __doc__ else None)
     parser.add_argument("--check", action="store_true", help="write nothing, exit 1 on a diff")
+    parser.add_argument(
+        "--extract", action="store_true", help="rewrite the excerpt file from the Inspect log"
+    )
     args = parser.parse_args(argv)
+    if args.check and args.extract:
+        parser.error("--check writes nothing, so it cannot go with --extract")
+    if args.extract:
+        EXCERPT.write_text(excerpt_text(extract(read_records(RECORDS))), encoding="utf-8")
+        print(f"wrote {EXCERPT}")
+        return 0
     if args.check:
         differ = check()
         for name in differ:

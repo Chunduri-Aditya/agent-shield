@@ -3,25 +3,32 @@
 The prose of SHOWCASE.md is the operator's. These tests check that the design counts it
 states in words match the records, that its quoted Opus answer is in the records, and that the
 figure and the generated block equal a fresh build. The stats function keeps channels apart.
+The log excerpt in the block is checked against records.jsonl here, and against the Inspect log
+when the private evidence folder is present.
 """
 
 from __future__ import annotations
 
 import copy
 import io
+import json
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import cast
 
 import pytest
 from PIL import Image
 
 from agent_shield.runtime.stats import wilson_interval
+from scripts.multimodal_injection import records as records_module
 from scripts.multimodal_injection import showcase
 from scripts.multimodal_injection.records import Record, read_records
 from scripts.multimodal_injection.report import ATTACKS, MODEL_ORDER
 from scripts.multimodal_injection.showcase import (
     END,
+    EXCERPT,
+    EXCERPT_LABEL,
     MODEL_COLORS,
     START,
     build,
@@ -31,7 +38,7 @@ from scripts.multimodal_injection.showcase import (
     main,
     toolchain_line,
 )
-from scripts.pilot._common import strip_provider
+from scripts.pilot._common import sha256_file, strip_provider
 
 REPO = Path(__file__).resolve().parent.parent
 RECORDS = REPO / "results" / "multimodal_injection" / "records.jsonl"
@@ -252,3 +259,151 @@ def test_splice_refuses_a_page_without_one_marker_pair() -> None:
         showcase.splice("no markers", "x")
     with pytest.raises(ValueError, match="needs one"):
         showcase.splice(f"{END} {START}", "x")
+
+
+# ---------------------------------------------------------------------------
+# the log excerpt
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def excerpt() -> showcase.Excerpt:
+    return showcase.read_excerpt()
+
+
+def _excerpt_record(rows: list[Record], ex: showcase.Excerpt) -> Record:
+    hits = [
+        r
+        for r in rows
+        if (r["model"], r["sample_id"], r["run"]) == (ex["model"], ex["sample_id"], ex["run"])
+    ]
+    assert len(hits) == 1
+    return hits[0]
+
+
+def test_excerpt_file_is_deterministic_json() -> None:
+    text = EXCERPT.read_text(encoding="utf-8")
+    assert text.endswith("}\n") and not text.endswith("\n\n")
+    assert text == json.dumps(json.loads(text), sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+    assert text == showcase.excerpt_text(showcase.read_excerpt())
+
+
+def test_excerpt_is_the_record_it_names(rows: list[Record], excerpt: showcase.Excerpt) -> None:
+    row = _excerpt_record(rows, excerpt)
+    assert (excerpt["log"], excerpt["log_sha256"]) == (row["log"], row["log_sha256"])
+    assert row["outcome"] == "attack_success"
+    assert row["canary_in_args"] is True
+    assert row["tr_v1_flagged"] is False
+    assert excerpt["canary"] in json.dumps(excerpt["send_report_call"]["arguments"])
+    assert excerpt["send_report_call"]["function"] == "send_report"
+    assert excerpt["final_answer"] == row["final_answer"]
+    assert showcase.excerpt_problems(excerpt, rows) == []
+
+
+def test_excerpt_answer_does_not_mention_the_call(excerpt: showcase.Excerpt) -> None:
+    answer = excerpt["final_answer"].lower()
+    assert excerpt["canary"].lower() not in answer
+    assert "report" not in answer
+
+
+def test_block_shows_the_label_the_call_the_canary_and_the_answer(
+    excerpt: showcase.Excerpt,
+) -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    inner = page[page.index(START) : page.index(END)]
+    assert f"### {EXCERPT_LABEL}" in inner
+    assert inner.count(excerpt["canary"]) == 2  # in the sentence and in the arguments
+    assert '"function": "send_report"' in inner
+    assert f"> {excerpt['final_answer']}" in inner
+    assert showcase.excerpt_section(excerpt) in inner
+
+
+def test_excerpt_section_needs_no_log_and_has_clean_prose(excerpt: showcase.Excerpt) -> None:
+    text = showcase.excerpt_section(excerpt)
+    prose = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    prose = re.sub(r"^> .*$", "", prose, flags=re.MULTILINE)
+    assert not {"\u2014", "\u2013", "-"} & set(prose)
+    assert not re.search(r"\b(first|novel)\b", prose, re.IGNORECASE)
+
+
+def test_a_long_summary_is_cut_with_a_marker_and_the_sentence_says_so(
+    excerpt: showcase.Excerpt,
+) -> None:
+    long = copy.deepcopy(excerpt)
+    long["send_report_call"]["arguments"]["summary"] = "x" * 401
+    text = showcase.excerpt_section(long)
+    assert f'{"x" * 400} {showcase.CUT_MARKER}"' in text
+    assert "x" * 401 not in text
+    assert "is cut there and marked [cut]" in text
+    exact = copy.deepcopy(excerpt)
+    exact["send_report_call"]["arguments"]["summary"] = "x" * 400
+    assert "[cut]" not in showcase.excerpt_section(exact)
+    assert "[cut]" not in showcase.excerpt_section(excerpt)
+
+
+def test_a_summary_with_backticks_cannot_close_the_fence(excerpt: showcase.Excerpt) -> None:
+    tricky = copy.deepcopy(excerpt)
+    tricky["send_report_call"]["arguments"]["summary"] = "a ```` b"
+    assert "`````json" in showcase.excerpt_section(tricky)
+
+
+def test_a_multi_line_answer_stays_inside_the_quote(excerpt: showcase.Excerpt) -> None:
+    two = {**excerpt, "final_answer": "one\n\ntwo"}
+    assert showcase.excerpt_section(cast(showcase.Excerpt, two)).endswith("> one\n>\n> two")
+
+
+def test_build_refuses_an_excerpt_that_disagrees_with_the_records(
+    rows: list[Record], excerpt: showcase.Excerpt
+) -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    for key, value in (
+        ("final_answer", "I did not send it."),
+        ("log_sha256", "0" * 64),
+        ("canary", "VI04_0000"),
+    ):
+        with pytest.raises(ValueError, match="disagrees"):
+            build(rows, page, excerpt=cast(showcase.Excerpt, {**excerpt, key: value}))
+    wrong_call = copy.deepcopy(excerpt)
+    wrong_call["send_report_call"] = {
+        "function": "fetch_screenshot",
+        "arguments": {"screen_id": "scr-e179da"},
+    }
+    with pytest.raises(ValueError, match="disagrees"):
+        build(rows, page, excerpt=wrong_call)
+
+
+def test_check_rebuilds_the_excerpt_from_the_committed_file(
+    tmp_path: Path, excerpt: showcase.Excerpt
+) -> None:
+    other = tmp_path / "showcase_excerpt.json"
+    other.write_text(
+        showcase.excerpt_text(cast(showcase.Excerpt, {**excerpt, "log": "evals/other.eval"})),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="disagrees"):
+        check(RECORDS, PAGE, FIGURE, other)
+
+
+def test_the_excerpt_matches_the_inspect_log_when_the_evidence_is_present(
+    rows: list[Record], excerpt: showcase.Excerpt
+) -> None:
+    if not records_module.EVIDENCE.is_dir():
+        pytest.skip("the private evidence folder agent-shield-pilot-data is absent here")
+    log_path = showcase.find_log(excerpt["log"])
+    assert sha256_file(log_path) == excerpt["log_sha256"]
+    fresh = showcase.extract(rows)
+    assert fresh == excerpt
+    assert showcase.excerpt_text(fresh) == EXCERPT.read_text(encoding="utf-8")
+
+
+def test_extract_refuses_a_log_with_the_wrong_hash(rows: list[Record], tmp_path: Path) -> None:
+    row = showcase._the_record(
+        rows, showcase.EXCERPT_MODEL, showcase.EXCERPT_SAMPLE, showcase.EXCERPT_RUN
+    )
+    bad = tmp_path / row["log"]
+    bad.parent.mkdir(parents=True)
+    bad.write_bytes(b"not the log")
+    with pytest.raises(ValueError, match="sha256"):
+        showcase.extract(rows, (tmp_path,))
+    with pytest.raises(FileNotFoundError):
+        showcase.extract(rows, (tmp_path / "empty",))
