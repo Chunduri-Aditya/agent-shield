@@ -6,8 +6,9 @@ RESULTS.md, audit CSV, MAPPINGS.md. A duplicate or malformed ID silently
 corrupts all of them. These tests catch structural problems at import time
 before they cascade.
 
-Expected ID format: (IN|TL|PS|MM|EX|DR|DW)-DD
-  IN = inputs, TL = tools, PS = psych, MM = memory, EX = exfil, DR = drift, DW = wallet
+Expected ID format: (IN|TL|PS|MM|EX|DR|DW|VI)-DD
+  IN = inputs, TL = tools, PS = psych, MM = memory, EX = exfil, DR = drift, DW = wallet,
+  VI = multimodal_injection
 """
 
 import re
@@ -18,11 +19,12 @@ from drift.attacks import ATTACKS as DRIFT_ATTACKS
 from exfil.attacks import ATTACKS as EXFIL_ATTACKS
 from inputs.attacks import ATTACKS as INPUT_ATTACKS
 from memory.attacks import MEMORY_ATTACKS
+from multimodal_injection.attacks import ATTACK_IDS as VISION_ATTACK_IDS
 from psych.attacks import ATTACKS as PSYCH_ATTACKS
 from tools.attacks import TOOL_ATTACKS
 from wallet.attacks import WALLET_ATTACKS
 
-VALID_ID_PATTERN = re.compile(r"^(IN|TL|PS|MM|EX|DR|DW)-\d{2}$")
+VALID_ID_PATTERN = re.compile(r"^(IN|TL|PS|MM|EX|DR|DW|VI)-\d{2}$")
 
 
 def _all_attack_ids() -> list[str]:
@@ -34,6 +36,7 @@ def _all_attack_ids() -> list[str]:
     ids.extend(a.id for a in EXFIL_ATTACKS)
     ids.extend(a.id for a in DRIFT_ATTACKS)
     ids.extend(a.id for a in WALLET_ATTACKS)
+    ids.extend(VISION_ATTACK_IDS.values())
     return ids
 
 
@@ -55,6 +58,7 @@ def _registry_backed_attack_ids() -> list[str]:
     ids.extend(a.id for a in EXFIL_ATTACKS)
     ids.extend(a.id for a in DRIFT_ATTACKS)
     ids.extend(a.id for a in WALLET_ATTACKS)
+    ids.extend(VISION_ATTACK_IDS.values())
     # Tools: only implemented attacks are registry-backed (TL-02..TL-05 are stubs).
     ids.extend(a.id for a in TOOL_ATTACKS if a.implemented)
     return ids
@@ -82,6 +86,7 @@ def test_attack_id_count_matches_expected() -> None:
         "EX": 5,
         "DR": 6,
         "DW": 1,
+        "VI": 4,
     }
     by_prefix: dict[str, int] = {}
     for aid in _all_attack_ids():

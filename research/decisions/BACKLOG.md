@@ -26,6 +26,13 @@ under-delivers. Do not just add them without pulling something else.
   treats images as environment payloads only. Extend to cover cross-modality
   instruction smuggling (text hidden in image that the vision model
   interprets as instruction). 5 to 10 tasks.
+- [ ] **NeMo Guardrails vision rail as a baseline for `multimodal_injection`.**
+  Deferred. The vision rail is a content safety judge, it runs on LLMRails only, and
+  it would add a dependency and a model call per turn.
+- [ ] **Image scaling attack (Anamorpher style) for `multimodal_injection`.**
+  Deferred. The hidden text appears only after the endpoint resizes the image, so the
+  result depends on the preprocessing of the endpoint, which is unknown for the hosted
+  models. Revisit when one endpoint documents its resize step.
 - [ ] **User-driven copy-paste attacks.** Social engineering where the user
   pastes poisoned content unknowingly. Bridge into `psych/`. New adversary
   level needed (L0.5: influences user behavior upstream of agent).

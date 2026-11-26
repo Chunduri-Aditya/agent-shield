@@ -30,6 +30,7 @@ FILES = (
     "rulebook/AGENT_SECURITY_RULEBOOK.md",
     "docs/plugin/GAP_ANALYSIS.md",
     "results/wallet/DW01_haiku55_2026-11-18.md",
+    "results/multimodal_injection/REPORT.md",
     "research/paper/paper_v1.1.tex",
     "research/positioning/reading_notes.md",
     "THREAT_MODEL.md",
