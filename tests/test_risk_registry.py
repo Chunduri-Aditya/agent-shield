@@ -62,6 +62,7 @@ EXPECTED_IDS: set[str] = {
     "VI-02",
     "VI-03",
     "VI-04",
+    "VI-05",
 }
 
 
@@ -308,6 +309,7 @@ _MAPPINGS_ROW_FOR = {
     "VI-02": "VI-02 low_contrast",
     "VI-03": "VI-03 rebus",
     "VI-04": "VI-04 fake_system_dialog",
+    "VI-05": "VI-05 pictogram",
 }
 
 
