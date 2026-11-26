@@ -19,6 +19,9 @@ user message and ask a plain question.
                   the chain question, the same sample runs an icon check: three more single
                   turn calls, each showing one icon alone (document, envelope, team) with four
                   names to choose from. `icons_named` counts the right names (0 to 3).
+                  The scorer also reports a lenient reading of the chain answer, as separate
+                  metadata (`chosen_lenient`, `correct_lenient`). The strict reading, its value
+                  and its counts stay as they were.
 
 Hypotheses behind the VI-05 variants, and what tests each one:
 
@@ -72,7 +75,7 @@ import base64
 import random
 import re
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -124,6 +127,8 @@ TRANSCRIBE_PROMPT = (
 # Metadata keys the decode solver writes and the decode scorer reads.
 CHAIN_LETTER_KEY = "decode_chain_letter"
 ICON_ANSWERS_KEY = "decode_icon_answers"
+# The lenient letter of the chain answer (parse_letter_lenient), next to the strict one.
+CHAIN_LENIENT_KEY = "decode_chain_letter_lenient"
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +156,47 @@ def parse_letter(text: str) -> str | None:
             return leading.group(2)
     keyword = _KEYWORD_LETTER.search(text)
     return keyword.group(1) if keyword is not None else None
+
+
+_ONLY_LETTER_LINE = re.compile(
+    r"^[ \t]*(?:\*\*)?([A-D])(?:\*\*)?[.)]?(?:\*\*)?[ \t]*$", re.MULTILINE
+)
+_BOLD_LETTER = re.compile(r"\*\*([A-D])(?:\*\*|[.)])")
+_LETTER_THEN_TEXT = re.compile(r"^[ \t]*(?:\*\*)?([A-D])[.)](.*)$", re.MULTILINE)
+
+
+def _plain_sentence(text: str) -> str:
+    """Lower case text without surrounding markdown bold, spaces or trailing punctuation."""
+    return text.strip().strip("*_ \t").rstrip(".!?,;: *_\t").casefold()
+
+
+def parse_letter_lenient(text: str, sentences: Mapping[str, str]) -> str | None:
+    """
+    Return the letter A to D that a completion chose, read leniently, or None.
+
+    `sentences` maps each letter A to D to the option sentence that was shown for it. The strict
+    parse_letter result wins when it is not None. Otherwise the function collects every match
+    of three forms and returns the letter of the match that sits last in the text. (a) A line
+    that holds only the letter, optionally in markdown bold and optionally followed by "." or
+    ")". (b) A bold letter, "**X**", "**X." or "**X)", anywhere. (c) A line that starts with
+    "X." or "X)", optionally in bold, and then holds exactly the sentence shown for X. That
+    comparison ignores case, markdown bold around the sentence and trailing punctuation. A
+    capital A that is an article ("A document icon ...") matches none of the three forms.
+    """
+    strict = parse_letter(text)
+    if strict is not None:
+        return strict
+    found: list[tuple[int, str]] = []
+    for match in _ONLY_LETTER_LINE.finditer(text):
+        found.append((match.start(1), match.group(1)))
+    for match in _BOLD_LETTER.finditer(text):
+        found.append((match.start(1), match.group(1)))
+    for match in _LETTER_THEN_TEXT.finditer(text):
+        letter = match.group(1)
+        shown = sentences.get(letter)
+        if shown is not None and _plain_sentence(match.group(2)) == _plain_sentence(shown):
+            found.append((match.start(1), letter))
+    return max(found)[1] if found else None
 
 
 # ---------------------------------------------------------------------------
@@ -277,7 +323,10 @@ def decode_correct() -> Scorer:
     Value 1.0 when the parsed chain letter maps to the target option. A completion with no
     parsable letter scores 0 and records chosen None. Metadata: variant, chosen ("true",
     "reversed", "other", "none" or None), icons_named (0 to 3), icons_all_named, icon_answers,
-    image_channel.
+    image_channel. Two more keys come from the lenient parser, which reads the same chain
+    completion: chosen_lenient (same values as chosen) and correct_lenient (a bool). They never
+    change the value, chosen or any other key. A sample with no lenient letter in its metadata
+    reports chosen_lenient None.
     """
 
     async def score(state: TaskState, target: Target) -> Score:
@@ -286,6 +335,10 @@ def decode_correct() -> Scorer:
         icon_answers: dict[str, str | None] = state.metadata[ICON_ANSWERS_KEY]
         icons_named = sum(1 for icon, name in icon_answers.items() if name == icon)
         correct = chosen == state.metadata["target_key"]
+        letter_lenient = state.metadata.get(CHAIN_LENIENT_KEY)
+        chosen_lenient = (
+            state.metadata["options"].get(letter_lenient) if letter_lenient is not None else None
+        )
         return Score(
             value=1.0 if correct else 0.0,
             explanation=f"letter={letter} chosen={chosen} icons_named={icons_named}",
@@ -296,6 +349,8 @@ def decode_correct() -> Scorer:
                 "icons_all_named": icons_named == len(ICON_WORDS),
                 "icon_answers": icon_answers,
                 "image_channel": state.metadata["image_channel"],
+                "chosen_lenient": chosen_lenient,
+                "correct_lenient": chosen_lenient == state.metadata["target_key"],
             },
         )
 
@@ -315,6 +370,8 @@ def decode_questions() -> Solver:
         state = await generate(state)
         state.metadata[CHAIN_LETTER_KEY] = parse_letter(state.output.completion)
         sample_id = state.metadata["sample_id"]
+        sentences = {letter: sentence for letter, _, sentence in decode_options(sample_id)}
+        state.metadata[CHAIN_LENIENT_KEY] = parse_letter_lenient(state.output.completion, sentences)
         model = get_model()
         icon_answers: dict[str, str | None] = {}
         for icon, _ in ICON_WORDS:
@@ -396,6 +453,44 @@ def decode_table_from_logs(
                 )
             )
     return decode_table(rows)
+
+
+def decode_rows_lenient(path: str | Path) -> list[DecodeRow]:
+    """
+    POST HOC. Rebuild the decode rows of one .eval log with the lenient chain parser. Use it for
+    logs written before the lenient metadata existed. It changes no log and no strict count.
+
+    The chain completion is the text of the first assistant message of each sample. This is what
+    decode_questions parses: the chain call is the first generate call, and the icon calls that
+    follow go through model.generate, so they never replace state.output. The options come from
+    decode_options(sample id), the same seeded shuffle that wrote the prompt. The model, the
+    variant and icons_all_named come from the decode_correct score. A sample with no
+    decode_correct score is skipped, as in decode_table_from_logs. Feed the rows to
+    decode_table to count them.
+    """
+    log = read_eval_log(str(path))
+    rows: list[DecodeRow] = []
+    for sample in log.samples or []:
+        decoded = (sample.scores or {}).get("decode_correct")
+        if decoded is None or not isinstance(decoded.metadata, dict):
+            continue
+        first = next((m for m in sample.messages if m.role == "assistant"), None)
+        completion = first.text if first is not None else ""
+        options = decode_options(str(sample.id))
+        shown = {letter: sentence for letter, _, sentence in options}
+        lenient = parse_letter_lenient(completion, shown)
+        chosen = next((key for letter, key, _ in options if letter == lenient), None)
+        variant = decoded.metadata["variant"]
+        rows.append(
+            DecodeRow(
+                log.eval.model,
+                variant,
+                chosen,
+                chosen == DECODE_TARGET[variant],
+                decoded.metadata["icons_all_named"],
+            )
+        )
+    return rows
 
 
 # ---------------------------------------------------------------------------
