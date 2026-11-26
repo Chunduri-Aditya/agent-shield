@@ -26,7 +26,13 @@ from scripts.multimodal_injection.pictogram_records import (
 )
 from scripts.multimodal_injection.records import Record
 from scripts.multimodal_injection.report import fmt_rate
-from scripts.multimodal_injection.run_capped import NVIDIA_MODELS, Step, pictogram_plan
+from scripts.multimodal_injection.run_capped import (
+    FORCE_FALLBACK,
+    NVIDIA_MODELS,
+    Step,
+    local_plan,
+    pictogram_plan,
+)
 
 REPO = Path(__file__).resolve().parent.parent
 COMMITTED = REPO / "results" / "mmi_pictogram_2026_11_26"
@@ -158,7 +164,7 @@ def test_a_folder_that_is_not_a_plan_step_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     logs = {"logs/B/B-not-a-step/run.eval": _log_for(PLAN[B_NATIVE])}
-    with pytest.raises(ValueError, match="not a step of the pictogram plan"):
+    with pytest.raises(ValueError, match="not a step of the plan"):
         build(_evidence(tmp_path, monkeypatch, logs))
 
 
@@ -228,6 +234,30 @@ def test_the_channel_a_step_implies() -> None:
     assert expected_channel(PLAN[B_FALLBACK]) == "user_fallback"
     assert expected_channel(PLAN[B_NVIDIA]) == "user_fallback"
     assert expected_channel(PLAN[A_HAIKU]) == "user_fallback"
+
+
+def test_an_ollama_step_without_a_forced_channel_implies_user_fallback() -> None:
+    steps = local_plan()
+    assert all(expected_channel(s) == "user_fallback" for s in steps)
+    assert all(FORCE_FALLBACK not in s.task_args for s in steps)
+
+
+def test_the_builder_reads_the_steps_of_the_local_plan(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local = {s.name: s for s in local_plan()}
+    names = ["A-qwen3-vl-8b-s0", "B-gemma4-12b-s0-benign"]
+    logs = {f"logs/{local[n].arm}/{n}/run.eval": _log_for(local[n]) for n in names}
+    root = _evidence(tmp_path, monkeypatch, logs)
+    rows, absent = build(root, local_plan())
+    assert len(rows) == 60
+    assert absent == sorted(set(local) - set(names))
+    assert {(r["model"], r["image_channel"], r["run"]) for r in rows} == {
+        ("ollama/qwen3-vl:8b", "user_fallback", "seed 0"),
+        ("ollama/gemma4:12b", "user_fallback", "seed 0"),
+    }
+    with pytest.raises(ValueError, match="not a step of the plan"):
+        build(root)  # the default plan is the pictogram plan
 
 
 @pytest.mark.parametrize(
@@ -545,3 +575,86 @@ def test_a_canary_send_on_a_variant_without_canary_is_refused() -> None:
     records[0]["canary_in_args"] = True
     with pytest.raises(ValueError, match="carry no canary"):
         pictogram_report.render(records, [], [])
+
+
+# ---------------------------------------------------------------------------
+# local plan report
+# ---------------------------------------------------------------------------
+
+QWEN = "ollama/qwen3-vl:8b"
+GEMMA = "ollama/gemma4:12b"
+
+
+def _local_records() -> list[PictogramRecord]:
+    return (
+        _prec("A", GEMMA, "user_fallback", "typographic", 3, sends=1, run="seed 0")
+        + _prec("A", QWEN, "user_fallback", "benign", 3, run="seed 0")
+        + _prec("B", GEMMA, "user_fallback", "pictogram", 2, run="seed 0")
+        + _prec("B", GEMMA, "user_fallback", "pictogram_reversed", 2, run="seed 0")
+        + _prec("B", GEMMA, "user_fallback", "benign", 2, run="seed 0")
+        + _prec("B", QWEN, "user_fallback", "pictogram", 2, sends=1, run="seed 0")
+        + _prec("B", QWEN, "user_fallback", "pictogram_reversed", 2, run="seed 0")
+        + _prec("B", QWEN, "user_fallback", "benign", 2, run="seed 0")
+    )
+
+
+def test_the_local_model_order_puts_the_two_local_models_after_the_five() -> None:
+    from scripts.multimodal_injection.report import MODEL_ORDER
+
+    assert (*MODEL_ORDER, "qwen3-vl:8b", "gemma4:12b") == pictogram_report.LOCAL_ORDER
+
+
+def test_the_local_render_has_no_anthropic_section_and_lists_the_local_models() -> None:
+    text = pictogram_report.render_local(_local_records(), [])
+    assert text.startswith("# Local model sweep report (draft, not reviewed)\n")
+    headings = [line for line in text.splitlines() if line.startswith("## ")]
+    assert headings == ["## Header", "## All cells", "## Pictogram arm", "## Limits"]
+    assert "Anthropic" not in text and "tool_native" not in text
+    assert [r[:2] for r in _table(text, "Header")] == [
+        ["A", "qwen3-vl:8b"],
+        ["A", "gemma4:12b"],
+        ["B", "qwen3-vl:8b"],
+        ["B", "gemma4:12b"],
+    ]
+    arm_b = _table(text, "Pictogram arm")
+    assert [r[0] for r in arm_b] == ["qwen3-vl:8b", "gemma4:12b"]
+    assert arm_b[0][2] == fmt_rate(1, 2) and arm_b[1][2] == fmt_rate(0, 2)
+
+
+def test_the_local_render_states_its_limits_and_uses_no_banned_words() -> None:
+    text = pictogram_report.render_local(_local_records(), ["B-x"])
+    assert "one run at seed 0 and temperature 0" in text
+    assert "not compared with the API model sweeps" in text
+    assert "Ollama returns no image inside a tool result" in text
+    assert "Absent steps (1): `B-x`." in text
+    assert "\u2014" not in text and "\u2013" not in text
+    assert "novel" not in text.lower() and "first" not in text.lower()
+
+
+def test_the_local_render_refuses_a_model_that_is_not_in_the_order() -> None:
+    with pytest.raises(ValueError, match="MODEL_ORDER"):
+        pictogram_report.render_local(
+            _prec("B", "ollama/other:1b", "user_fallback", "benign", 1), []
+        )
+
+
+def test_check_mode_of_the_local_plan_uses_the_local_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_records(_local_records(), tmp_path / "records.jsonl")
+    (tmp_path / "absent_steps.json").write_text("[]\n")
+    report = tmp_path / "REPORT.md"
+    monkeypatch.setattr(pictogram_report, "LOCAL_RECORDS", tmp_path / "records.jsonl")
+    monkeypatch.setattr(pictogram_report, "LOCAL_ABSENT", tmp_path / "absent_steps.json")
+    monkeypatch.setattr(pictogram_report, "LOCAL_REPORT", report)
+    assert pictogram_report.main(["--plan", "local", "--check"]) == 1  # no file yet
+    assert pictogram_report.main(["--plan", "local"]) == 0
+    assert report.read_text(encoding="utf-8") == pictogram_report.render_local(_local_records(), [])
+    assert pictogram_report.main(["--plan", "local", "--check"]) == 0
+    report.write_text(report.read_text() + "edited\n")
+    assert pictogram_report.main(["--plan", "local", "--check"]) == 1
+
+
+def test_the_records_cli_default_out_follows_the_plan() -> None:
+    assert pictogram_records.OUTS["pictogram"].parent.name == "mmi_pictogram_2026_11_26"
+    assert pictogram_records.OUTS["local"].parent.name == "mmi_local_2026_11_26"

@@ -5,10 +5,11 @@ Usage (from the repo root):
 
 The row carries: stage, model, samples x epochs, input, cache and output tokens summed from
 EvalSample.model_usage, cost from pilot/prices.yaml (scripts/pilot/cost.py usage_cost; a model
-served through openai-api/nvidia costs 0), cumulative spend over every row of ledger.jsonl,
-image channels, sample errors, missing scores, benign mmi_utility and the peak model requests
-in any 60 second window. Nothing is typed by hand. A log already in the ledger (same sha256)
-is refused. The ledger files live in logs/mmi_overnight/report/, which is gitignored.
+served through openai-api/nvidia or a local ollama model costs 0), cumulative spend over every
+row of ledger.jsonl, image channels, sample errors, missing scores, benign mmi_utility and the
+peak model requests in any 60 second window. Nothing is typed by hand. A log already in the
+ledger (same sha256) is refused. The ledger files live in logs/mmi_overnight/report/, which is
+gitignored.
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ LEDGER_JSONL = OUT_DIR / "ledger.jsonl"
 LEDGER_MD = OUT_DIR / "LEDGER.md"
 PRICES = REPO / "pilot" / "prices.yaml"
 SCORERS = ("mmi_asr", "mmi_tr", "mmi_utility")
-FREE_PREFIXES = ("openai-api/nvidia/",)
+FREE_PREFIXES = ("openai-api/nvidia/", "ollama/")
 to_float = value_to_float()
 
 

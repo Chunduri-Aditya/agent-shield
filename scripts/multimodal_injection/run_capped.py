@@ -1,24 +1,26 @@
-"""Run the approved pictogram sweep step by step, and refuse any step that could pass a spend cap.
+"""Run an approved sweep step by step, and refuse any step that could pass a spend cap.
 
 Usage (from the repo root):
   uv run python scripts/multimodal_injection/run_capped.py --cap 15 --dry-run
   uv run python scripts/multimodal_injection/run_capped.py --cap 15
+  uv run python scripts/multimodal_injection/run_capped.py --plan local --cap 0 --dry-run
 
-The plan is a fixed tuple of 81 steps, built by pictogram_plan(). Each step is one Inspect run
-of evals/multimodal_injection.py. Before a step runs, the runner sums the cost column of
+The default plan is a fixed tuple of 81 steps, built by pictogram_plan(). The plan named local
+is a fixed tuple of 8 steps on two Ollama models, built by local_plan(). Each step is one
+Inspect run of evals/multimodal_injection.py. Before a step runs, the runner sums the cost column of
 ledger.jsonl in the out dir and adds the worst case cost of the step. If that sum is above the
 cap, the runner prints the reason, stops, and never starts a later step. After a step runs, the
 runner prices its log through scripts/multimodal_injection/ledger.py and stops on any failed
-status, sample error, missing score or request rate above 30 per minute.
+status, sample error, missing score or, on the NVIDIA route, request rate above 30 per minute.
 
 A step whose name is already a stage in ledger.jsonl is skipped, so a second run resumes. A step
 folder that holds .eval logs without a ledger row is a spend the ledger does not know, so the
 runner refuses to run that step again until a person has priced or removed the logs.
 
 Worst case cost of a step: samples x (IN_BOUND x cache write 1h price + OUT_BOUND x output price)
-/ 1e6 x MARGIN, with prices from pilot/prices.yaml. A model served through openai-api/nvidia is
-free. The runner calls a model only through the injected execute function, and --dry-run never
-calls it. The runner prints no environment value.
+/ 1e6 x MARGIN, with prices from pilot/prices.yaml. A model served through openai-api/nvidia or
+through ollama is free. The runner calls a model only through the injected execute function,
+and --dry-run never calls it. The runner prints no environment value.
 """
 
 from __future__ import annotations
@@ -41,12 +43,13 @@ from scripts.multimodal_injection import ledger  # noqa: E402
 from scripts.pilot._common import load_prices, price_for, strip_provider  # noqa: E402
 
 DEFAULT_OUT_DIR = REPO / "logs" / "mmi_pictogram_2026_11_26"
+LOCAL_OUT_DIR = REPO / "logs" / "mmi_local_2026_11_26"
 DEFAULT_ENV_FILE = REPO / ".env"
 IN_BOUND = 2300  # input tokens one sample can cost at most, billed at the 1h cache write price
 OUT_BOUND = 250  # output tokens one sample can cost at most
 MARGIN = 1.5
 MAX_REQUESTS_PER_MINUTE = 30
-STEP_TIMEOUT_SECONDS = 3600
+STEP_TIMEOUT_SECONDS = 10800  # a local 50 sample step can take over an hour
 
 CLAUDE_MODELS = (
     "anthropic/claude-haiku-5-5",
@@ -58,6 +61,8 @@ NVIDIA_MODELS = (
     "openai-api/nvidia/nvidia/nemotron-3.5-super-vl-120b-a12b",
 )
 CHANNELS = ("tool_native", "user_fallback")
+OLLAMA_MODELS = ("ollama/qwen3-vl:8b", "ollama/gemma4:12b")
+NVIDIA_ROUTE = "openai-api/nvidia/"
 VARIANTS = ("pictogram", "pictogram_reversed", "benign")
 FORCE_FALLBACK = "force_channel=user_fallback"
 
@@ -74,6 +79,7 @@ class Step:
     run: str
     samples: int
     max_connections: int
+    temperature: float | None = None
 
 
 def pictogram_plan() -> tuple[Step, ...]:
@@ -107,6 +113,27 @@ def pictogram_plan() -> tuple[Step, ...]:
                          f"seed {seed}", 10, 2)
                 )  # fmt: skip
     return tuple(steps)
+
+
+def local_plan() -> tuple[Step, ...]:
+    """The 8 steps on two Ollama models: Arm A on the frozen 50, then Arm B per variant."""
+    steps: list[Step] = []
+    for model in OLLAMA_MODELS:
+        short = strip_provider(model).replace(":", "-")
+        steps.append(Step(f"A-{short}-s0", "A", model, (), 0, "seed 0", 50, 1, 0.0))
+        for variant in VARIANTS:
+            steps.append(
+                Step(f"B-{short}-s0-{variant}", "B", model, (f"variant={variant}",), 0,
+                     "seed 0", 10, 1, 0.0)
+            )  # fmt: skip
+    return tuple(steps)
+
+
+PLANS: dict[str, Callable[[], tuple[Step, ...]]] = {
+    "pictogram": pictogram_plan,
+    "local": local_plan,
+}
+DEFAULT_OUT_DIRS = {"pictogram": DEFAULT_OUT_DIR, "local": LOCAL_OUT_DIR}
 
 
 @cache
@@ -144,6 +171,8 @@ def build_command(step: Step, log_dir: Path, env_file: Path) -> list[str]:
         cmd += ["-T", arg]
     if step.seed is not None:
         cmd += ["--seed", str(step.seed)]
+    if step.temperature is not None:
+        cmd += ["--temperature", str(step.temperature)]
     return cmd
 
 
@@ -226,7 +255,7 @@ def _row_problem(row: dict[str, Any], step: Step) -> str | None:
     if row.get("missing_scores", 0) > 0:
         return f"has {row['missing_scores']} samples with missing scores"
     peak = row.get("peak_requests_per_minute", 0)
-    if ledger.is_free(step.model) and peak > MAX_REQUESTS_PER_MINUTE:
+    if step.model.startswith(NVIDIA_ROUTE) and peak > MAX_REQUESTS_PER_MINUTE:
         return f"peaked at {row['peak_requests_per_minute']} requests per minute"
     return None
 
@@ -251,16 +280,19 @@ def dry_run_table(plan: Sequence[Step], cap: float) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
     parser.add_argument("--cap", type=float, required=True, help="total spend cap in USD")
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument("--plan", choices=sorted(PLANS), default="pictogram")
+    parser.add_argument(
+        "--out-dir", type=Path, default=None, help="default: logs/mmi_<plan>_2026_11_26"
+    )
     parser.add_argument("--workdir", type=Path, default=REPO, help="checkout that runs Inspect")
     parser.add_argument("--env-file", type=Path, default=DEFAULT_ENV_FILE)
     parser.add_argument("--dry-run", action="store_true", help="print the cost table, run nothing")
     args = parser.parse_args(argv)
-    plan = pictogram_plan()
+    plan = PLANS[args.plan]()
     if args.dry_run:
         print(dry_run_table(plan, args.cap))
         return 0
-    out_dir = args.out_dir.resolve()
+    out_dir = (args.out_dir or DEFAULT_OUT_DIRS[args.plan]).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     return run_plan(plan, out_dir, args.cap, make_execute(args.workdir.resolve(), args.env_file))
 
