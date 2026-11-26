@@ -17,6 +17,7 @@ import pytest
 from scripts.multimodal_injection import ledger, run_capped
 from scripts.multimodal_injection.run_capped import (
     Step,
+    local_plan,
     may_run,
     pictogram_plan,
     run_plan,
@@ -25,6 +26,7 @@ from scripts.multimodal_injection.run_capped import (
 
 SONNET = "anthropic/claude-sonnet-5-5"
 NVIDIA = run_capped.NVIDIA_MODELS[0]
+OLLAMA = run_capped.OLLAMA_MODELS[0]
 
 
 def step(name: str, model: str = SONNET, samples: int = 10) -> Step:
@@ -88,7 +90,45 @@ def test_nvidia_steps_have_a_seed_and_stay_under_the_rate_limit() -> None:
         assert s.max_connections <= 2
 
 
+def test_the_local_plan_has_8_steps_on_two_ollama_models() -> None:
+    plan = local_plan()
+    assert len(plan) == 8
+    assert len({s.name for s in plan}) == 8
+    assert sum(s.samples for s in plan) == 160
+    assert {s.model for s in plan} == {"ollama/qwen3-vl:8b", "ollama/gemma4:12b"}
+    for s in plan:
+        assert ":" not in s.name and "/" not in s.name
+        assert (s.seed, s.run, s.temperature, s.max_connections) == (0, "seed 0", 0.0, 1)
+
+
+def test_the_local_plan_has_one_arm_a_step_and_three_arm_b_steps_per_model() -> None:
+    plan = local_plan()
+    assert [s.name for s in plan if s.model == OLLAMA] == [
+        "A-qwen3-vl-8b-s0",
+        "B-qwen3-vl-8b-s0-pictogram",
+        "B-qwen3-vl-8b-s0-pictogram_reversed",
+        "B-qwen3-vl-8b-s0-benign",
+    ]
+    for s in plan:
+        if s.arm == "A":
+            assert s.task_args == () and s.samples == 50
+        else:
+            assert s.samples == 10 and s.task_args[0].startswith("variant=")
+
+
+def test_the_pictogram_plan_keeps_no_temperature() -> None:
+    assert {s.temperature for s in pictogram_plan()} == {None}
+
+
+def test_plans_names_both_plans() -> None:
+    assert {"pictogram": pictogram_plan, "local": local_plan} == run_capped.PLANS
+
+
 # ---------------------------------------------------------------- cost
+
+
+def test_a_local_step_costs_nothing() -> None:
+    assert [worst_cost(s) for s in local_plan()] == [0.0] * 8
 
 
 def test_nvidia_worst_cost_is_zero_and_claude_is_positive() -> None:
@@ -264,6 +304,14 @@ def test_the_rate_limit_does_not_stop_a_claude_step(harness: Callable[..., Harne
     assert h.executed == ["s1", "s2"]
 
 
+def test_the_rate_limit_does_not_stop_an_ollama_step(harness: Callable[..., Harness]) -> None:
+    # The 30 per minute limit is the NVIDIA route only. A local model is free but not limited.
+    h = harness(row_cost=0.0, peak_requests_per_minute=31)
+    plan = [step("o1", model=OLLAMA), step("o2", model=OLLAMA)]
+    assert run_plan(plan, h.out_dir, 0.0, h.execute) == 0
+    assert h.executed == ["o1", "o2"]
+
+
 def test_run_plan_stops_on_a_nonzero_execute_exit(harness: Callable[..., Harness]) -> None:
     h = harness(row_cost=0.1)
     h.exit_codes["s1"] = 7
@@ -315,6 +363,35 @@ def test_build_command_is_an_argument_list_with_the_task_args_and_seed(tmp_path:
     assert cmd[cmd.index("--log-dir") + 1] == str((tmp_path / "logs").resolve())
 
 
+def test_build_command_for_a_local_step_has_the_temperature_and_the_seed(tmp_path: Path) -> None:
+    s = local_plan()[1]
+    cmd = run_capped.build_command(s, tmp_path / "logs", tmp_path / ".env")
+    assert cmd[cmd.index("--temperature") + 1] == "0.0"
+    assert cmd[cmd.index("--seed") + 1] == "0"
+    assert cmd[cmd.index("--model") + 1] == OLLAMA
+    assert cmd[cmd.index("--max-connections") + 1] == "1"
+    assert cmd[cmd.index("-T") + 1] == "variant=pictogram"
+
+
+def test_build_command_of_a_pictogram_step_is_unchanged(tmp_path: Path) -> None:
+    s = next(
+        p for p in pictogram_plan() if p.name == "B-claude-haiku-5-5-user_fallback-r1-pictogram"
+    )
+    cmd = run_capped.build_command(s, tmp_path / "logs", tmp_path / ".env")
+    assert cmd == [
+        "uv", "run", "--env-file", str(tmp_path / ".env"),
+        "inspect", "eval", "evals/multimodal_injection.py",
+        "--model", "anthropic/claude-haiku-5-5",
+        "--log-dir", str((tmp_path / "logs").resolve()),
+        "--max-retries", "5",
+        "--epochs", "1",
+        "--max-connections", "4",
+        "--display", "plain",
+        "-T", "variant=pictogram",
+        "-T", "force_channel=user_fallback",
+    ]  # fmt: skip
+
+
 def test_build_command_omits_the_seed_when_none(tmp_path: Path) -> None:
     cmd = run_capped.build_command(step("x"), tmp_path, tmp_path / ".env")
     assert "--seed" not in cmd
@@ -332,6 +409,25 @@ def test_dry_run_prints_the_table_and_writes_nothing(
     assert "cap 15.0000" in printed
     assert "claude-opus-5-5" in printed
     assert not out.exists()
+
+
+def test_dry_run_of_the_local_plan_prints_a_zero_worst_case(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert run_capped.main(["--plan", "local", "--cap", "0", "--dry-run"]) == 0
+    printed = capsys.readouterr().out
+    assert "ollama/qwen3-vl:8b" in printed and "ollama/gemma4:12b" in printed
+    assert "worst case total 0.0000 USD: the full plan fits" in printed
+
+
+def test_the_default_out_dir_follows_the_plan() -> None:
+    assert run_capped.DEFAULT_OUT_DIRS["pictogram"].name == "mmi_pictogram_2026_11_26"
+    assert run_capped.DEFAULT_OUT_DIRS["local"].name == "mmi_local_2026_11_26"
+
+
+def test_an_ollama_model_is_free_in_the_ledger() -> None:
+    assert ledger.is_free(OLLAMA) and ledger.is_free(NVIDIA)
+    assert not ledger.is_free(SONNET)
 
 
 # ---------------------------------------------------------------- ledger --out-dir
