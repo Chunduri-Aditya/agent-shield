@@ -31,6 +31,7 @@ from scripts.multimodal_injection.showcase import (
     EXCERPT_LABEL,
     MODEL_COLORS,
     START,
+    TABLE_SUMMARY,
     build,
     cell_stats,
     check,
@@ -55,6 +56,19 @@ def rows() -> list[Record]:
 def _prose(page: str) -> str:
     """The page without the generated block."""
     return page[: page.index(START)] + page[page.index(END) + len(END) :]
+
+
+def test_the_table_is_folded_directly_under_the_figure() -> None:
+    """The first visible thing after the figure is the details block that holds the table."""
+    page = PAGE.read_text(encoding="utf-8")
+    after_figure = page[page.index("(asr_by_channel.png)") :]
+    inner = after_figure[after_figure.index(START) + len(START) : after_figure.index(END)]
+    visible = [ln for ln in inner.splitlines() if ln.strip() and not ln.startswith("<!--")]
+    assert visible[:2] == ["<details>", f"<summary>{TABLE_SUMMARY}</summary>"]
+    folded = inner[inner.index("<details>") : inner.index("</details>")]
+    assert "| Channel | Model | Variant |" in folded
+    assert inner.count("| Channel | Model | Variant |") == 1
+    assert TABLE_SUMMARY == "All cells (generated from records.jsonl)"
 
 
 def test_prose_claim_of_no_rebus_send_holds(rows: list[Record]) -> None:

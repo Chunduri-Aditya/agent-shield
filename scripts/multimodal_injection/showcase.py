@@ -485,9 +485,23 @@ def table(cells: list[Cell]) -> str:
     return "\n".join(lines)
 
 
+TABLE_SUMMARY = "All cells (generated from records.jsonl)"
+
+
+def folded_table(cells: list[Cell]) -> str:
+    """The table in a collapsed details block. Blank lines let markdown render it inside."""
+    return f"<details>\n<summary>{TABLE_SUMMARY}</summary>\n\n{table(cells)}\n\n</details>"
+
+
 def block(cells: list[Cell], toolchain: str, excerpt: Excerpt) -> str:
-    """The text between the two markers, with a blank line inside each marker."""
-    return f"\n{toolchain}\n\n{headline(cells)}\n\n{table(cells)}\n\n{excerpt_section(excerpt)}\n"
+    """
+    The text between the two markers, with a blank line inside each marker. The folded table
+    comes first, so it sits directly under the figure, which the page places above the block.
+    """
+    return (
+        f"\n{toolchain}\n\n{folded_table(cells)}\n\n{headline(cells)}\n\n"
+        f"{excerpt_section(excerpt)}\n"
+    )
 
 
 def recorded_toolchain(page: str) -> str | None:
