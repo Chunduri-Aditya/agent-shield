@@ -86,7 +86,7 @@ def test_attack_id_count_matches_expected() -> None:
         "EX": 5,
         "DR": 6,
         "DW": 1,
-        "VI": 4,
+        "VI": 5,
     }
     by_prefix: dict[str, int] = {}
     for aid in _all_attack_ids():

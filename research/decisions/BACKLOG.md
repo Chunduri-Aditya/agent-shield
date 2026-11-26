@@ -253,6 +253,11 @@ specific item.
 - [ ] Bespoke GCG suffixes optimized against frontier API models (paper
   release only, not code release)
 - [ ] Cross-vendor data exfiltration chains
+- [ ] Level 2 multimodal injection: images optimized so encoder patch embeddings land
+  near instruction text embeddings. Largely published: arXiv 2307.14539 (encoder only
+  embedding targeting, Shayegani et al.), arXiv 2407.08970 (self interpreting adversarial
+  images act as soft prompts), arXiv 2603.29418 (covert visual prompt injection against
+  commercial MLLMs). HIGH risk, needs open encoder weights, not built.
 
 ---
 

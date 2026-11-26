@@ -81,6 +81,7 @@ Columns: attack → module(s) → OWASP LLM 2025 → OWASP Agentic 2026 → MITR
 | VI-02 low_contrast | EN, IN | LLM01 | ASI01 | AML.T0051.001 | arXiv 2026 https://arxiv.org/abs/2603.03637; evals/multimodal_injection.py |
 | VI-03 rebus | EN, IN | LLM01 | ASI01 | AML.T0051.001 | arXiv 2026 https://arxiv.org/abs/2603.03637; evals/multimodal_injection.py |
 | VI-04 fake_system_dialog | EN, IN | LLM01 | ASI01 | AML.T0051.001 | arXiv 2026 https://arxiv.org/abs/2603.03637; evals/multimodal_injection.py |
+| VI-05 pictogram | EN, IN | LLM01 | ASI01 | AML.T0051.001 | https://developer.nvidia.com/blog/securing-agentic-ai-how-semantic-prompt-injections-bypass-ai-guardrails/; evals/multimodal_injection.py |
 | Policy bypass — authority spoof (PB-001) | IN, PS | LLM01 | ASI01 | AML.T0054 | Perez et al. 2212.09251; Cialdini 1984 |
 | Policy bypass — hypothetical framing (PB-002) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |
 | Policy bypass — fictional framing (PB-003) | IN, PS | LLM01 | ASI01 | AML.T0054 | TODO anchor |

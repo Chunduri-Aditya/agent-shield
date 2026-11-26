@@ -7,8 +7,14 @@ from pathlib import Path
 import pytest
 
 from multimodal_injection.attacks import (
+    ALL_SPECS,
+    ICON_CHOICES,
+    ICON_WORDS,
     LOW_CONTRAST_TARGETS,
     PAGE_BG,
+    PICTOGRAM_ORDER,
+    PICTOGRAM_SPECS,
+    PICTOGRAM_VARIANTS,
     SPECS,
     SPECS_BY_ID,
     VARIANTS,
@@ -26,6 +32,12 @@ def test_fifty_specs_ten_per_variant():
     assert len(SPECS) == 50
     for variant in VARIANTS:
         assert sum(1 for s in SPECS if s.variant == variant) == 10
+
+
+def test_the_original_variants_are_unchanged():
+    assert VARIANTS == ("typographic", "low_contrast", "rebus", "fake_system_dialog", "benign")
+    assert PICTOGRAM_VARIANTS == ("pictogram", "pictogram_reversed")
+    assert all(s.variant in VARIANTS for s in SPECS)
 
 
 def test_sample_ids_canaries_and_facts_are_unique():
@@ -85,9 +97,11 @@ def test_wcag_contrast_extremes():
 def test_every_spec_has_a_png_that_passes_the_hash_check():
     toolchain, sums = read_sums()
     assert toolchain.startswith(VERSION_PREFIX)
-    assert set(sums) == {f"{s.sample_id}.png" for s in SPECS}
-    for spec in SPECS:
-        data = verified_png(DATA_DIR / f"{spec.sample_id}.png")
+    icon_files = {f"ICON_{name}.png" for name in ICON_CHOICES}
+    assert set(sums) == {f"{s.sample_id}.png" for s in ALL_SPECS} | icon_files
+    assert len(sums) == 74
+    for name in sorted(sums):
+        data = verified_png(DATA_DIR / name)
         assert data.startswith(b"\x89PNG\r\n\x1a\n")
 
 
@@ -111,16 +125,78 @@ def test_png_missing_from_sums_is_refused(tmp_path: Path):
 
 def test_regeneration_is_byte_identical():
     pytest.importorskip("PIL")
-    from multimodal_injection.render import png_bytes
+    from multimodal_injection.render import icon_png_bytes, png_bytes
     from scripts.make_multimodal_images import toolchain_line
 
     recorded, _ = read_sums()
     if toolchain_line() != recorded:
         pytest.skip(f"running {toolchain_line()!r}, files drawn with {recorded!r}")
-    for spec in SPECS:
+    for spec in ALL_SPECS:
         data = png_bytes(spec)
         assert data == (DATA_DIR / f"{spec.sample_id}.png").read_bytes(), spec.sample_id
         assert data == png_bytes(SPECS_BY_ID[spec.sample_id])  # two renders agree
+    for name in ICON_CHOICES:
+        data = icon_png_bytes(name)
+        assert data == (DATA_DIR / f"ICON_{name}.png").read_bytes(), name
+        assert data == icon_png_bytes(name)
+
+
+# ---------------------------------------------------------------------------
+# VI-05 pictogram: icon chain with no text, and the reversed control
+# ---------------------------------------------------------------------------
+
+
+def test_twenty_pictogram_specs_ten_per_variant():
+    assert len(PICTOGRAM_SPECS) == 20
+    for variant in PICTOGRAM_VARIANTS:
+        assert sum(1 for s in PICTOGRAM_SPECS if s.variant == variant) == 10
+    assert [s.sample_id for s in PICTOGRAM_SPECS] == [
+        *(f"VI05_s{n:02d}" for n in range(1, 11)),
+        *(f"VI05R_s{n:02d}" for n in range(1, 11)),
+    ]
+    assert len(ALL_SPECS) == 70
+    assert set(SPECS_BY_ID) == {s.sample_id for s in ALL_SPECS}
+
+
+def test_ids_facts_and_screen_ids_are_unique_across_all_seventy_specs():
+    assert len({s.sample_id for s in ALL_SPECS}) == 70
+    assert len({s.fact for s in ALL_SPECS}) == 70
+    assert len({s.screen_id for s in ALL_SPECS}) == 70
+    # No fact equals a canary number, so a word bounded fact check never reads a canary.
+    canary_numbers = {int(s.canary.split("_")[1]) for s in ALL_SPECS if s.canary}
+    assert canary_numbers.isdisjoint(s.fact for s in ALL_SPECS)
+
+
+def test_pictogram_specs_carry_no_canary_and_no_text_token():
+    for s in PICTOGRAM_SPECS:
+        assert s.attack_id == "VI-05"
+        assert s.canary is None
+        assert s.contains_text_token is False
+        assert s.contrast_ratio is None
+        assert s.hard_negative is False
+        assert re.fullmatch(r"scr-[0-9a-f]{6}", s.screen_id)
+
+
+def test_pictogram_order_and_its_reverse_follow_the_icon_words():
+    assert PICTOGRAM_ORDER["pictogram"] == tuple(name for name, _ in ICON_WORDS)
+    assert PICTOGRAM_ORDER["pictogram"] == ("document", "envelope", "team")
+    assert PICTOGRAM_ORDER["pictogram_reversed"] == tuple(reversed(PICTOGRAM_ORDER["pictogram"]))
+    assert PICTOGRAM_ORDER["pictogram_reversed"] != PICTOGRAM_ORDER["pictogram"]
+
+
+def test_the_two_pictogram_variants_draw_different_images_for_the_same_layout():
+    pytest.importorskip("PIL")
+    from multimodal_injection.render import png_bytes
+
+    forward = SPECS_BY_ID["VI05_s01"]
+    reverse = SPECS_BY_ID["VI05R_s01"]
+    assert forward.layout == reverse.layout
+    assert png_bytes(forward) != png_bytes(reverse)
+
+
+def test_every_chain_icon_has_a_single_icon_choice():
+    assert set(ICON_CHOICES) >= {name for name, _ in ICON_WORDS}
+    assert len(ICON_CHOICES) == len(set(ICON_CHOICES)) == 4
 
 
 # ---------------------------------------------------------------------------
