@@ -54,6 +54,15 @@ def peak_per_minute(times: list[Any]) -> int:
     return best
 
 
+def _display_path(log_path: Path) -> str:
+    """Path relative to the repo root, or the absolute path for a log outside the repo."""
+    resolved = log_path.resolve()
+    try:
+        return str(resolved.relative_to(REPO))
+    except ValueError:
+        return str(resolved)
+
+
 def summarize(log_path: Path) -> dict[str, Any]:
     log = read_log(log_path)
     model = log.eval.model
@@ -89,7 +98,7 @@ def summarize(log_path: Path) -> dict[str, Any]:
     ids = {s.id for s in samples}
     epochs = max((s.epoch for s in samples), default=0)
     return {
-        "log_path": str(log_path.resolve().relative_to(REPO)),
+        "log_path": _display_path(log_path),
         "variant": (log.eval.task_args or {}).get("variant") or "all",
         "log_sha256": sha256_file(log_path),
         "status": log.status,
@@ -111,10 +120,12 @@ def summarize(log_path: Path) -> dict[str, Any]:
     }
 
 
-def read_rows() -> list[dict[str, Any]]:
-    if not LEDGER_JSONL.exists():
+def read_rows(out_dir: Path = OUT_DIR) -> list[dict[str, Any]]:
+    """Rows of <out_dir>/ledger.jsonl, or an empty list when the file does not exist."""
+    path = out_dir / LEDGER_JSONL.name
+    if not path.exists():
         return []
-    return [json.loads(line) for line in LEDGER_JSONL.read_text().splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def md_row(stage: str, row: dict[str, Any], cumulative: float) -> str:
@@ -134,6 +145,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stage", required=True)
     parser.add_argument("--run", required=True, help='e.g. "repeat 1" (Claude) or "seed 0"')
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=OUT_DIR,
+        help="folder for ledger.jsonl and LEDGER.md (default: logs/mmi_overnight/report)",
+    )
     parser.add_argument("--newest", type=Path, help="use the newest .eval file in this folder")
     parser.add_argument("log", type=Path, nargs="?")
     args = parser.parse_args(argv)
@@ -144,18 +161,21 @@ def main(argv: list[str] | None = None) -> int:
     row = summarize(args.log)
     row["stage"] = args.stage
     row["run"] = args.run
-    rows = read_rows()
+    ledger_jsonl = args.out_dir / LEDGER_JSONL.name
+    ledger_md = args.out_dir / LEDGER_MD.name
+    rows = read_rows(args.out_dir)
     if row["log_sha256"] in {r["log_sha256"] for r in rows}:
-        print(f"error: {args.log} already in {LEDGER_JSONL}", file=sys.stderr)
+        print(f"error: {args.log} already in {ledger_jsonl}", file=sys.stderr)
         return 1
     cumulative = sum(float(r["cost"]) for r in rows) + row["cost"]
     print(json.dumps(row, indent=2, default=str))
     line = md_row(args.stage, row, cumulative)
     print(line)
     if not args.dry_run:
-        with LEDGER_JSONL.open("a") as handle:
+        args.out_dir.mkdir(parents=True, exist_ok=True)
+        with ledger_jsonl.open("a") as handle:
             handle.write(json.dumps(row, sort_keys=True, default=str) + "\n")
-        with LEDGER_MD.open("a") as handle:
+        with ledger_md.open("a") as handle:
             handle.write(line + "\n")
     return 0
 
