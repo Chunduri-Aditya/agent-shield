@@ -61,12 +61,35 @@ mlx = [
 
 [tool.ruff]
 line-length = 100
+# force-exclude makes ruff skip the files below even when a path is passed explicitly.
+# The .py files after "logs" are S1 frozen files (S1_FILES in scripts/v2/setup_s1.py and the
+# two files amendment A1 freezes). A formatter run rewrote some of them on 2026-11-26, so
+# ruff must never touch them. tests/test_s1_frozen_hashes.py pins their sha256 values.
+force-exclude = true
 extend-exclude = [
     ".claude",
     ".venv",
     "Papers",
     "github_Repos",
     "logs",
+    "approvals/gate.py",
+    "evals/tools.py",
+    "evals/tools_event_v2.py",
+    "evals/tools_v12.py",
+    "evals/tools_v2.py",
+    "scripts/pilot/_common.py",
+    "scripts/pilot/cost.py",
+    "scripts/pilot/describe.py",
+    "scripts/pilot/gates.py",
+    "scripts/v2/allocate_s1.py",
+    "scripts/v2/blind_export.py",
+    "scripts/v2/gates_s1.py",
+    "scripts/v2/label.py",
+    "scripts/v2/panel_s1.py",
+    "scripts/v2/s1_panel.py",
+    "scripts/v2/setup_s1.py",
+    "scripts/v2/tasks_v2.py",
+    "tools/payloads.py",
 ]
 
 [tool.ruff.lint]
@@ -82,6 +105,8 @@ split-on-trailing-comma = false
 # evidence, so the data file is exempted rather than edited to please the linter.
 [tool.ruff.lint.per-file-ignores]
 "scripts/dpo_pairs.py" = ["E501"]
+# The pinned sha256 literals sit one per line, so a long path plus its digest passes 100.
+"tests/test_s1_frozen_hashes.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "evals"]
