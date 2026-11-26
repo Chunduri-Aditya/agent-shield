@@ -32,6 +32,7 @@ FILES = (
     "results/wallet/DW01_haiku55_2026-11-18.md",
     "results/multimodal_injection/REPORT.md",
     "docs/mmi/SHOWCASE.md",
+    "docs/mmi/DECODE_SCORER.md",
     "research/paper/paper_v1.1.tex",
     "research/positioning/reading_notes.md",
     "THREAT_MODEL.md",
