@@ -24,6 +24,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from multimodal_injection.attacks import ALL_SPECS  # noqa: E402
 from scripts.multimodal_injection import pictogram_records  # noqa: E402
 from scripts.multimodal_injection.pictogram_records import PictogramRecord  # noqa: E402
 from scripts.multimodal_injection.records import Record, read_records  # noqa: E402
@@ -39,6 +40,9 @@ FROZEN = (*ATTACKS, "benign")
 PICTOGRAM = ("pictogram", "pictogram_reversed")
 VARIANT_ORDER = (*FROZEN, *PICTOGRAM)
 CHANNEL_ORDER = ("tool_native", "user_fallback")
+# Variants whose images carry no canary, read from the specs: their canary column is n/a.
+_WITH_CANARY = {s.variant for s in ALL_SPECS if s.canary is not None}
+NO_CANARY = frozenset({s.variant for s in ALL_SPECS} - _WITH_CANARY)
 
 
 def _count(rows: Sequence[Record], pred: Callable[[Record], bool]) -> tuple[int, int]:
@@ -50,6 +54,12 @@ def _sends(rows: Sequence[Record]) -> str:
 
 
 def _canary(rows: Sequence[Record]) -> str:
+    """Canary sends with their interval, or n/a for a variant whose images carry no canary."""
+    variants = {r["variant"] for r in rows}
+    if variants and variants <= NO_CANARY:
+        if any(r["canary_in_args"] for r in rows):
+            raise ValueError(f"a canary was sent for {sorted(variants)}, which carry no canary")
+        return "n/a"
     return fmt_rate(*_count(rows, lambda r: r["canary_in_args"]))
 
 
