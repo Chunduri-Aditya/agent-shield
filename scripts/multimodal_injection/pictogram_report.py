@@ -5,7 +5,8 @@ sweep, with absent_steps.json beside it. The second is the overnight records.jso
 2026-11-25, which this script only reads, through records.read_records. Every number comes from
 those records. The prose is fixed text, and it states no reading of a difference between cells.
 In the local report the generation config statement is built from the generation field of the
-records.
+records. The local report also reads decode_records.jsonl of the same folder, which
+decode_records.py builds, for the per model contrast section.
 
   uv run python scripts/multimodal_injection/pictogram_report.py
   uv run python scripts/multimodal_injection/pictogram_report.py --check
@@ -25,6 +26,7 @@ import json
 import sys
 from collections import defaultdict
 from collections.abc import Callable, Sequence
+from math import comb
 from pathlib import Path
 from typing import cast
 
@@ -33,7 +35,8 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from multimodal_injection.attacks import ALL_SPECS  # noqa: E402
-from scripts.multimodal_injection import pictogram_records  # noqa: E402
+from scripts.multimodal_injection import decode_records, pictogram_records  # noqa: E402
+from scripts.multimodal_injection.decode_records import DecodeRecord  # noqa: E402
 from scripts.multimodal_injection.pictogram_records import (  # noqa: E402
     Generation,
     LocalRecord,
@@ -51,6 +54,7 @@ LOCAL_RESULTS = _REPO_ROOT / "results" / "mmi_local_2026_11_26"
 LOCAL_RECORDS = LOCAL_RESULTS / "records.jsonl"
 LOCAL_ABSENT = LOCAL_RESULTS / pictogram_records.ABSENT_NAME
 LOCAL_REPORT = LOCAL_RESULTS / "REPORT.md"
+LOCAL_DECODE = decode_records.OUT
 # The local plan lists the two Ollama models after the five models of report.MODEL_ORDER.
 LOCAL_ORDER = (*MODEL_ORDER, "qwen3-vl:8b-instruct", "gemma4:12b")
 PLAN_NAMES = ("pictogram", "local")
@@ -118,6 +122,20 @@ def _show_extra_body(extra_body: dict[str, object] | None) -> str:
     return "none" if extra_body is None else _show(extra_body)
 
 
+def _generation_text(g: Generation) -> str:
+    """max_tokens, temperature, seed and extra_body of one generation config, as one phrase."""
+    return (
+        f"max_tokens {_show(g['max_tokens'])}, temperature {_show(g['temperature'])}, "
+        f"seed {_show(g['seed'])} and extra_body {_show_extra_body(g['extra_body'])}"
+    )
+
+
+def _shared_generation(records: Sequence[LocalRecord]) -> Generation | None:
+    """The one generation config of all records, or None when the steps differ."""
+    configs = {json.dumps(r["generation"], sort_keys=True): r["generation"] for r in records}
+    return next(iter(configs.values())) if len(configs) == 1 else None
+
+
 def _generation_lines(records: Sequence[LocalRecord]) -> list[str]:
     """The generation config statement, from the generation field of each record.
 
@@ -139,11 +157,7 @@ def _generation_lines(records: Sequence[LocalRecord]) -> list[str]:
     distinct = {json.dumps(g, sort_keys=True) for g in per_step.values()}
     if len(distinct) == 1:
         g = next(iter(per_step.values()))
-        return [
-            f"Every run used max_tokens {_show(g['max_tokens'])}, "
-            f"temperature {_show(g['temperature'])}, seed {_show(g['seed'])} and "
-            f"extra_body {_show_extra_body(g['extra_body'])}, as stored in the log."
-        ]
+        return [f"Every run used {_generation_text(g)}, as stored in the log."]
     out = [
         "The generation config differs between steps. Each row is the config stored in the "
         "log of that step.",
@@ -157,6 +171,152 @@ def _generation_lines(records: Sequence[LocalRecord]) -> list[str]:
             f"{_show(g['seed'])} | {_show_extra_body(g['extra_body'])} |"
         )
     return out
+
+
+def _at_most(count: int, observed: int) -> bool:
+    """count <= observed, with a relative tolerance of 1e-7, as scipy uses for a tie."""
+    return count * 10_000_000 <= observed * 10_000_001
+
+
+def fisher_exact_p(a: int, b: int, c: int, d: int) -> float:
+    """Two sided Fisher exact p of the 2x2 table [[a, b], [c, d]].
+
+    The sum of the hypergeometric probabilities of every table with the same margins whose
+    probability is at most the observed one. The counts are integers, so each probability is
+    compared as the integer comb(n1, x) * comb(n2, k - x) with the same denominator.
+    """
+    if min(a, b, c, d) < 0:
+        raise ValueError(f"fisher_exact_p: negative count in {[[a, b], [c, d]]}")
+    n1, n2, k = a + b, c + d, a + c
+    if n1 == 0 or n2 == 0 or n1 + n2 == 0:
+        raise ValueError(f"fisher_exact_p: empty row in {[[a, b], [c, d]]}")
+    numerators = {x: comb(n1, x) * comb(n2, k - x) for x in range(max(0, k - n2), min(n1, k) + 1)}
+    observed = numerators[a]
+    total = sum(count for count in numerators.values() if _at_most(count, observed))
+    return min(1.0, total / comb(n1 + n2, k))
+
+
+def _show_p(p: float) -> str:
+    """A p value with 4 significant digits, trailing zeros kept."""
+    return f"{p:#.4g}"
+
+
+def _decode_by_model(decode: Sequence[DecodeRecord]) -> dict[str, list[DecodeRecord]]:
+    """The decode records of each model. Two logs for one model, or a short set, are refused."""
+    by_model: dict[str, list[DecodeRecord]] = defaultdict(list)
+    for r in decode:
+        by_model[r["model"]].append(r)
+    for model, rows in by_model.items():
+        logs = sorted({r["log"] for r in rows})
+        if len(logs) != 1:
+            raise ValueError(f"{model}: one decode log per model expected, got {logs}")
+        for set_name in decode_records.SETS:
+            n = sum(1 for r in rows if r["set"] == set_name)
+            if n != decode_records.SAMPLES_PER_SET:
+                raise ValueError(f"{model}: decode set {set_name} has {n} samples")
+    return by_model
+
+
+def _sweep_cell(rows: Sequence[LocalRecord], arm: str, variant: str) -> list[LocalRecord]:
+    return [r for r in rows if r["arm"] == arm and r["variant"] == variant]
+
+
+def _decoded(rows: Sequence[DecodeRecord], set_name: str, lenient: bool) -> str:
+    chosen = [r for r in rows if r["set"] == set_name]
+    if lenient:
+        return fmt_rate(sum(r["correct_lenient"] for r in chosen), len(chosen))
+    return fmt_rate(sum(r["correct"] for r in chosen), len(chosen))
+
+
+def _contrast_row(short: str, mine: list[LocalRecord], dec: list[DecodeRecord]) -> str:
+    """One row of the contrast table for one model: its sweep records and its decode records."""
+    typo = _sweep_cell(mine, "A", "typographic")
+    pict = _sweep_cell(mine, "B", "pictogram")
+    if typo and pict:
+        t_sends = sum(1 for r in typo if r["asr"] > 0)
+        p_sends = sum(1 for r in pict if r["asr"] > 0)
+        p_text = _show_p(fisher_exact_p(t_sends, len(typo) - t_sends, p_sends, len(pict) - p_sends))
+    else:
+        p_text = "n/a"
+    cells = [
+        short,
+        _sends(typo),
+        _decoded(dec, "pictogram", False),
+        _decoded(dec, "pictogram", True),
+        _decoded(dec, "pictogram_reversed", False),
+        _decoded(dec, "pictogram_reversed", True),
+        _sends(pict),
+        _sends(_sweep_cell(mine, "B", "pictogram_reversed")),
+        _sends(_sweep_cell(mine, "B", "benign")),
+        p_text,
+    ]
+    return "| " + " | ".join(cells) + " |"
+
+
+def _contrast(
+    records: Sequence[LocalRecord], decode: Sequence[DecodeRecord], order: Sequence[str]
+) -> list[str]:
+    """The per model contrast section: sweep sends, decode counts and the Fisher p."""
+    if not decode:
+        raise ValueError("no decode records: build decode_records.jsonl with decode_records.py")
+    by_model = _decode_by_model(decode)
+    sweep_models = {strip_provider(r["model"]): r["model"] for r in records}
+    shown = [m for m in order if m in sweep_models and sweep_models[m] in by_model]
+    left_out = [m for m in order if m in sweep_models and sweep_models[m] not in by_model]
+    not_shown = sorted(
+        {strip_provider(m) for m in by_model} - set(sweep_models),
+    )
+    out = [
+        "One row per local model that has records in both the sweep and the decode logs. Each "
+        "rate shows k/n and its Wilson 95% interval. Typographic sends come from Arm A. The "
+        "pictogram, pictogram_reversed and benign sends come from Arm B. Decode ordered is the "
+        "pictogram set (VI05) and decode reversed is the pictogram_reversed set (VI05R), "
+        f"{decode_records.SAMPLES_PER_SET} samples each. Strict is the score value of "
+        "decode_correct. Lenient is its correct_lenient field, a declared scorer for logs whose "
+        "commit contains "
+        f"{decode_records.DECLARED_SCORER_COMMIT} (docs/mmi/DECODE_SCORER.md). The Fisher exact "
+        "p is two sided, from the 2x2 table of sends and not sends for typographic and "
+        "pictogram.",
+        "",
+        "| Model | typographic sends (Arm A) | decode ordered strict | decode ordered lenient "
+        "| decode reversed strict | decode reversed lenient | pictogram sends (Arm B) "
+        "| pictogram_reversed sends (Arm B) | benign sends (Arm B) "
+        "| Fisher exact p, typographic vs pictogram |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for short in shown:
+        mine = [r for r in records if r["model"] == sweep_models[short]]
+        out.append(_contrast_row(short, mine, by_model[sweep_models[short]]))
+    out.append("")
+    if left_out:
+        out.append(
+            "Left out: "
+            + ", ".join(f"{m} has records in the sweep and no decode records" for m in left_out)
+            + "."
+        )
+    else:
+        out.append("Left out: none.")
+    if not_shown:
+        out.append("")
+        out.append(
+            "Not shown: "
+            + ", ".join(
+                f"{m} has decode records and no records in the local sweep" for m in not_shown
+            )
+            + "."
+        )
+    out.append("")
+    for short in shown:
+        rows = by_model[sweep_models[short]]
+        gens = {json.dumps(r["generation"], sort_keys=True): r["generation"] for r in rows}
+        if len(gens) != 1:
+            raise ValueError(f"{short}: two generation configs in one decode log")
+        out.append(
+            f"Decode log of {short}: `{rows[0]['log']}` at commit `{rows[0]['commit']}`, "
+            f"{_generation_text(next(iter(gens.values())))}."
+        )
+        out.append("")
+    return out[:-1]
 
 
 def _header(
@@ -283,7 +443,9 @@ def _pictogram_arm(
     return out
 
 
-def render_local(records: Sequence[LocalRecord], absent: list[str]) -> str:
+def render_local(
+    records: Sequence[LocalRecord], absent: list[str], decode: Sequence[DecodeRecord]
+) -> str:
     """The report of the local model sweep. It reads no overnight record."""
     out: list[str] = []
     w = out.append
@@ -311,10 +473,20 @@ def render_local(records: Sequence[LocalRecord], absent: list[str]) -> str:
     w("")
     out.extend(_pictogram_arm(records, LOCAL_ORDER))
     w("")
+    w("## Per model contrast")
+    w("")
+    out.extend(_contrast(records, decode, LOCAL_ORDER))
+    w("")
     w("## Limits")
     w("")
+    shared = _shared_generation(records)
+    config = (
+        "at the generation config stated in the header with " + _generation_text(shared)
+        if shared is not None
+        else "at the generation config of that step in the header table"
+    )
     w(
-        "1. Each model has one run at seed 0 and temperature 0. The repeats rule of the "
+        f"1. Each model has one run of each step, {config}. The repeats rule of the "
         "pictogram sweep does not apply."
     )
     w("2. Each cell holds 10 samples, one for each of 10 images, from that one run.")
@@ -387,7 +559,15 @@ def _render_from_disk(plan: str = "pictogram") -> str:
     records_path, absent_path, _ = _paths(plan)
     absent = pictogram_records.read_absent(absent_path)
     if plan == "local":
-        return render_local(pictogram_records.read_records(records_path, local=True), absent)
+        if not LOCAL_DECODE.is_file():
+            raise ValueError(
+                f"{LOCAL_DECODE} is missing: build it with decode_records.py before the report"
+            )
+        return render_local(
+            pictogram_records.read_records(records_path, local=True),
+            absent,
+            decode_records.read_decode_records(LOCAL_DECODE),
+        )
     records = pictogram_records.read_records(records_path)
     return render(records, read_records(OVERNIGHT), absent)
 
