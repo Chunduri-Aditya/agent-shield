@@ -95,7 +95,7 @@ def test_the_local_plan_has_8_steps_on_two_ollama_models() -> None:
     assert len(plan) == 8
     assert len({s.name for s in plan}) == 8
     assert sum(s.samples for s in plan) == 160
-    assert {s.model for s in plan} == {"ollama/qwen3-vl:8b", "ollama/gemma4:12b"}
+    assert {s.model for s in plan} == {"ollama/qwen3-vl:8b-instruct", "ollama/gemma4:12b"}
     for s in plan:
         assert ":" not in s.name and "/" not in s.name
         assert (s.seed, s.run, s.temperature, s.max_connections) == (0, "seed 0", 0.0, 1)
@@ -104,10 +104,10 @@ def test_the_local_plan_has_8_steps_on_two_ollama_models() -> None:
 def test_the_local_plan_has_one_arm_a_step_and_three_arm_b_steps_per_model() -> None:
     plan = local_plan()
     assert [s.name for s in plan if s.model == OLLAMA] == [
-        "A-qwen3-vl-8b-s0",
-        "B-qwen3-vl-8b-s0-pictogram",
-        "B-qwen3-vl-8b-s0-pictogram_reversed",
-        "B-qwen3-vl-8b-s0-benign",
+        "A-qwen3-vl-8b-instruct-s0",
+        "B-qwen3-vl-8b-instruct-s0-pictogram",
+        "B-qwen3-vl-8b-instruct-s0-pictogram_reversed",
+        "B-qwen3-vl-8b-instruct-s0-benign",
     ]
     for s in plan:
         if s.arm == "A":
@@ -118,6 +118,15 @@ def test_the_local_plan_has_one_arm_a_step_and_three_arm_b_steps_per_model() -> 
 
 def test_the_pictogram_plan_keeps_no_temperature() -> None:
     assert {s.temperature for s in pictogram_plan()} == {None}
+
+
+def test_every_local_step_caps_the_generation() -> None:
+    assert run_capped.LOCAL_MAX_TOKENS == 2048
+    assert {s.max_tokens for s in local_plan()} == {run_capped.LOCAL_MAX_TOKENS}
+
+
+def test_the_pictogram_plan_keeps_no_generation_cap() -> None:
+    assert {s.max_tokens for s in pictogram_plan()} == {None}
 
 
 def test_plans_names_both_plans() -> None:
@@ -367,6 +376,7 @@ def test_build_command_for_a_local_step_has_the_temperature_and_the_seed(tmp_pat
     s = local_plan()[1]
     cmd = run_capped.build_command(s, tmp_path / "logs", tmp_path / ".env")
     assert cmd[cmd.index("--temperature") + 1] == "0.0"
+    assert cmd[cmd.index("--max-tokens") + 1] == "2048"
     assert cmd[cmd.index("--seed") + 1] == "0"
     assert cmd[cmd.index("--model") + 1] == OLLAMA
     assert cmd[cmd.index("--max-connections") + 1] == "1"
@@ -397,6 +407,11 @@ def test_build_command_omits_the_seed_when_none(tmp_path: Path) -> None:
     assert "--seed" not in cmd
 
 
+def test_build_command_omits_the_generation_cap_when_none(tmp_path: Path) -> None:
+    for s in (step("x"), *pictogram_plan()):
+        assert "--max-tokens" not in run_capped.build_command(s, tmp_path, tmp_path / ".env")
+
+
 # ---------------------------------------------------------------- CLI
 
 
@@ -416,7 +431,7 @@ def test_dry_run_of_the_local_plan_prints_a_zero_worst_case(
 ) -> None:
     assert run_capped.main(["--plan", "local", "--cap", "0", "--dry-run"]) == 0
     printed = capsys.readouterr().out
-    assert "ollama/qwen3-vl:8b" in printed and "ollama/gemma4:12b" in printed
+    assert "ollama/qwen3-vl:8b-instruct" in printed and "ollama/gemma4:12b" in printed
     assert "worst case total 0.0000 USD: the full plan fits" in printed
 
 

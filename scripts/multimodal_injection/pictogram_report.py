@@ -44,7 +44,7 @@ LOCAL_RECORDS = LOCAL_RESULTS / "records.jsonl"
 LOCAL_ABSENT = LOCAL_RESULTS / pictogram_records.ABSENT_NAME
 LOCAL_REPORT = LOCAL_RESULTS / "REPORT.md"
 # The local plan lists the two Ollama models after the five models of report.MODEL_ORDER.
-LOCAL_ORDER = (*MODEL_ORDER, "qwen3-vl:8b", "gemma4:12b")
+LOCAL_ORDER = (*MODEL_ORDER, "qwen3-vl:8b-instruct", "gemma4:12b")
 PLAN_NAMES = ("pictogram", "local")
 OVERNIGHT = _REPO_ROOT / "results" / "multimodal_injection" / "records.jsonl"
 FROZEN = (*ATTACKS, "benign")
