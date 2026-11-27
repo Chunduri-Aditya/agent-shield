@@ -12,12 +12,15 @@ import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
+from inspect_ai.model import GenerateConfig
 
 from scripts.multimodal_injection import pictogram_records, pictogram_report
 from scripts.multimodal_injection.pictogram_records import (
+    Generation,
+    LocalRecord,
     PictogramRecord,
     build,
     expected_channel,
@@ -44,6 +47,20 @@ B_NATIVE = "B-claude-haiku-5-5-tool_native-r1-pictogram"
 B_FALLBACK = "B-claude-sonnet-5-5-user_fallback-r2-benign"
 B_NVIDIA = "B-nemotron-3-nano-omni-30b-a3b-reasoning-s0-pictogram"
 A_HAIKU = "A-claude-haiku-5-5-r1"
+# A config that no constant of run_capped.py holds, so a value taken from there would fail.
+GEN_CONFIG = GenerateConfig(
+    max_tokens=777,
+    temperature=0.25,
+    seed=13,
+    extra_body={"reasoning_effort": "none"},
+    max_retries=5,
+)
+GEN_VALUES: Generation = {
+    "max_tokens": 777,
+    "temperature": 0.25,
+    "seed": 13,
+    "extra_body": {"reasoning_effort": "none"},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +106,7 @@ def _log_for(step: Step, **over: Any) -> Any:
     fields: dict[str, Any] = {
         "status": "success",
         "eval": SimpleNamespace(model=step.model),
+        "plan": SimpleNamespace(config=GEN_CONFIG),
         "samples": samples,
     }
     fields.update(over)
@@ -250,7 +268,7 @@ def test_the_builder_reads_the_steps_of_the_local_plan(
     names = ["A-qwen3-vl-8b-instruct-s0", "B-gemma4-12b-s0-benign"]
     logs = {f"logs/{local[n].arm}/{n}/run.eval": _log_for(local[n]) for n in names}
     root = _evidence(tmp_path, monkeypatch, logs)
-    rows, absent = build(root, local_plan())
+    rows, absent = build(root, local_plan(), generation=True)
     assert len(rows) == 60
     assert absent == sorted(set(local) - set(names))
     assert {(r["model"], r["image_channel"], r["run"]) for r in rows} == {
@@ -335,6 +353,70 @@ def test_the_cli_writes_records_sums_and_absent_steps(
     rows = read_records(out)
     assert len(rows) == 10 and rows == build(root)[0]
     assert pictogram_records.read_absent(out.parent / "absent_steps.json") == absent
+
+
+def test_a_pictogram_record_has_no_generation_field(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _evidence(tmp_path, monkeypatch, _good_logs(B_NATIVE))
+    rows, _ = build(root)
+    assert all(set(r) == pictogram_records.KEYS for r in rows)
+    assert all("generation" not in r for r in rows)
+    assert "generation" not in pictogram_records.KEYS
+
+
+def test_a_local_record_carries_the_generation_config_of_its_own_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local = {s.name: s for s in local_plan()}
+    other = GenerateConfig(max_tokens=None, temperature=None, seed=2, extra_body=None)
+    plain, odd = "A-qwen3-vl-8b-instruct-s0", "B-gemma4-12b-s0-benign"
+    logs = {
+        f"logs/{local[plain].arm}/{plain}/run.eval": _log_for(local[plain]),
+        f"logs/{local[odd].arm}/{odd}/run.eval": _log_for(
+            local[odd], plan=SimpleNamespace(config=other)
+        ),
+    }
+    root = _evidence(tmp_path, monkeypatch, logs)
+    rows, _ = build(root, local_plan(), generation=True)
+    by_step = {r["step"]: r["generation"] for r in rows}
+    assert by_step["A-qwen3-vl-8b-instruct-s0"] == GEN_VALUES
+    assert by_step["B-gemma4-12b-s0-benign"] == {
+        "max_tokens": None,
+        "temperature": None,
+        "seed": 2,
+        "extra_body": None,
+    }
+    assert all(set(r["generation"]) == set(pictogram_records.GENERATION_KEYS) for r in rows)
+    assert all(set(r) == pictogram_records.LOCAL_KEYS for r in rows)
+
+
+def test_the_local_cli_writes_the_generation_field_and_the_pictogram_cli_does_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local = {s.name: s for s in local_plan()}
+    name = "A-gemma4-12b-s0"
+    root = _evidence(tmp_path, monkeypatch, {f"logs/A/{name}/run.eval": _log_for(local[name])})
+    out = tmp_path / "out" / "records.jsonl"
+    assert (
+        pictogram_records.main(["--plan", "local", "--evidence", str(root), "--out", str(out)]) == 0
+    )
+    rows = read_records(out, local=True)
+    assert len(rows) == 50 and all(r["generation"] == GEN_VALUES for r in rows)
+    with pytest.raises(ValueError, match="keys differ"):
+        read_records(out)  # a pictogram reader refuses the extra key
+
+
+def test_read_records_of_the_local_plan_refuses_a_row_without_generation(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    row: dict[str, Any] = {k: "x" for k in pictogram_records.KEYS}
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="no generation field"):
+        read_records(path, local=True)
+    row["generation"] = {"max_tokens": 1}
+    path.write_text(json.dumps(row) + "\n")
+    with pytest.raises(ValueError, match="generation keys"):
+        read_records(path, local=True)
 
 
 def test_read_records_refuses_a_row_with_other_keys(tmp_path: Path) -> None:
@@ -596,7 +678,16 @@ QWEN = "ollama/qwen3-vl:8b-instruct"
 GEMMA = "ollama/gemma4:12b"
 
 
-def _local_records() -> list[PictogramRecord]:
+def _gen(**over: Any) -> Generation:
+    return cast(Generation, {**GEN_VALUES, **over})
+
+
+def _local_records(**over: Any) -> list[LocalRecord]:
+    plain = _local_plain()
+    return [LocalRecord(**r, generation=_gen(**over)) for r in plain]
+
+
+def _local_plain() -> list[PictogramRecord]:
     return (
         _prec("A", GEMMA, "user_fallback", "typographic", 3, sends=1, run="seed 0")
         + _prec("A", QWEN, "user_fallback", "benign", 3, run="seed 0")
@@ -635,6 +726,7 @@ def test_the_local_render_has_no_anthropic_section_and_lists_the_local_models() 
 def test_the_local_render_states_its_limits_and_uses_no_banned_words() -> None:
     text = pictogram_report.render_local(_local_records(), ["B-x"])
     assert "one run at seed 0 and temperature 0" in text
+    assert "Every run is at seed 0 and temperature 0." not in text
     assert "not compared with the API model sweeps" in text
     assert "Ollama returns no image inside a tool result" in text
     assert "Absent steps (1): `B-x`." in text
@@ -643,10 +735,63 @@ def test_the_local_render_states_its_limits_and_uses_no_banned_words() -> None:
 
 
 def test_the_local_render_refuses_a_model_that_is_not_in_the_order() -> None:
+    other = [
+        LocalRecord(**r, generation=_gen())
+        for r in _prec("B", "ollama/other:1b", "user_fallback", "benign", 1)
+    ]
     with pytest.raises(ValueError, match="MODEL_ORDER"):
-        pictogram_report.render_local(
-            _prec("B", "ollama/other:1b", "user_fallback", "benign", 1), []
-        )
+        pictogram_report.render_local(other, [])
+
+
+def test_the_local_header_states_one_shared_generation_config_in_one_sentence() -> None:
+    text = pictogram_report.render_local(_local_records(), [])
+    sentence = (
+        "Every run used max_tokens 777, temperature 0.25, seed 13 and "
+        'extra_body {"reasoning_effort": "none"}, as stored in the log.'
+    )
+    assert sentence in text.split("## All cells")[0]
+    assert "| Step |" not in text
+
+
+def test_the_local_header_says_none_for_an_unset_extra_body_and_unset_for_the_rest() -> None:
+    text = pictogram_report.render_local(
+        _local_records(extra_body=None, max_tokens=None, seed=None), []
+    )
+    assert (
+        "Every run used max_tokens unset, temperature 0.25, seed unset and extra_body none, "
+        "as stored in the log." in text
+    )
+
+
+def test_the_local_header_has_a_table_per_step_when_the_configs_differ() -> None:
+    records = _local_records()
+    for r in records:
+        if r["step"] == "step-B":
+            r["generation"] = _gen(extra_body=None, max_tokens=2048)
+    text = pictogram_report.render_local(records, [])
+    header = text.split("## All cells")[0]
+    assert "Every run used" not in header
+    assert "The generation config differs between steps" in header
+    block = header.split("| Step | max_tokens | temperature | seed | extra_body |\n", 1)[1].split(
+        "\n\n", 1
+    )[0]
+    rows = [ln for ln in block.splitlines() if ln.startswith("|")][1:]
+    assert rows == [
+        '| step-A | 777 | 0.25 | 13 | {"reasoning_effort": "none"} |',
+        "| step-B | 2048 | 0.25 | 13 | none |",
+    ]
+
+
+def test_the_local_render_refuses_a_record_without_generation() -> None:
+    with pytest.raises(ValueError, match="no generation field"):
+        pictogram_report.render_local(_local_plain(), [])  # type: ignore[arg-type]
+
+
+def test_the_local_render_refuses_two_configs_inside_one_step() -> None:
+    records = _local_records()
+    records[0]["generation"] = _gen(seed=99)
+    with pytest.raises(ValueError, match="two generation configs"):
+        pictogram_report.render_local(records, [])
 
 
 def test_check_mode_of_the_local_plan_uses_the_local_files(

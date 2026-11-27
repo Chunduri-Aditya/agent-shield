@@ -4,6 +4,8 @@ The report reads two records files and never a log. The first is records.jsonl o
 sweep, with absent_steps.json beside it. The second is the overnight records.jsonl of
 2026-11-25, which this script only reads, through records.read_records. Every number comes from
 those records. The prose is fixed text, and it states no reading of a difference between cells.
+In the local report the generation config statement is built from the generation field of the
+records.
 
   uv run python scripts/multimodal_injection/pictogram_report.py
   uv run python scripts/multimodal_injection/pictogram_report.py --check
@@ -19,10 +21,12 @@ with a message when they differ.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -30,7 +34,11 @@ if str(_REPO_ROOT) not in sys.path:
 
 from multimodal_injection.attacks import ALL_SPECS  # noqa: E402
 from scripts.multimodal_injection import pictogram_records  # noqa: E402
-from scripts.multimodal_injection.pictogram_records import PictogramRecord  # noqa: E402
+from scripts.multimodal_injection.pictogram_records import (  # noqa: E402
+    Generation,
+    LocalRecord,
+    PictogramRecord,
+)
 from scripts.multimodal_injection.records import Record, read_records  # noqa: E402
 from scripts.multimodal_injection.report import ATTACKS, CLAUDE, MODEL_ORDER, fmt_rate  # noqa: E402
 from scripts.pilot._common import strip_provider  # noqa: E402
@@ -97,8 +105,62 @@ def _channel_index(channel: str) -> int:
     return CHANNEL_ORDER.index(channel)
 
 
+def _show(value: object) -> str:
+    """A generation value as text: unset for None, compact JSON for a dict."""
+    if value is None:
+        return "unset"
+    if isinstance(value, dict):
+        return json.dumps(value, sort_keys=True)
+    return str(value)
+
+
+def _show_extra_body(extra_body: dict[str, object] | None) -> str:
+    return "none" if extra_body is None else _show(extra_body)
+
+
+def _generation_lines(records: Sequence[LocalRecord]) -> list[str]:
+    """The generation config statement, from the generation field of each record.
+
+    One sentence when every record has the same config. A table with one row per step when the
+    configs differ. A record with no generation field is refused.
+    """
+    by_step: dict[str, dict[str, Generation]] = defaultdict(dict)
+    for r in records:
+        if "generation" not in r:
+            raise ValueError(
+                f"record {r['sample_id']} of step {r['step']} has no generation field; "
+                "rebuild the records with pictogram_records.py --plan local"
+            )
+        by_step[r["step"]][json.dumps(r["generation"], sort_keys=True)] = r["generation"]
+    for step, configs in by_step.items():
+        if len(configs) != 1:
+            raise ValueError(f"step {step}: two generation configs in one log")
+    per_step = {step: next(iter(configs.values())) for step, configs in sorted(by_step.items())}
+    distinct = {json.dumps(g, sort_keys=True) for g in per_step.values()}
+    if len(distinct) == 1:
+        g = next(iter(per_step.values()))
+        return [
+            f"Every run used max_tokens {_show(g['max_tokens'])}, "
+            f"temperature {_show(g['temperature'])}, seed {_show(g['seed'])} and "
+            f"extra_body {_show_extra_body(g['extra_body'])}, as stored in the log."
+        ]
+    out = [
+        "The generation config differs between steps. Each row is the config stored in the "
+        "log of that step.",
+        "",
+        "| Step | max_tokens | temperature | seed | extra_body |",
+        "|---|---|---|---|---|",
+    ]
+    for step, g in per_step.items():
+        out.append(
+            f"| {step} | {_show(g['max_tokens'])} | {_show(g['temperature'])} | "
+            f"{_show(g['seed'])} | {_show_extra_body(g['extra_body'])} |"
+        )
+    return out
+
+
 def _header(
-    records: list[PictogramRecord],
+    records: Sequence[PictogramRecord],
     absent: list[str],
     order: Sequence[str] = MODEL_ORDER,
     local: bool = False,
@@ -115,7 +177,9 @@ def _header(
             f"Source: `records.jsonl` in this folder, {len(records)} scored samples from "
             f"{len({r['log'] for r in records})} logs. " + generated,
             "",
-            "Every run is at seed 0 and temperature 0. Each model has one run of each step.",
+            *_generation_lines(cast(Sequence[LocalRecord], records)),
+            "",
+            "Each model has one run of each step.",
             "",
             "| Arm | Model | Runs | Samples |",
             "|---|---|---|---|",
@@ -143,7 +207,7 @@ def _header(
     return out
 
 
-def _all_cells(records: list[PictogramRecord], order: Sequence[str] = MODEL_ORDER) -> list[str]:
+def _all_cells(records: Sequence[PictogramRecord], order: Sequence[str] = MODEL_ORDER) -> list[str]:
     cells: dict[tuple[str, int, int, int], list[PictogramRecord]] = defaultdict(list)
     for r in records:
         key = (
@@ -195,7 +259,9 @@ def _frozen_pairs(records: list[PictogramRecord], overnight: list[Record]) -> li
     return out
 
 
-def _pictogram_arm(records: list[PictogramRecord], order: Sequence[str] = MODEL_ORDER) -> list[str]:
+def _pictogram_arm(
+    records: Sequence[PictogramRecord], order: Sequence[str] = MODEL_ORDER
+) -> list[str]:
     cells: dict[tuple[int, int], dict[str, list[PictogramRecord]]] = defaultdict(
         lambda: defaultdict(list)
     )
@@ -217,7 +283,7 @@ def _pictogram_arm(records: list[PictogramRecord], order: Sequence[str] = MODEL_
     return out
 
 
-def render_local(records: list[PictogramRecord], absent: list[str]) -> str:
+def render_local(records: Sequence[LocalRecord], absent: list[str]) -> str:
     """The report of the local model sweep. It reads no overnight record."""
     out: list[str] = []
     w = out.append
@@ -319,10 +385,10 @@ def _paths(plan: str) -> tuple[Path, Path, Path]:
 
 def _render_from_disk(plan: str = "pictogram") -> str:
     records_path, absent_path, _ = _paths(plan)
-    records = pictogram_records.read_records(records_path)
     absent = pictogram_records.read_absent(absent_path)
     if plan == "local":
-        return render_local(records, absent)
+        return render_local(pictogram_records.read_records(records_path, local=True), absent)
+    records = pictogram_records.read_records(records_path)
     return render(records, read_records(OVERNIGHT), absent)
 
 

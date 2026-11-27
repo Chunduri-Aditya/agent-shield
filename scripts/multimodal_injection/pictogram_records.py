@@ -11,6 +11,10 @@ anthropic/ model implies user_fallback, because Ollama and NVIDIA return no imag
 tool result. Each step present must hold
 exactly step.samples rows with distinct sample ids.
 
+For the plan named local, each record also carries a generation field: the max_tokens,
+temperature, seed and extra_body of the GenerateConfig that Inspect stored in that log
+(log.plan.config), None where unset. The pictogram records have no such field.
+
 A step of the plan with no logs is allowed, because the runner may stop at the spend cap.
 build() returns the names of those steps, and the CLI writes them to absent_steps.json.
 
@@ -32,7 +36,7 @@ import sys
 from collections import defaultdict
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, TypedDict, cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -66,7 +70,31 @@ class PictogramRecord(Record):
     step: str
 
 
+class Generation(TypedDict):
+    max_tokens: int | None
+    temperature: float | None
+    seed: int | None
+    extra_body: dict[str, Any] | None
+
+
+class LocalRecord(PictogramRecord):
+    generation: Generation
+
+
 KEYS = frozenset(PictogramRecord.__annotations__)
+LOCAL_KEYS = frozenset(LocalRecord.__annotations__)
+GENERATION_KEYS = tuple(Generation.__annotations__)
+
+
+def generation_of(log: Any) -> Generation:
+    """The four generation settings of the GenerateConfig that the log itself stored."""
+    config = log.plan.config
+    return Generation(
+        max_tokens=config.max_tokens,
+        temperature=config.temperature,
+        seed=config.seed,
+        extra_body=config.extra_body,
+    )
 
 
 def expected_channel(step: Step) -> str:
@@ -97,9 +125,12 @@ def _step_of(name: str, plan: dict[str, Step]) -> Step:
 
 
 def build(
-    evidence: Path, steps: Sequence[Step] | None = None
-) -> tuple[list[PictogramRecord], list[str]]:
-    """Return the sorted records and the sorted names of the plan steps with no logs."""
+    evidence: Path, steps: Sequence[Step] | None = None, generation: bool = False
+) -> tuple[list[Any], list[str]]:
+    """Return the sorted records and the sorted names of the plan steps with no logs.
+
+    With generation=True each record is a LocalRecord. Otherwise it is a PictogramRecord.
+    """
     plan = {s.name: s for s in (pictogram_plan() if steps is None else steps)}
     sums = read_sums(evidence)
     on_disk = {p.relative_to(evidence).as_posix() for p in evidence.rglob("*.eval")}
@@ -108,11 +139,11 @@ def build(
     by_step: dict[str, list[str]] = defaultdict(list)
     for name in sorted(sums):
         by_step[_step_of(name, plan).name].append(name)
-    rows: list[PictogramRecord] = []
+    rows: list[Any] = []
     for step_name, names in by_step.items():
         if len(names) != 1:
             raise ValueError(f"step {step_name}: {len(names)} logs, expected exactly 1: {names}")
-        step_rows = _step_rows(evidence, names[0], sums[names[0]], plan[step_name])
+        step_rows = _step_rows(evidence, names[0], sums[names[0]], plan[step_name], generation)
         ids = [r["sample_id"] for r in step_rows]
         if len(step_rows) != plan[step_name].samples or len(set(ids)) != len(step_rows):
             raise ValueError(
@@ -124,7 +155,9 @@ def build(
     return rows, sorted(set(plan) - set(by_step))
 
 
-def _step_rows(evidence: Path, name: str, expected_sum: str, step: Step) -> list[PictogramRecord]:
+def _step_rows(
+    evidence: Path, name: str, expected_sum: str, step: Step, with_generation: bool = False
+) -> list[Any]:
     actual = sha256_file(evidence / name)
     if actual != expected_sum:
         raise ValueError(f"{name}: sha256 {actual} is not the {SUMS_NAME} value {expected_sum}")
@@ -135,7 +168,8 @@ def _step_rows(evidence: Path, name: str, expected_sum: str, step: Step) -> list
         raise ValueError(f"{name}: model {log.eval.model}, step {step.name} runs {step.model}")
     channel = expected_channel(step)
     only_variant = _step_variant(step)
-    rows: list[PictogramRecord] = []
+    gen = generation_of(log) if with_generation else None
+    rows: list[Any] = []
     for sample in log.samples or []:
         where = f"{name}: sample {sample.id}"
         if sample.epoch != 1:
@@ -179,23 +213,37 @@ def _step_rows(evidence: Path, name: str, expected_sum: str, step: Step) -> list
                 step=step.name,
             )
         )
-    return rows
+    if gen is None:
+        return rows
+    return [cast(LocalRecord, {**r, "generation": gen}) for r in rows]
 
 
-def write_records(rows: list[PictogramRecord], path: Path) -> None:
+def write_records(rows: Sequence[PictogramRecord], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     text = "".join(json.dumps(r, sort_keys=True, ensure_ascii=False) + "\n" for r in rows)
     path.write_text(text, encoding="utf-8")
 
 
-def read_records(path: Path) -> list[PictogramRecord]:
-    rows: list[PictogramRecord] = []
+def read_records(path: Path, local: bool = False) -> list[Any]:
+    """Read a records file. With local=True the rows must be LocalRecord rows."""
+    keys, kind = (LOCAL_KEYS, "LocalRecord") if local else (KEYS, "PictogramRecord")
+    rows: list[Any] = []
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         row = json.loads(line)
-        if set(row) != KEYS:
-            diff = sorted(set(row) ^ KEYS)
-            raise ValueError(f"{path}:{number}: keys differ from PictogramRecord: {diff}")
-        rows.append(cast(PictogramRecord, row))
+        if local and "generation" not in row:
+            raise ValueError(
+                f"{path}:{number}: no generation field; rebuild the records with "
+                "pictogram_records.py --plan local"
+            )
+        if set(row) != keys:
+            diff = sorted(set(row) ^ keys)
+            raise ValueError(f"{path}:{number}: keys differ from {kind}: {diff}")
+        if local and set(row["generation"]) != set(GENERATION_KEYS):
+            raise ValueError(
+                f"{path}:{number}: generation keys {sorted(row['generation'])}, "
+                f"expected {sorted(GENERATION_KEYS)}"
+            )
+        rows.append(row)
     return rows
 
 
@@ -213,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=None, help="default follows the plan")
     args = parser.parse_args(argv)
     out = args.out or OUTS[args.plan]
-    rows, absent = build(args.evidence, PLANS[args.plan]())
+    rows, absent = build(args.evidence, PLANS[args.plan](), generation=args.plan == "local")
     write_records(rows, out)
     (out.parent / SUMS_NAME).write_bytes((args.evidence / SUMS_NAME).read_bytes())
     absent_text = json.dumps(absent, indent=2) + "\n"
