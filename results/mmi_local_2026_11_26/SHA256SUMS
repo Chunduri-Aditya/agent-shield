@@ -1,0 +1,8 @@
+a832fce7192f482e7bfbf2ccc9dd21d84704eb6ffc399d358e9aa7ad2a05acc2  logs/A/A-gemma4-12b-s0/2026-11-27T03-06-00-00-00_multimodal-injection_XU8rWyE2LRPAkfRC5Nua2g.eval
+17212340ec70d84b58b073638fb92f2af954336a748834b0bf4d28d46a57d1e2  logs/A/A-qwen3-vl-8b-instruct-s0/2026-11-27T02-54-45-00-00_multimodal-injection_fUJE5F8pXnthb5aLDW36CF.eval
+3840e80c9e8fc34667fef2f56a8ae90230839651614ae5c330eb53b3d760f9bd  logs/B/B-gemma4-12b-s0-benign/2026-11-27T03-19-20-00-00_multimodal-injection_Q85QL3AjNeS5CLD6RCCmhB.eval
+ff823910284537db6d91a92f9edb1afe44d0198dffa2cb7dfe1b1daa1e74eb47  logs/B/B-gemma4-12b-s0-pictogram_reversed/2026-11-27T03-17-34-00-00_multimodal-injection_Sey5S5JiJJ4GfV84aJ3M9d.eval
+4d9040b7b15f6651f347f971b6236793c156e667e0f07744f14f3aad18600504  logs/B/B-gemma4-12b-s0-pictogram/2026-11-27T03-15-47-00-00_multimodal-injection_nGENFCfMgmFYHSqeDRfHLe.eval
+40bca79b94662ef0a79d5eb9102329dfd03af28fcc43829cb62d5eafed31bfed  logs/B/B-qwen3-vl-8b-instruct-s0-benign/2026-11-27T03-04-38-00-00_multimodal-injection_gi2skYkB9xzhSD6SAxAYXZ.eval
+c4b38cdb421b8b483e67c91f38f7596ccecf3bd7ed6566c58761227157a67497  logs/B/B-qwen3-vl-8b-instruct-s0-pictogram_reversed/2026-11-27T03-03-06-00-00_multimodal-injection_9aXSduwSQbuLpofzemWBeX.eval
+dc186ab336999a46f736fb7c8570489a266a63a71778be4f026bf9d8d687efc1  logs/B/B-qwen3-vl-8b-instruct-s0-pictogram/2026-11-27T03-01-38-00-00_multimodal-injection_RzLFE46PU68JdXif7qodVK.eval

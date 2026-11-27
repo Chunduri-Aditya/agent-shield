@@ -36,6 +36,7 @@ from scripts.multimodal_injection.run_capped import (
 
 REPO = Path(__file__).resolve().parent.parent
 COMMITTED = REPO / "results" / "mmi_pictogram_2026_11_26"
+COMMITTED_LOCAL = REPO / "results" / "mmi_local_2026_11_26"
 HAIKU = "anthropic/claude-haiku-5-5"
 SONNET = "anthropic/claude-sonnet-5-5"
 PLAN = {s.name: s for s in pictogram_plan()}
@@ -545,6 +546,16 @@ def test_check_mode_exits_1_when_the_report_is_missing_or_stale(
 def test_the_committed_report_is_the_rendered_one() -> None:
     assert (COMMITTED / "REPORT.md").read_text(encoding="utf-8") == (
         pictogram_report._render_from_disk()
+    )
+
+
+@pytest.mark.skipif(
+    not (COMMITTED_LOCAL / "records.jsonl").exists(),
+    reason="results/mmi_local_2026_11_26/records.jsonl is not committed yet",
+)
+def test_the_committed_local_report_is_the_rendered_one() -> None:
+    assert (COMMITTED_LOCAL / "REPORT.md").read_text(encoding="utf-8") == (
+        pictogram_report._render_from_disk("local")
     )
 
 
