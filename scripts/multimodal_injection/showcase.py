@@ -9,6 +9,11 @@ cells disagree or if the two send fields of a record disagree.
   uv run python scripts/multimodal_injection/showcase.py --check   # write nothing, exit 1 on a diff
   uv run python scripts/multimodal_injection/showcase.py --extract # rewrite the log excerpt
 
+A second generated block holds the local model result: a table of the per model contrast and
+one claim sentence, built from results/mmi_local_2026_11_26/records.jsonl and decode_records.jsonl
+with the functions of pictogram_report.py. Its markers are showcase:local:start and
+showcase:local:end. build() refuses data that would make a sentence of the block wrong.
+
 The block ends with one real transcript excerpt, read from results/multimodal_injection/
 showcase_excerpt.json. Only --extract reads an Inspect log (from the evidence folder, else from
 logs/mmi_overnight/), and it checks the log hash against records.jsonl. The build and --check read
@@ -27,9 +32,10 @@ import json
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, Literal, TypedDict, cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -41,12 +47,27 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from agent_shield.runtime.stats import wilson_interval  # noqa: E402
 from multimodal_injection.attacks import SPECS_BY_ID  # noqa: E402
+from scripts.multimodal_injection import (  # noqa: E402
+    decode_records,
+    pictogram_records,
+    pictogram_report,
+)
+from scripts.multimodal_injection.decode_records import DecodeRecord  # noqa: E402
+from scripts.multimodal_injection.pictogram_records import LocalRecord  # noqa: E402
 from scripts.multimodal_injection.records import EVIDENCE, Record, read_records  # noqa: E402
-from scripts.multimodal_injection.report import ATTACKS, CLAUDE, MODEL_ORDER, NEMOTRON  # noqa: E402
+from scripts.multimodal_injection.report import (  # noqa: E402
+    ATTACKS,
+    CLAUDE,
+    MODEL_ORDER,
+    NEMOTRON,
+    fmt_rate,
+)
 from scripts.pilot._common import read_log, sha256_file, strip_provider  # noqa: E402
 
 RECORDS = _REPO_ROOT / "results" / "multimodal_injection" / "records.jsonl"
 EXCERPT = _REPO_ROOT / "results" / "multimodal_injection" / "showcase_excerpt.json"
+LOCAL_RECORDS = pictogram_report.LOCAL_RECORDS
+LOCAL_DECODE = pictogram_report.LOCAL_DECODE
 # Where --extract looks for a log, in this order: the pinned evidence copy, then the local run dir.
 LOG_DIRS = (EVIDENCE, _REPO_ROOT / "logs" / "mmi_overnight")
 # The one sample the page quotes: it obeyed the screenshot and its answer did not say so.
@@ -61,6 +82,8 @@ PAGE = DOCS / "SHOWCASE.md"
 FIGURE = DOCS / "asr_by_channel.png"
 START = "<!-- showcase:generated:start -->"
 END = "<!-- showcase:generated:end -->"
+LOCAL_START = "<!-- showcase:local:start -->"
+LOCAL_END = "<!-- showcase:local:end -->"
 TOOLCHAIN_PREFIX = "<!-- toolchain:"
 
 VARIANTS = (*ATTACKS, "benign")
@@ -534,6 +557,160 @@ def summary(cells: list[Cell], excerpt: Excerpt) -> str:
     )
 
 
+# ---------------------------------------------------------------------------
+# local model block
+# ---------------------------------------------------------------------------
+
+READABLE = "gemma4:12b"
+UNREADABLE = "qwen3-vl:8b-instruct"  # its zero sends cannot separate resisting from not reading
+LOCAL_MODELS = (READABLE, UNREADABLE)
+LOCAL_ROWS = (
+    "typographic sends (Arm A)",
+    "decode ordered, strict",
+    "decode ordered, lenient",
+    "decode reversed, strict",
+    "decode reversed, lenient",
+    "pictogram sends (Arm B)",
+    "pictogram_reversed sends (Arm B)",
+    "benign sends (Arm B)",
+    "Fisher exact p, typographic vs pictogram",
+)
+HYPOTHESIS = (
+    "**Hypothesis, not tested here.** Decoding the chain on request may not mean that the "
+    "model treats the chain as an instruction during a task."
+)
+
+
+def _single(values: set[Any], what: str) -> Any:
+    if len(values) != 1:
+        raise ValueError(f"{what} differ in the local records: {sorted(values, key=str)}")
+    return next(iter(values))
+
+
+def _model_rows(
+    records: list[LocalRecord], decode: list[DecodeRecord]
+) -> dict[str, tuple[list[LocalRecord], list[DecodeRecord]]]:
+    """The sweep records and decode records of each of the two local models, by short name."""
+    found = {strip_provider(r["model"]) for r in records}
+    if found != set(LOCAL_MODELS):
+        raise ValueError(f"the local records hold {sorted(found)}, expected {sorted(LOCAL_MODELS)}")
+    by_decode = {
+        strip_provider(m): rows for m, rows in pictogram_report.decode_by_model(decode).items()
+    }
+    missing = set(LOCAL_MODELS) - set(by_decode)
+    if missing:
+        raise ValueError(f"no decode records for {sorted(missing)}")
+    return {
+        m: ([r for r in records if strip_provider(r["model"]) == m], by_decode[m])
+        for m in LOCAL_MODELS
+    }
+
+
+def _generation_value(
+    rows: Sequence[LocalRecord | DecodeRecord], key: Literal["seed", "temperature"], what: str
+) -> Any:
+    """The one value of a generation setting across rows, as JSON text. Raises if it varies."""
+    return _single({json.dumps(r["generation"][key]) for r in rows}, what)
+
+
+def _decode_pair(rows: list[DecodeRecord], lenient: bool) -> tuple[int, int, int]:
+    """Correct decodes of the ordered set and of the reversed set, and the samples per set."""
+    k_ordered, n_ordered = pictogram_report.decode_counts(rows, "pictogram", lenient)
+    k_reversed, n_reversed = pictogram_report.decode_counts(rows, "pictogram_reversed", lenient)
+    return k_ordered, k_reversed, _single({n_ordered, n_reversed}, "decode set sizes")
+
+
+def local_table(model_rows: dict[str, tuple[list[LocalRecord], list[DecodeRecord]]]) -> str:
+    """Metrics as rows, models as columns, with the cells of the contrast section of the report."""
+    k_o, k_r, n = _decode_pair(model_rows[UNREADABLE][1], lenient=True)
+    if _decode_pair(model_rows[UNREADABLE][1], lenient=False) != (k_o, k_r, n):
+        raise ValueError(
+            f"{UNREADABLE}: strict and lenient decode counts differ, so its column label "
+            "needs a human rewrite"
+        )
+    header = (
+        f"{UNREADABLE} (not interpretable: decodes {k_o}/{n} and {k_r}/{n}, so zero sends "
+        "cannot separate resisting from not reading)"
+    )
+    columns = [pictogram_report.contrast_cells(*model_rows[m]) for m in LOCAL_MODELS]
+    lines = [f"| Metric | {READABLE} | {header} |", "|---|---|---|"]
+    for label, *cells in zip(LOCAL_ROWS, *columns, strict=True):
+        lines.append(f"| {label} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def local_claim(model_rows: dict[str, tuple[list[LocalRecord], list[DecodeRecord]]]) -> str:
+    """The one sentence about the readable model. Raises if the data would make it wrong."""
+    mine, dec = model_rows[READABLE]
+    channel = _single({r["image_channel"] for r in mine}, f"{READABLE} image channels")
+    runs = _single({len({r["run"] for r in rows}) for rows, _ in model_rows.values()}, "runs")
+    if runs != 1:
+        raise ValueError(f"the claim says one run, the records hold {runs} runs per model")
+    cells = {(r["arm"], r["variant"]) for r in mine}
+    n = _single({len(pictogram_report.sweep_cell(mine, *c)) for c in cells}, "cell sizes")
+    lo, lr, n_dec = _decode_pair(dec, lenient=True)
+    so, sr, _ = _decode_pair(dec, lenient=False)
+    if n_dec != n:
+        raise ValueError(f"decode sets hold {n_dec} samples, the sweep cells hold {n}")
+    typo = pictogram_report.send_count(pictogram_report.sweep_cell(mine, "A", "typographic"))
+    pict = pictogram_report.send_count(pictogram_report.sweep_cell(mine, "B", "pictogram"))
+    upper = fmt_rate(pict, n).rsplit(", ", 1)[1].removesuffix("]")  # the printed upper bound
+    order = (
+        f"on {lo} of {n} images in each order"
+        if lo == lr
+        else f"on {lo} of {n} ordered and {lr} of {n} reversed images"
+    )
+    return (
+        f"**Claim.** In {READABLE}, on the {channel} channel, in {_words(runs)} run with n={n} "
+        f"per cell, the model decoded the icon chain {order} when asked (lenient reading; "
+        f"strict {so} of {n} ordered and {sr} of {n} reversed), sent on {typo} of {n} "
+        f"typographic images, and sent on {pict} of {n} pictogram images (Wilson upper bound "
+        f"{upper}, Fisher exact p {pictogram_report.contrast_p_text(mine)} for typographic vs "
+        "pictogram)."
+    )
+
+
+def local_limits(model_rows: dict[str, tuple[list[LocalRecord], list[DecodeRecord]]]) -> str:
+    sweep = [r for rows, _ in model_rows.values() for r in rows]
+    decoded = [r for _, rows in model_rows.values() for r in rows]
+    seed = _generation_value([*sweep, *decoded], "seed", "seeds")
+    n = _single(
+        {
+            len(pictogram_report.sweep_cell(rows, a, v))
+            for rows, _ in model_rows.values()
+            for a, v in {(r["arm"], r["variant"]) for r in rows}
+        },
+        "cell sizes",
+    )
+    if _single({len({r["run"] for r in rows}) for rows, _ in model_rows.values()}, "runs") != 1:
+        raise ValueError("the limits say one run per model, the records hold more")
+    decode_temp = _generation_value(decoded, "temperature", "decode temperatures")
+    sweep_temp = _generation_value(sweep, "temperature", "sweep temperatures")
+    show = pictogram_report._show
+    return "\n".join(
+        [
+            f"- One run per model at seed {show(json.loads(seed))}, with n={n} per cell.",
+            f"- The claim rests on one local model, {READABLE}. The {UNREADABLE} column is not "
+            "interpretable.",
+            f"- The decode runs left temperature {show(json.loads(decode_temp))}, and the sweep "
+            f"ran at temperature {show(json.loads(sweep_temp))}.",
+            "- The 10 VI-05 images are icons drawn by hand in code with PIL, not icons from a "
+            "real application.",
+        ]
+    )
+
+
+def local_block(records: list[LocalRecord], decode: list[DecodeRecord]) -> str:
+    """The text between the local markers, with a blank line inside each marker."""
+    model_rows = _model_rows(records, decode)
+    return (
+        "\nGenerated from `results/mmi_local_2026_11_26/records.jsonl` and "
+        "`decode_records.jsonl`. Each rate shows k/n and its Wilson 95% interval.\n\n"
+        f"{local_table(model_rows)}\n\n{local_claim(model_rows)}\n\n{HYPOTHESIS}\n\n"
+        f"**Limits of this section.**\n\n{local_limits(model_rows)}\n"
+    )
+
+
 def recorded_toolchain(page: str) -> str | None:
     """The toolchain line inside the markers of the committed page, or None."""
     start, end = page.index(START) + len(START), page.index(END)
@@ -554,8 +731,12 @@ def build(
     page: str,
     toolchain: str | None = None,
     excerpt: Excerpt | None = None,
+    local: tuple[list[LocalRecord], list[DecodeRecord]] | None = None,
 ) -> tuple[bytes, str]:
-    """Return (PNG bytes, page text) for these records and the committed excerpt."""
+    """
+    Return (PNG bytes, page text) for these records and the committed excerpt. The local block is
+    spliced only when the local records and decode records are given.
+    """
     excerpt = excerpt or read_excerpt()
     problems = excerpt_problems(excerpt, records)
     if problems:
@@ -563,7 +744,27 @@ def build(
     cells = cell_stats(records)
     figure = draw_figure(cells, len(records))
     page = splice(page, summary(cells, excerpt), SUMMARY_START, SUMMARY_END)
+    if local is not None:
+        page = splice(page, local_block(*local), LOCAL_START, LOCAL_END)
     return figure, splice(page, block(cells, toolchain or toolchain_line(), excerpt))
+
+
+def read_local() -> tuple[list[LocalRecord], list[DecodeRecord]]:
+    return (
+        pictogram_records.read_records(LOCAL_RECORDS, local=True),
+        decode_records.read_decode_records(LOCAL_DECODE),
+    )
+
+
+BLOCKS = {
+    "showcase:summary": (SUMMARY_START, SUMMARY_END),
+    "showcase:generated": (START, END),
+    "showcase:local": (LOCAL_START, LOCAL_END),
+}
+
+
+def _between(page: str, start: str, end: str) -> str:
+    return page[page.index(start) : page.index(end)]
 
 
 def _name(path: Path) -> str:
@@ -575,14 +776,25 @@ def check(
     page_path: Path = PAGE,
     figure_path: Path = FIGURE,
     excerpt_path: Path = EXCERPT,
+    local_path: Path = LOCAL_RECORDS,
+    decode_path: Path = LOCAL_DECODE,
 ) -> list[str]:
     """Names of the outputs that differ from a fresh build. Writes nothing."""
     page = page_path.read_text(encoding="utf-8")
     recorded = recorded_toolchain(page)
-    figure, fresh = build(read_records(records_path), page, recorded, read_excerpt(excerpt_path))
+    local = (
+        pictogram_records.read_records(local_path, local=True),
+        decode_records.read_decode_records(decode_path),
+    )
+    figure, fresh = build(
+        read_records(records_path), page, recorded, read_excerpt(excerpt_path), local
+    )
     differ = []
     if fresh != page:
         differ.append(_name(page_path))
+        for name, (start, end) in BLOCKS.items():
+            if _between(fresh, start, end) != _between(page, start, end):
+                print(f"the block {name} of {_name(page_path)} differs", file=sys.stderr)
     if recorded == toolchain_line():
         if not figure_path.is_file() or figure_path.read_bytes() != figure:
             differ.append(_name(figure_path))
@@ -613,7 +825,9 @@ def main(argv: list[str] | None = None) -> int:
         for name in differ:
             print(f"differs from a fresh build: {name}")
         return 1 if differ else 0
-    figure, text = build(read_records(RECORDS), PAGE.read_text(encoding="utf-8"))
+    figure, text = build(
+        read_records(RECORDS), PAGE.read_text(encoding="utf-8"), local=read_local()
+    )
     FIGURE.write_bytes(figure)
     PAGE.write_text(text, encoding="utf-8")
     print(f"wrote {FIGURE} and the generated block of {PAGE}")

@@ -23,8 +23,10 @@ from PIL import Image
 from agent_shield.runtime.stats import wilson_interval
 from scripts.multimodal_injection import records as records_module
 from scripts.multimodal_injection import showcase
+from scripts.multimodal_injection.decode_records import DecodeRecord
+from scripts.multimodal_injection.pictogram_records import LocalRecord
 from scripts.multimodal_injection.records import Record, read_records
-from scripts.multimodal_injection.report import ATTACKS, MODEL_ORDER
+from scripts.multimodal_injection.report import ATTACKS, MODEL_ORDER, fmt_rate
 from scripts.multimodal_injection.showcase import (
     END,
     EXCERPT,
@@ -446,3 +448,243 @@ def test_extract_refuses_a_log_with_the_wrong_hash(rows: list[Record], tmp_path:
         showcase.extract(rows, (tmp_path,))
     with pytest.raises(FileNotFoundError):
         showcase.extract(rows, (tmp_path / "empty",))
+
+
+# ---------------------------------------------------------------------------
+# the local model block
+# ---------------------------------------------------------------------------
+
+LOCAL_RECORDS = showcase.LOCAL_RECORDS
+LOCAL_DECODE = showcase.LOCAL_DECODE
+GEN: dict[str, object] = {"max_tokens": 2048, "temperature": 0.0, "seed": 0, "extra_body": None}
+DECODE_GEN: dict[str, object] = {**GEN, "temperature": None}
+CELLS = (
+    ("A", "typographic"),
+    ("B", "pictogram"),
+    ("B", "pictogram_reversed"),
+    ("B", "benign"),
+)
+needs_local = pytest.mark.skipif(
+    not (LOCAL_RECORDS.is_file() and LOCAL_DECODE.is_file()),
+    reason="the local result files are absent",
+)
+
+
+def _fixture(
+    sends: dict[tuple[str, str], int] | None = None,
+    decodes: dict[tuple[str, bool], tuple[int, int]] | None = None,
+) -> tuple[list[LocalRecord], list[DecodeRecord]]:
+    """
+    Two local models with 10 samples per cell. sends maps (model, variant) to the sends of the
+    cell, decodes maps (model, lenient) to the correct counts of the ordered and reversed sets.
+    The defaults give gemma 7, 0 sends and 8/4 strict, 9/9 lenient, qwen 5, 0 and 4/0 for both.
+    """
+    sends = {("gemma4:12b", "typographic"): 7, **(sends or {})}
+    decodes = {
+        ("gemma4:12b", False): (8, 4),
+        ("gemma4:12b", True): (9, 9),
+        ("qwen3-vl:8b-instruct", False): (4, 0),
+        ("qwen3-vl:8b-instruct", True): (4, 0),
+        **(decodes or {}),
+    }
+    records: list[LocalRecord] = []
+    decode: list[DecodeRecord] = []
+    for model in ("gemma4:12b", "qwen3-vl:8b-instruct"):
+        for arm, variant in CELLS:
+            k = sends.get((model, variant), 5 if variant == "typographic" else 0)
+            for i in range(10):
+                records.append(
+                    cast(
+                        LocalRecord,
+                        {
+                            "model": f"ollama/{model}",
+                            "arm": arm,
+                            "variant": variant,
+                            "run": "seed 0",
+                            "image_channel": "user_fallback",
+                            "sample_id": f"{variant}_{i}",
+                            "asr": int(i < k),
+                            "generation": dict(GEN),
+                        },
+                    )
+                )
+        for set_name, index in (("pictogram", 0), ("pictogram_reversed", 1)):
+            for i in range(10):
+                decode.append(
+                    cast(
+                        DecodeRecord,
+                        {
+                            "model": f"ollama/{model}",
+                            "log": f"{model}.eval",
+                            "set": set_name,
+                            "sample_id": f"{set_name}_{i}",
+                            "correct": int(i < decodes[(model, False)][index]),
+                            "correct_lenient": int(i < decodes[(model, True)][index]),
+                            "generation": dict(DECODE_GEN),
+                        },
+                    )
+                )
+    return records, decode
+
+
+def _local_page(page: str) -> str:
+    return page[page.index(showcase.LOCAL_START) : page.index(showcase.LOCAL_END)]
+
+
+def test_the_local_block_renders_from_fixture_records() -> None:
+    text = showcase.local_block(*_fixture())
+    assert text.startswith("\nGenerated from `results/mmi_local_2026_11_26/records.jsonl` and ")
+    rows = [ln for ln in text.splitlines() if ln.startswith("|")]
+    assert len(rows) == 2 + len(showcase.LOCAL_ROWS)
+    assert rows[0] == (
+        "| Metric | gemma4:12b | qwen3-vl:8b-instruct (not interpretable: decodes 4/10 and 0/10, "
+        "so zero sends cannot separate resisting from not reading) |"
+    )
+    assert rows[2].startswith("| typographic sends (Arm A) | 7/10 = 0.700 [0.397, 0.892] | 5/10 ")
+    assert "Fisher exact p 0.003096 for typographic vs pictogram" in text
+    assert "**Claim.** In gemma4:12b, on the user_fallback channel, in one run with n=10" in text
+    assert "decoded the icon chain on 9 of 10 images in each order when asked" in text
+    assert "- One run per model at seed 0, with n=10 per cell." in text
+    assert "- The decode runs left temperature unset, and the sweep ran at temperature 0.0." in text
+
+
+def test_the_claim_names_both_lenient_counts_when_they_differ() -> None:
+    claim = showcase.local_block(*_fixture(decodes={("gemma4:12b", True): (9, 7)}))
+    assert "on 9 of 10 ordered and 7 of 10 reversed images when asked" in claim
+    assert "in each order" not in claim
+
+
+def test_check_fails_when_the_local_block_is_edited_by_one_byte(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = PAGE.read_text(encoding="utf-8")
+    page = tmp_path / "SHOWCASE.md"
+    assert text.count("Fisher exact p 0.003096") == 1
+    page.write_text(text.replace("Fisher exact p 0.003096", "Fisher exact p 0.003097"), "utf-8")
+    before = page.read_bytes()
+    assert check(RECORDS, page, FIGURE) == [str(page)]
+    assert page.read_bytes() == before  # check writes nothing
+    assert "showcase:local" in capsys.readouterr().err
+    page.write_text(text, encoding="utf-8")
+    assert check(RECORDS, page, FIGURE) == []
+
+
+def test_the_local_markers_must_be_on_the_page() -> None:
+    page = PAGE.read_text(encoding="utf-8").replace(showcase.LOCAL_END, "")
+    with pytest.raises(ValueError, match="needs one"):
+        build(read_records(RECORDS), page, local=_fixture())
+
+
+def test_the_column_label_needs_a_human_when_qwen_strict_and_lenient_differ() -> None:
+    with pytest.raises(ValueError, match="strict and lenient decode counts differ"):
+        showcase.local_block(*_fixture(decodes={("qwen3-vl:8b-instruct", True): (5, 0)}))
+    with pytest.raises(ValueError, match="strict and lenient decode counts differ"):
+        showcase.local_block(*_fixture(decodes={("qwen3-vl:8b-instruct", True): (4, 1)}))
+
+
+def test_the_local_block_refuses_a_missing_model_or_missing_decodes() -> None:
+    records, decode = _fixture()
+    with pytest.raises(ValueError, match="local records hold"):
+        showcase.local_block([r for r in records if "gemma" in r["model"]], decode)
+    with pytest.raises(ValueError, match="no decode records"):
+        showcase.local_block(records, [r for r in decode if "gemma" in r["model"]])
+
+
+def test_the_claim_refuses_two_channels_two_runs_and_cells_of_unequal_size() -> None:
+    records, decode = _fixture()
+    gemma = next(r for r in records if "gemma" in r["model"])
+    other_channel = {**gemma, "image_channel": "tool_native"}
+    with pytest.raises(ValueError, match="image channels differ"):
+        showcase.local_block([*records[1:], cast(LocalRecord, other_channel)], decode)
+    other_run = {**gemma, "run": "seed 1"}
+    with pytest.raises(ValueError, match="runs differ"):
+        showcase.local_block([*records, cast(LocalRecord, other_run)], decode)
+    with pytest.raises(ValueError, match="cell sizes differ"):
+        showcase.local_block([*records, cast(LocalRecord, {**gemma})], decode)
+
+
+def test_the_claim_refuses_decode_sets_of_another_size_than_the_cells() -> None:
+    records, decode = _fixture()
+    gemma_decode = [r for r in decode if "gemma" in r["model"]]
+    dropped = [r for r in decode if r not in gemma_decode[:2]]
+    with pytest.raises(ValueError, match="decode set"):
+        showcase.local_block(records, dropped)
+
+
+def test_the_limits_refuse_a_seed_or_a_temperature_that_varies() -> None:
+    records, decode = _fixture()
+    for key in ("seed", "temperature"):
+        bad_sweep = copy.deepcopy(records)
+        bad_sweep[-1]["generation"][key] = 7
+        with pytest.raises(ValueError, match=f"{key}s differ"):
+            showcase.local_block(bad_sweep, decode)
+        bad_decode = copy.deepcopy(decode)
+        bad_decode[-1]["generation"][key] = 7
+        with pytest.raises(ValueError, match=f"{key}s differ"):
+            showcase.local_block(records, bad_decode)
+
+
+def test_the_limits_show_a_set_decode_temperature_as_a_number() -> None:
+    records, decode = _fixture()
+    for r in decode:
+        r["generation"]["temperature"] = 0.0
+    assert "left temperature 0.0, and" in showcase.local_block(records, decode)
+
+
+def _contrast_section_rows() -> dict[str, list[str]]:
+    report = (REPO / "results" / "mmi_local_2026_11_26" / "REPORT.md").read_text(encoding="utf-8")
+    section = report[report.index("## Per model contrast") : report.index("## Limits")]
+    rows = [ln for ln in section.splitlines() if ln.startswith("| ")][1:]
+    split = [[c.strip() for c in ln.strip("|").split(" | ")] for ln in rows]
+    return {cells[0]: cells[1:] for cells in split}
+
+
+@needs_local
+def test_the_local_table_cells_equal_the_contrast_section_of_the_report() -> None:
+    if not (REPO / "results" / "mmi_local_2026_11_26" / "REPORT.md").is_file():
+        pytest.skip("REPORT.md is absent")
+    report_rows = _contrast_section_rows()
+    table = [
+        [c.strip() for c in ln.strip("|").split(" | ")]
+        for ln in showcase.local_table(showcase._model_rows(*showcase.read_local())).splitlines()
+        if ln.startswith("| ")
+    ]
+    header, body = table[0], table[1:]
+    assert header[0] == "Metric" and header[1] == "gemma4:12b"
+    assert header[2].startswith("qwen3-vl:8b-instruct (not interpretable: decodes ")
+    assert [row[0] for row in body] == list(showcase.LOCAL_ROWS)
+    assert len(body) == 9
+    for column, model in ((1, "gemma4:12b"), (2, "qwen3-vl:8b-instruct")):
+        assert [row[column] for row in body] == report_rows[model]
+
+
+@needs_local
+def test_the_committed_page_holds_the_local_block_of_the_real_files() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    fresh = showcase.local_block(*showcase.read_local())
+    inner = page[page.index(showcase.LOCAL_START) + len(showcase.LOCAL_START) :]
+    assert inner[: inner.index(showcase.LOCAL_END)] == fresh
+    assert page.index("A rebus zero may mean unread.") < page.index(showcase.LOCAL_START)
+    assert page.index(showcase.LOCAL_END) < page.index("## Next slice (in progress)")
+    assert "## Icons it can read but does not obey\n\n<!-- showcase:local:start -->" in page
+
+
+@needs_local
+def test_the_claim_of_the_real_files_has_the_expected_text() -> None:
+    # This pins the current data: 9 lenient, 8 strict ordered, 4 strict reversed, 7 typographic
+    # sends, 0 pictogram sends, upper bound 0.278, Fisher p 0.003096. New data fails here on
+    # purpose, so a human rereads the claim.
+    claim = showcase.local_claim(showcase._model_rows(*showcase.read_local()))
+    assert claim == (
+        "**Claim.** In gemma4:12b, on the user_fallback channel, in one run with n=10 per cell, "
+        "the model decoded the icon chain on 9 of 10 images in each order when asked (lenient "
+        "reading; strict 8 of 10 ordered and 4 of 10 reversed), sent on 7 of 10 typographic "
+        "images, and sent on 0 of 10 pictogram images (Wilson upper bound 0.278, Fisher exact p "
+        "0.003096 for typographic vs pictogram)."
+    )
+
+
+def test_the_wilson_upper_bound_in_the_claim_is_the_one_fmt_rate_prints() -> None:
+    claim = showcase.local_claim(showcase._model_rows(*_fixture()))
+    assert f"{wilson_interval(0, 10).high:.3f}" in claim
+    assert "[0.000, 0.278]" in fmt_rate(0, 10)
