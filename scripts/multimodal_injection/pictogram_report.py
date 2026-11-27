@@ -201,7 +201,7 @@ def _show_p(p: float) -> str:
     return f"{p:#.4g}"
 
 
-def _decode_by_model(decode: Sequence[DecodeRecord]) -> dict[str, list[DecodeRecord]]:
+def decode_by_model(decode: Sequence[DecodeRecord]) -> dict[str, list[DecodeRecord]]:
     """The decode records of each model. Two logs for one model, or a short set, are refused."""
     by_model: dict[str, list[DecodeRecord]] = defaultdict(list)
     for r in decode:
@@ -217,40 +217,55 @@ def _decode_by_model(decode: Sequence[DecodeRecord]) -> dict[str, list[DecodeRec
     return by_model
 
 
-def _sweep_cell(rows: Sequence[LocalRecord], arm: str, variant: str) -> list[LocalRecord]:
+def sweep_cell(rows: Sequence[LocalRecord], arm: str, variant: str) -> list[LocalRecord]:
     return [r for r in rows if r["arm"] == arm and r["variant"] == variant]
 
 
-def _decoded(rows: Sequence[DecodeRecord], set_name: str, lenient: bool) -> str:
+def decode_counts(rows: Sequence[DecodeRecord], set_name: str, lenient: bool) -> tuple[int, int]:
+    """Correct decodes and samples of one decode set, strict or lenient."""
     chosen = [r for r in rows if r["set"] == set_name]
     if lenient:
-        return fmt_rate(sum(r["correct_lenient"] for r in chosen), len(chosen))
-    return fmt_rate(sum(r["correct"] for r in chosen), len(chosen))
+        return sum(r["correct_lenient"] for r in chosen), len(chosen)
+    return sum(r["correct"] for r in chosen), len(chosen)
 
 
-def _contrast_row(short: str, mine: list[LocalRecord], dec: list[DecodeRecord]) -> str:
-    """One row of the contrast table for one model: its sweep records and its decode records."""
-    typo = _sweep_cell(mine, "A", "typographic")
-    pict = _sweep_cell(mine, "B", "pictogram")
-    if typo and pict:
-        t_sends = sum(1 for r in typo if r["asr"] > 0)
-        p_sends = sum(1 for r in pict if r["asr"] > 0)
-        p_text = _show_p(fisher_exact_p(t_sends, len(typo) - t_sends, p_sends, len(pict) - p_sends))
-    else:
-        p_text = "n/a"
-    cells = [
-        short,
-        _sends(typo),
+def _decoded(rows: Sequence[DecodeRecord], set_name: str, lenient: bool) -> str:
+    return fmt_rate(*decode_counts(rows, set_name, lenient))
+
+
+def send_count(rows: Sequence[Record]) -> int:
+    """The samples with a send_report call (asr above 0)."""
+    return _count(rows, lambda r: r["asr"] > 0)[0]
+
+
+def contrast_p_text(mine: list[LocalRecord]) -> str:
+    """The shown Fisher exact p of typographic (Arm A) against pictogram (Arm B), or n/a."""
+    typo = sweep_cell(mine, "A", "typographic")
+    pict = sweep_cell(mine, "B", "pictogram")
+    if not (typo and pict):
+        return "n/a"
+    t_sends, p_sends = send_count(typo), send_count(pict)
+    return _show_p(fisher_exact_p(t_sends, len(typo) - t_sends, p_sends, len(pict) - p_sends))
+
+
+def contrast_cells(mine: list[LocalRecord], dec: list[DecodeRecord]) -> list[str]:
+    """The nine cells of one model in the contrast table, after its name, in column order."""
+    return [
+        _sends(sweep_cell(mine, "A", "typographic")),
         _decoded(dec, "pictogram", False),
         _decoded(dec, "pictogram", True),
         _decoded(dec, "pictogram_reversed", False),
         _decoded(dec, "pictogram_reversed", True),
-        _sends(pict),
-        _sends(_sweep_cell(mine, "B", "pictogram_reversed")),
-        _sends(_sweep_cell(mine, "B", "benign")),
-        p_text,
+        _sends(sweep_cell(mine, "B", "pictogram")),
+        _sends(sweep_cell(mine, "B", "pictogram_reversed")),
+        _sends(sweep_cell(mine, "B", "benign")),
+        contrast_p_text(mine),
     ]
-    return "| " + " | ".join(cells) + " |"
+
+
+def _contrast_row(short: str, mine: list[LocalRecord], dec: list[DecodeRecord]) -> str:
+    """One row of the contrast table for one model: its sweep records and its decode records."""
+    return "| " + " | ".join([short, *contrast_cells(mine, dec)]) + " |"
 
 
 def _contrast(
@@ -259,7 +274,7 @@ def _contrast(
     """The per model contrast section: sweep sends, decode counts and the Fisher p."""
     if not decode:
         raise ValueError("no decode records: build decode_records.jsonl with decode_records.py")
-    by_model = _decode_by_model(decode)
+    by_model = decode_by_model(decode)
     sweep_models = {strip_provider(r["model"]): r["model"] for r in records}
     shown = [m for m in order if m in sweep_models and sweep_models[m] in by_model]
     left_out = [m for m in order if m in sweep_models and sweep_models[m] not in by_model]
