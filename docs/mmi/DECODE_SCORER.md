@@ -26,3 +26,10 @@ The lenient reading of a log made before `78a9c1a` is computed afterwards by `de
 | ollama/gemma4:12b | `2026-11-26T20-25-06-00-00_mmi-decode_7Zpmk9iwj48MQyxsw6PtBs.eval` | 20 |
 
 The two smoke logs are smoke runs only. No result row comes from them.
+
+## qwen3-vl builds
+
+- `ollama/qwen3-vl:8b` is the thinking build. Its Ollama id `9cf69da2b16d` is the id of `qwen3-vl:8b-thinking`. All three qwen3-vl logs in the table above come from the thinking build.
+- The thinking build hung the local attack sweep, and under a 2048 token cap it never called a tool. The local plan therefore uses the instruct build `ollama/qwen3-vl:8b-instruct` (Ollama id `70e58e37beb1`), which has no thinking mode.
+- The decode run on the instruct build, on all 20 samples with a 2048 token cap, is `2026-11-27T02-52-02-00-00_mmi-decode_KGmin93kGN2bFpTz3EzXzt.eval`. Its log records commit `6ddb812`, so its lenient fields are a declared scorer.
+- A decode count of one build says nothing about the other build. Each report names the build tag.
