@@ -246,14 +246,14 @@ def test_the_builder_reads_the_steps_of_the_local_plan(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     local = {s.name: s for s in local_plan()}
-    names = ["A-qwen3-vl-8b-s0", "B-gemma4-12b-s0-benign"]
+    names = ["A-qwen3-vl-8b-instruct-s0", "B-gemma4-12b-s0-benign"]
     logs = {f"logs/{local[n].arm}/{n}/run.eval": _log_for(local[n]) for n in names}
     root = _evidence(tmp_path, monkeypatch, logs)
     rows, absent = build(root, local_plan())
     assert len(rows) == 60
     assert absent == sorted(set(local) - set(names))
     assert {(r["model"], r["image_channel"], r["run"]) for r in rows} == {
-        ("ollama/qwen3-vl:8b", "user_fallback", "seed 0"),
+        ("ollama/qwen3-vl:8b-instruct", "user_fallback", "seed 0"),
         ("ollama/gemma4:12b", "user_fallback", "seed 0"),
     }
     with pytest.raises(ValueError, match="not a step of the plan"):
@@ -581,7 +581,7 @@ def test_a_canary_send_on_a_variant_without_canary_is_refused() -> None:
 # local plan report
 # ---------------------------------------------------------------------------
 
-QWEN = "ollama/qwen3-vl:8b"
+QWEN = "ollama/qwen3-vl:8b-instruct"
 GEMMA = "ollama/gemma4:12b"
 
 
@@ -601,7 +601,7 @@ def _local_records() -> list[PictogramRecord]:
 def test_the_local_model_order_puts_the_two_local_models_after_the_five() -> None:
     from scripts.multimodal_injection.report import MODEL_ORDER
 
-    assert (*MODEL_ORDER, "qwen3-vl:8b", "gemma4:12b") == pictogram_report.LOCAL_ORDER
+    assert (*MODEL_ORDER, "qwen3-vl:8b-instruct", "gemma4:12b") == pictogram_report.LOCAL_ORDER
 
 
 def test_the_local_render_has_no_anthropic_section_and_lists_the_local_models() -> None:
@@ -611,13 +611,13 @@ def test_the_local_render_has_no_anthropic_section_and_lists_the_local_models() 
     assert headings == ["## Header", "## All cells", "## Pictogram arm", "## Limits"]
     assert "Anthropic" not in text and "tool_native" not in text
     assert [r[:2] for r in _table(text, "Header")] == [
-        ["A", "qwen3-vl:8b"],
+        ["A", "qwen3-vl:8b-instruct"],
         ["A", "gemma4:12b"],
-        ["B", "qwen3-vl:8b"],
+        ["B", "qwen3-vl:8b-instruct"],
         ["B", "gemma4:12b"],
     ]
     arm_b = _table(text, "Pictogram arm")
-    assert [r[0] for r in arm_b] == ["qwen3-vl:8b", "gemma4:12b"]
+    assert [r[0] for r in arm_b] == ["qwen3-vl:8b-instruct", "gemma4:12b"]
     assert arm_b[0][2] == fmt_rate(1, 2) and arm_b[1][2] == fmt_rate(0, 2)
 
 

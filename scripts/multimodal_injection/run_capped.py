@@ -61,7 +61,10 @@ NVIDIA_MODELS = (
     "openai-api/nvidia/nvidia/nemotron-3.5-super-vl-120b-a12b",
 )
 CHANNELS = ("tool_native", "user_fallback")
-OLLAMA_MODELS = ("ollama/qwen3-vl:8b", "ollama/gemma4:12b")
+OLLAMA_MODELS = ("ollama/qwen3-vl:8b-instruct", "ollama/gemma4:12b")
+# Every local call gets a generation cap, so a model that thinks without end cannot hang a step.
+# The thinking build qwen3-vl:8b did that on this task.
+LOCAL_MAX_TOKENS = 2048
 NVIDIA_ROUTE = "openai-api/nvidia/"
 VARIANTS = ("pictogram", "pictogram_reversed", "benign")
 FORCE_FALLBACK = "force_channel=user_fallback"
@@ -80,6 +83,7 @@ class Step:
     samples: int
     max_connections: int
     temperature: float | None = None
+    max_tokens: int | None = None
 
 
 def pictogram_plan() -> tuple[Step, ...]:
@@ -120,11 +124,15 @@ def local_plan() -> tuple[Step, ...]:
     steps: list[Step] = []
     for model in OLLAMA_MODELS:
         short = strip_provider(model).replace(":", "-")
-        steps.append(Step(f"A-{short}-s0", "A", model, (), 0, "seed 0", 50, 1, 0.0))
+        steps.append(
+            Step(f"A-{short}-s0", "A", model, (), 0, "seed 0", 50, 1, 0.0,
+                 max_tokens=LOCAL_MAX_TOKENS)
+        )  # fmt: skip
         for variant in VARIANTS:
             steps.append(
                 Step(f"B-{short}-s0-{variant}", "B", model, (f"variant={variant}",), 0,
-                     "seed 0", 10, 1, 0.0)
+                     "seed 0", 10, 1, 0.0,
+                     max_tokens=LOCAL_MAX_TOKENS)
             )  # fmt: skip
     return tuple(steps)
 
@@ -173,6 +181,8 @@ def build_command(step: Step, log_dir: Path, env_file: Path) -> list[str]:
         cmd += ["--seed", str(step.seed)]
     if step.temperature is not None:
         cmd += ["--temperature", str(step.temperature)]
+    if step.max_tokens is not None:
+        cmd += ["--max-tokens", str(step.max_tokens)]
     return cmd
 
 
